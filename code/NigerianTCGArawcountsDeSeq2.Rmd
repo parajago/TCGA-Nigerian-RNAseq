@@ -1,16 +1,16 @@
 ---
 title: "Nigerian-TCGA Differential Expression Analysis Using DeSeq2"
 author: "Padma Sheila Rajagopal, MD MPH"
-date: "1/12/2019"
+date: "1/13/2019"
 output:
   html_document:
     df_print: paged
+    toc: yes
     number_sections: yes
     theme: spacelab
-    toc: yes
 ---
-```{r setup}
-knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```{r Setup, message=FALSE, warning=FALSE, echo=FALSE, results=FALSE, include=FALSE}
+knitr::opts_chunk$set(message=FALSE, warning=FALSE)
 library("DESeq2")
 library(stringi)
 library("dplyr")
@@ -20,18 +20,16 @@ library("AnnotationDbi")
 library("org.Hs.eg.db")
 library('GenomicFeatures')
 library(biomaRt)
-library (EnsDb.Hsapiens.v75)
+library(EnsDb.Hsapiens.v75)
 library(apeglm)
 library("genefilter")
 library(pheatmap)
 library("sva")
-
 setwd("~/Research-Local/RNAseq-Local/Inputs/NigerianTCGA_quants")
 ```
 
 I have 86 TCGA patients with whole-genome sequencing data and RNAseq data as well as 99 Nigerian patients with RNA-seq data. Raw counts were initially processed using HTSeq, so HTSeq data is being formatted for use with DESeq2.
 ```{r Preparing the sampleTable using HTSeq raw counts}
-message=FALSE
 FOLDER <- "/Users/parajago/Research-Local/RNAseq-Local/Inputs/NigerianTCGA_quants"
 
 sampleFiles <- grep("htseq.counts",list.files(FOLDER),value=TRUE)
@@ -80,6 +78,8 @@ sampleTable2 <- data.frame(sampleName=gsub(".htseq.counts","",sampleFiles),
                           fileName=sampleFiles,
                           condition=sampleConditionrace)
 
+head(sampleTable2)
+
 ddsHTSeqMF <- DESeqDataSetFromHTSeqCount(sampleTable=sampleTable2,
                                        directory=FOLDER,
                                        design=~condition)
@@ -88,7 +88,6 @@ ddsHTSeqMF <- DESeqDataSetFromHTSeqCount(sampleTable=sampleTable2,
 
 I am now running initial variance transformations and plotting count data with a PCA. 
 ```{r Exploratory analysis and PCA the batches}
-nrow(ddsHTSeqMF)
 ddsHTSeqMF <- ddsHTSeqMF[rowSums(counts(ddsHTSeqMF)) > 1, ] #Pre-filtering the dataset by removing the rows without information about gene expression
 
 vsd <- vst(ddsHTSeqMF, blind = TRUE) #Variance-stabilizing transformation
@@ -118,6 +117,8 @@ ggplot(pcaData, aes(x = PC1, y = PC2, color = condition)) +
   coord_fixed()
 
 ```
+We see here that the PCA demonstrates batch effect between the Nigerian patients and TGCA patients. TCGA patients also appear to have internal batch effect.
+
 
 This is the actual differential expression analysis with false discovery threshold of 0.05. Then we are sorting out the results for both the white and black TCGA patients separately. Differential expression results are annotated. 
 ```{r Differential expression analysis}
@@ -144,19 +145,19 @@ resSigwhite <- subset(reswhiteNigerian, padj < 0.05)
 resSigblack <- subset(resblackNigerian, padj < 0.05) #Puts all significantly differentially expressed genes into a table
 
 #Provided method for annotating genes from Bioconductor/DESeq2
-txdb <- makeTxDbFromBiomart(biomart="ENSEMBL_MART_ENSEMBL",
-                     dataset="hsapiens_gene_ensembl",
-                     transcript_ids=NULL,
-                     circ_seqs=DEFAULT_CIRC_SEQS,
-                     filter=NULL,
-                     id_prefix="ensembl_",
-                     host="www.ensembl.org",
-                     port=80,
-                     taxonomyId=NA,
-                     miRBaseBuild=NA)
+#txdb <- makeTxDbFromBiomart(biomart="ENSEMBL_MART_ENSEMBL",
+#                     dataset="hsapiens_gene_ensembl",
+#                     transcript_ids=NULL,
+#                     circ_seqs=DEFAULT_CIRC_SEQS,
+#                     filter=NULL,
+#                     id_prefix="ensembl_",
+#                     host="www.ensembl.org",
+#                     port=80,
+#                     taxonomyId=NA,
+#                     miRBaseBuild=NA)
 
-mart = useMart("ensembl", dataset=
-                      "hsapiens_gene_ensembl")
+#mart = useMart("ensembl", dataset=
+#                      "hsapiens_gene_ensembl")
 
 resSigwhite$temp <- row.names(resSigwhite)
 resSigwhite$temp <- gsub("[.].+", "", resSigwhite$temp)
@@ -224,11 +225,14 @@ resSigblack$locend <- mapIds(EnsDb.Hsapiens.v75,
                      column="GENESEQEND",
                      keytype="GENEID",
                      multiVals="first")
+
+head (resSigblack)
+head (resSigwhite)
 ```
 
 
 This is code that can be used for batch effect assessment but I am not sure how to intepret the results or incorporate this into the rest of the analysis. Batch effect should be corrected prior to running the differential expression. 
-```{r Batch effect assessment}
+```{r Batch effect assessment, message=FALSE}
 dat  <- counts(ddsMF, normalized = TRUE)
 idx  <- rowMeans(dat) > 1
 dat  <- dat[idx, ]
@@ -264,17 +268,21 @@ pheatmap(mat, annotation_col = anno)
 Sorting the greatest differentially expressed genes and providing output. 
 ```{r Sorting the greatest log change and p-values}
 
-resSigwhitehead <- head(resSigwhite[ order(resSigwhite$log2FoldChange), ],100)
-write.table(resSigwhitehead,"Nigerian-TCGAwhiteDiffExpGenes100-pos",sep="\t",row.names=TRUE)
+resSigwhitehead <- head(resSigwhite[ order(resSigwhite$log2FoldChange), ],10)
+resSigwhitehead
+#write.table(resSigwhitehead,"Nigerian-TCGAwhiteDiffExpGenes100-pos",sep="\t",row.names=TRUE)
 
-resSigwhitetail <- tail(resSigwhite[order(resSigwhite$log2FoldChange), ],100)
-write.table(resSigwhitetail,"Nigerian-TCGAwhiteDiffExpGenes100-pos2",sep="\t",row.names=TRUE)
+resSigwhitetail <- tail(resSigwhite[order(resSigwhite$log2FoldChange), ],10)
+resSigwhitetail
+#write.table(resSigwhitetail,"Nigerian-TCGAwhiteDiffExpGenes100-pos2",sep="\t",row.names=TRUE)
 
-resSigblackhead <- head(resSigblack[ order(resSigblack$log2FoldChange), ],100)
-write.table(resSigblackhead,"Nigerian-TCGAblackDiffExpGenes100-neg",sep="\t",row.names=TRUE)
+resSigblackhead <- head(resSigblack[ order(resSigblack$log2FoldChange), ],10)
+resSigblackhead
+#write.table(resSigblackhead,"Nigerian-TCGAblackDiffExpGenes100-neg",sep="\t",row.names=TRUE)
 
-resSigblacktail <- tail(resSigblack[order(resSigblack$log2FoldChange), ],100)
-write.table(resSigblacktail,"Nigerian-TCGAblackDiffExpGenes100-pos",sep="\t",row.names=TRUE)
+resSigblacktail <- tail(resSigblack[order(resSigblack$log2FoldChange), ],10)
+resSigblacktail
+#write.table(resSigblacktail,"Nigerian-TCGAblackDiffExpGenes100-pos",sep="\t",row.names=TRUE)
 
 ```
 
@@ -332,6 +340,3 @@ loaded via a namespace (and not attached):
 [85] locfit_1.5-9.1           grid_3.5.0               readxl_1.1.0             data.table_1.11.8       
 [89] blob_1.1.1               digest_0.6.18            xtable_1.8-3             numDeriv_2016.8-1       
 [93] munsell_0.5.0    
-
-
-options(warn=0)
