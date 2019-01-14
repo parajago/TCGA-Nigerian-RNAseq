@@ -1,0 +1,5 @@
+# TCGA-Nigerian-RNAseq
+
+A [workflowr][] project.
+
+[workflowr]: https://github.com/jdblischak/workflowr
