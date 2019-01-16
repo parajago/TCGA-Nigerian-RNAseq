@@ -11,17 +11,22 @@
 
 
 
-<title>Home</title>
+<title>TCGA-Nigerian-RNASeq Project</title>
 
 <script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<link href="site_libs/bootstrap-3.3.5/css/cosmo.min.css" rel="stylesheet" />
+<link href="site_libs/bootstrap-3.3.5/css/spacelab.min.css" rel="stylesheet" />
 <script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
 <script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
 <script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<script src="site_libs/jqueryui-1.11.4/jquery-ui.min.js"></script>
+<link href="site_libs/tocify-1.9.1/jquery.tocify.css" rel="stylesheet" />
+<script src="site_libs/tocify-1.9.1/jquery.tocify.js"></script>
 <script src="site_libs/navigation-1.1/tabsets.js"></script>
 <link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
 <script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+<link href="site_libs/pagedtable-1.1/css/pagedtable.css" rel="stylesheet" />
+<script src="site_libs/pagedtable-1.1/js/pagedtable.js"></script>
 <link href="site_libs/font-awesome-5.0.13/css/fa-svg-with-js.css" rel="stylesheet" />
 <script src="site_libs/font-awesome-5.0.13/js/fontawesome-all.min.js"></script>
 <script src="site_libs/font-awesome-5.0.13/js/fa-v4-shims.min.js"></script>
@@ -169,6 +174,101 @@ $(document).ready(function () {
 
 
 
+<script>
+$(document).ready(function ()  {
+
+    // move toc-ignore selectors from section div to header
+    $('div.section.toc-ignore')
+        .removeClass('toc-ignore')
+        .children('h1,h2,h3,h4,h5').addClass('toc-ignore');
+
+    // establish options
+    var options = {
+      selectors: "h1,h2,h3",
+      theme: "bootstrap3",
+      context: '.toc-content',
+      hashGenerator: function (text) {
+        return text.replace(/[.\\/?&!#<>]/g, '').replace(/\s/g, '_').toLowerCase();
+      },
+      ignoreSelector: ".toc-ignore",
+      scrollTo: 0
+    };
+    options.showAndHide = true;
+    options.smoothScroll = true;
+
+    // tocify
+    var toc = $("#TOC").tocify(options).data("toc-tocify");
+});
+</script>
+
+<style type="text/css">
+
+#TOC {
+  margin: 25px 0px 20px 0px;
+}
+@media (max-width: 768px) {
+#TOC {
+  position: relative;
+  width: 100%;
+}
+}
+
+
+.toc-content {
+  padding-left: 30px;
+  padding-right: 40px;
+}
+
+div.main-container {
+  max-width: 1200px;
+}
+
+div.tocify {
+  width: 20%;
+  max-width: 260px;
+  max-height: 85%;
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+  div.tocify {
+    width: 25%;
+  }
+}
+
+@media (max-width: 767px) {
+  div.tocify {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.tocify ul, .tocify li {
+  line-height: 20px;
+}
+
+.tocify-subheader .tocify-item {
+  font-size: 0.90em;
+  padding-left: 25px;
+  text-indent: 0;
+}
+
+.tocify .list-group-item {
+  border-radius: 0px;
+}
+
+
+</style>
+
+<!-- setup 3col/9col grid for toc_float and main content  -->
+<div class="row-fluid">
+<div class="col-xs-12 col-sm-4 col-md-3">
+<div id="TOC" class="tocify">
+</div>
+</div>
+
+<div class="toc-content col-xs-12 col-sm-8 col-md-9">
+
+
 
 
 <div class="navbar navbar-default  navbar-fixed-top" role="navigation">
@@ -216,21 +316,20 @@ div.section {
 
 
 
-<h1 class="title toc-ignore">Home</h1>
+<h1 class="title toc-ignore">TCGA-Nigerian-RNASeq Project</h1>
 
 </div>
 
 
-<p><strong>Last updated:</strong> 2019-01-13</p>
+<p><strong>Last updated:</strong> 2019-01-16</p>
 <strong>workflowr checks:</strong> <small>(Click a bullet for more information)</small>
 <ul>
 <li>
-<p><details> <summary> <strong style="color:blue;">✔</strong> <strong>R Markdown file:</strong> up-to-date </summary></p>
-<p>Great! Since the R Markdown file has been committed to the Git repository, you know the exact version of the code that produced these results.</p>
+<p><details> <summary> <strong style="color:red;">✖</strong> <strong>R Markdown file:</strong> uncommitted changes </summary> The R Markdown file has unstaged changes. To know which version of the R Markdown file created these results, you’ll want to first commit it to the Git repo. If you’re still working on the analysis, you can ignore this warning. When you’re finished, you can run <code>wflow_publish</code> to commit the R Markdown file and build the HTML.</p>
 </details>
 </li>
 <li>
-<p><details> <summary> <strong style="color:blue;">✔</strong> <strong>Repository version:</strong> <a href="https://github.com/parajago/TCGA-Nigerian-RNAseq/tree/f6690b6c096d14e34d17b35245fcad5bd6a71657" target="_blank">f6690b6</a> </summary></p>
+<p><details> <summary> <strong style="color:blue;">✔</strong> <strong>Repository version:</strong> <a href="https://github.com/parajago/TCGA-Nigerian-RNAseq/tree/fcaf7a23e445dcce4e41640f730b89f457b27398" target="_blank">fcaf7a2</a> </summary></p>
 Great! You are using Git for version control. Tracking code development and connecting the code version to the results is critical for reproducibility. The version displayed above was the version of the Git repository at the time these results were generated. <br><br> Note that you need to be careful to ensure that all relevant files for the analysis have been committed to Git prior to generating the results (you can use <code>wflow_publish</code> or <code>wflow_git_commit</code>). workflowr only checks the R Markdown file, but you know if there are other scripts or data files that it depends on. Below is the status of the Git repository when the results were generated:
 <pre><code>
 Ignored files:
@@ -238,21 +337,111 @@ Ignored files:
     Ignored:    code/.DS_Store
 
 Untracked files:
-    Untracked:  README.md
-    Untracked:  TCGA-Nigerian-RNAseq.Rproj
-    Untracked:  _workflowr.yml
-    Untracked:  analysis/
-    Untracked:  code/README.md
-    Untracked:  data/
-    Untracked:  docs/
-    Untracked:  output/README.md
+    Untracked:  .Rhistory
+    Untracked:  analysis/NigerianTCGArawcountsDeSeq2.Rmd
+
+Unstaged changes:
+    Modified:   analysis/about.Rmd
+    Modified:   analysis/index.Rmd
+    Deleted:    code/NigerianTCGArawcountsDeSeq2.Rmd
 
 </code></pre>
 Note that any generated files, e.g. HTML, png, CSS, etc., are not included in this status report because it is ok for generated content to have uncommitted changes. </details>
 </li>
 </ul>
+<details> <summary> <small><strong>Expand here to see past versions:</strong></small> </summary>
+<ul>
+<table style="border-collapse:separate; border-spacing:5px;">
+<thead>
+<tr>
+<th style="text-align:left;">
+File
+</th>
+<th style="text-align:left;">
+Version
+</th>
+<th style="text-align:left;">
+Author
+</th>
+<th style="text-align:left;">
+Date
+</th>
+<th style="text-align:left;">
+Message
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+Rmd
+</td>
+<td style="text-align:left;">
+<a href="https://github.com/parajago/TCGA-Nigerian-RNAseq/blob/fcaf7a23e445dcce4e41640f730b89f457b27398/analysis/index.Rmd" target="_blank">fcaf7a2</a>
+</td>
+<td style="text-align:left;">
+Sheila Rajagopal
+</td>
+<td style="text-align:left;">
+2019-01-14
+</td>
+<td style="text-align:left;">
+WorkflowR structure added
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+html
+</td>
+<td style="text-align:left;">
+<a href="https://cdn.rawgit.com/parajago/TCGA-Nigerian-RNAseq/fcaf7a23e445dcce4e41640f730b89f457b27398/docs/index.html" target="_blank">fcaf7a2</a>
+</td>
+<td style="text-align:left;">
+Sheila Rajagopal
+</td>
+<td style="text-align:left;">
+2019-01-14
+</td>
+<td style="text-align:left;">
+WorkflowR structure added
+</td>
+</tr>
+</tbody>
+</table>
+</ul>
+<p></details></p>
 <hr />
-<p>Welcome to my research website.</p>
+<p>Padma Sheila Rajagopal, MD MPH</p>
+<p>Olopade Lab Postdoctoral Fellow</p>
+<p>This is the site I will use for a project in which I am assessing differential expression between a population of Nigerian breast cancer patients and breast cancer patients from the TCGA.</p>
+<p>Workflow and analysis published here:</p>
+<div id="protocols" class="section level1">
+<h1>Protocols</h1>
+<ul>
+<li><p><em>Alignment</em>: STAR (completed prior to analysis by Dominic Fitzgerald), initial steps of [PsychENCODE pipeline]: (<a href="https://gist.github.com/djf604/a3d6925c3775d6cf1053ded0e7a8b148" class="uri">https://gist.github.com/djf604/a3d6925c3775d6cf1053ded0e7a8b148</a>)</p></li>
+<li><p><em>Raw read counts</em>: HTSeq (completed prior to analysis by Dominic Fitzgerald)</p></li>
+<li><p><em>Normalization</em>:</p></li>
+<li><p><em>Differential expression</em>: DESeq2</p></li>
+</ul>
+</div>
+<div id="normalization" class="section level1">
+<h1>Normalization:</h1>
+</div>
+<div id="differential-expression" class="section level1">
+<h1>Differential expression:</h1>
+<p>Differential expression QC and analysis</p>
+</div>
+<div id="pending-analyses" class="section level1">
+<h1>Pending analyses</h1>
+<ul>
+<li><p>Pre-analysis visual summarization: TSNE, UMAP</p></li>
+<li><p>Differential expression of: candidate driver genes, breast cancer subtypes, protein-coding genes -&gt; volcano plots</p></li>
+<li><p>Verification in whole-genome sequencing samples only</p></li>
+<li>Improve PCA components</li>
+<li>Check 14q loss across the groups</li>
+<li><p>Plan for pathway analysis/GSEA</p></li>
+</ul>
+</div>
 
 <!-- Adjust MathJax settings so that all math formulae are shown using
 TeX fonts only; see
@@ -275,6 +464,8 @@ footer is added to webpages before the MathJax javascript. -->
 <hr>
 
 
+</div>
+</div>
 
 </div>
 

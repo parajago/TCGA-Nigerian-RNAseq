@@ -1,9 +1,45 @@
 ---
-title: "Home"
+title: "TCGA-Nigerian-RNASeq Project"
 site: workflowr::wflow_site
 output:
   workflowr::wflow_html:
-    toc: false
+    df_print: paged
+    toc: true
+    theme: spacelab
+    highlight: textmate
 ---
 
-Welcome to my research website.
+Padma Sheila Rajagopal, MD MPH
+
+Olopade Lab Postdoctoral Fellow
+
+This is the site I will use for a project in which I am assessing differential expression between a population of Nigerian breast cancer patients and breast cancer patients from the TCGA. 
+
+Workflow and analysis published here: 
+
+#Protocols
+* *Alignment*: STAR (completed prior to analysis by Dominic Fitzgerald), initial steps of 
+[PsychENCODE pipeline]: (https://gist.github.com/djf604/a3d6925c3775d6cf1053ded0e7a8b148)
+
+* *Raw read counts*: HTSeq (completed prior to analysis by Dominic Fitzgerald)
+
+* *Normalization*:
+
+* *Differential expression*: DESeq2
+
+#Normalization:
+
+#Differential expression:
+
+Differential expression QC and analysis
+
+#Pending analyses
+* Pre-analysis visual summarization: TSNE, UMAP
+
+* Differential expression of: candidate driver genes, breast cancer subtypes, protein-coding genes -> volcano plots
+
+* Verification in whole-genome sequencing samples only
+
+* Improve PCA components
+* Check 14q loss across the groups
+* Plan for pathway analysis/GSEA
