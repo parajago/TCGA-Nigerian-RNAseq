@@ -29,6 +29,8 @@ Workflow and analysis published here:
 
 #Normalization:
 
+[Normalization]: http://jtleek.com/genstats/inst/doc/02_05_normalization.html
+
 #Differential expression:
 
 [Differential expression QC and analysis]: https://parajago.github.io/TCGA-Nigerian-RNAseq/NigerianTCGArawcountsDeSeq2.html
