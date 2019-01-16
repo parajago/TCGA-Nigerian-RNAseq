@@ -31,7 +31,7 @@ Workflow and analysis published here:
 
 #Differential expression:
 
-Differential expression QC and analysis
+[Differential expression QC and analysis]: https://parajago.github.io/TCGA-Nigerian-RNAseq/NigerianTCGArawcountsDeSeq2.html
 
 #Pending analyses
 * Pre-analysis visual summarization: TSNE, UMAP
