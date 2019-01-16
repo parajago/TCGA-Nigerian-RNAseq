@@ -1,20 +1,20 @@
 name: "TCGA-Nigerian-RNAseq"
 output_dir: "../docs"
 navbar:
-  title: "TCGA-Nigerian-RNAseq"
+  title: "Olopade Lab: TCGA-Nigerian-RNAseq Project"
   left:
     - text: "Home"
       href: index.html
+    - text: "Differential Expression Analysis"
+      href: NigerianTCGArawcountsDeSeq2.html
     - text: "About"
       href: about.html
-    - text: "License"
-      href: license.html
   right:
     - icon: fa-github
-      href: https://github.com/jdblischak/workflowr
+      href: https://github.com/parajago/TCGA-Nigerian-RNAseq
 output:
   workflowr::wflow_html:
     toc: true
     toc_float: true
-    theme: cosmo
+    theme: spacelab
     highlight: textmate
