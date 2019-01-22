@@ -1,13 +1,15 @@
 ---
 title: "Nigerian-TCGA Differential Expression Analysis Using DeSeq2"
 author: "Padma Sheila Rajagopal, MD MPH"
-date: "1/13/2019"
+date: "1/16/2019"
+
+site: workflowr::wflow_site
 output:
-  html_document:
+  workflowr::wflow_html:
     df_print: paged
-    toc: yes
-    number_sections: yes
+    toc: true
     theme: spacelab
+    highlight: textmate
 ---
 ```{r Setup, message=FALSE, warning=FALSE, echo=FALSE, results=FALSE, include=FALSE}
 knitr::opts_chunk$set(message=FALSE, warning=FALSE)
@@ -28,6 +30,7 @@ library("sva")
 setwd("~/Research-Local/RNAseq-Local/Inputs/NigerianTCGA_quants")
 ```
 
+#Translation from HTSeq -> DESeq2 table
 I have 86 TCGA patients with whole-genome sequencing data and RNAseq data as well as 99 Nigerian patients with RNA-seq data. Raw counts were initially processed using HTSeq, so HTSeq data is being formatted for use with DESeq2.
 ```{r Preparing the sampleTable using HTSeq raw counts}
 FOLDER <- "/Users/parajago/Research-Local/RNAseq-Local/Inputs/NigerianTCGA_quants"
@@ -86,6 +89,7 @@ ddsHTSeqMF <- DESeqDataSetFromHTSeqCount(sampleTable=sampleTable2,
 ```
 
 
+#Brief exploratory analysis
 I am now running initial variance transformations and plotting count data with a PCA. 
 ```{r Exploratory analysis and PCA the batches}
 ddsHTSeqMF <- ddsHTSeqMF[rowSums(counts(ddsHTSeqMF)) > 1, ] #Pre-filtering the dataset by removing the rows without information about gene expression
@@ -119,7 +123,7 @@ ggplot(pcaData, aes(x = PC1, y = PC2, color = condition)) +
 ```
 We see here that the PCA demonstrates batch effect between the Nigerian patients and TGCA patients. TCGA patients also appear to have internal batch effect.
 
-
+#Differential expression analysis
 This is the actual differential expression analysis with false discovery threshold of 0.05. Then we are sorting out the results for both the white and black TCGA patients separately. Differential expression results are annotated. 
 ```{r Differential expression analysis}
 ddsMF <- DESeq(ddsHTSeqMF)
