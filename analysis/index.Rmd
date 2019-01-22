@@ -23,13 +23,7 @@ Workflow and analysis published here:
 
 * *Raw read counts*: HTSeq (completed prior to analysis by Dominic Fitzgerald)
 
-* *Normalization*:
-
 * *Differential expression*: DESeq2
-
-#Normalization:
-
-* Normalization: 
 
 #Differential expression:
 
