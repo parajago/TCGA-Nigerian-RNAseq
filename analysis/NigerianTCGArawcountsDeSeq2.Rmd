@@ -37,27 +37,6 @@ I have 86 TCGA patients with whole-genome sequencing data and RNAseq data as wel
 FOLDER <- "/Users/parajago/Research-Local/RNAseq-Local/Inputs/NigerianTCGA_quants"
 sampleFiles <- grep("htseq.counts",list.files(FOLDER),value=TRUE)
 
-#Differential gene expression setup for TCGA (all) + Nigerian
-#sampleCondition <- sub("(.*LIB).*","\\1",sampleFiles)
-#countVar=1
-#for (sample in sampleCondition){
-#  if (grepl(sample,"LIB")==TRUE){
-#    sampleCondition[countVar] <- "Nigerian"
-#    countVar=countVar+1
-#  }else{
-#    sampleCondition[countVar] <- "TCGA"
-#    countVar=countVar+1
-#  }
-#}
-
-#sampleTable <- data.frame(sampleName=gsub(".htseq.counts","",sampleFiles),
-#                          fileName=sampleFiles,
-#                          condition=sampleCondition)
-
-#ddsHTSeq <- DESeqDataSetFromHTSeqCount(sampleTable=sampleTable,
-#                                       directory=FOLDER,
-#                                       design=~condition)
-
 #Differential gene expression setup based on race (b/w/other)
 sampleConditionrace <- sampleFiles
 countVar2=1
@@ -81,8 +60,6 @@ sampleTable2 <- data.frame(sampleName=gsub(".htseq.counts","",sampleFiles),
                           fileName=sampleFiles,
                           condition=sampleConditionrace)
 
-head(sampleTable2)
-
 ddsHTSeqMF <- DESeqDataSetFromHTSeqCount(sampleTable=sampleTable2,
                                        directory=FOLDER,
                                        design=~condition)
@@ -90,7 +67,7 @@ ddsHTSeqMF <- DESeqDataSetFromHTSeqCount(sampleTable=sampleTable2,
 
 
 #Variance transformation, batch effect assessment and initial exploratory analysis
-I am now running initial variance transformations and plotting count data with a PCA. 
+I am now performing different visualization approaches to assess the variance of the data, batch effect and expected differences between the two populations.
 ```{r Variance transformation and batch effect assessment}
 ddsHTSeqMF <- ddsHTSeqMF[rowSums(counts(ddsHTSeqMF)) > 1, ] #Pre-filtering the dataset by removing the rows without information about gene expression
 
@@ -99,43 +76,39 @@ dds$condition <- relevel(dds$condition, ref = "Nigerian") #explicitng making the
 
 vsd <- vst(ddsHTSeqMF, blind = TRUE) #Variance-stabilizing transformation
 
-cat("Figure 1: Graphical representation of the variance-stabilizing transformation relative to the standard transformation of log2(x+1). This reduces variance purely due to low read counts")
 df <- bind_rows( #Graphical representation of the variance-stabilizing transformation
           as_data_frame(log2(counts(dds, normalized=TRUE)[, 1:2]+1)) %>%
           mutate(transformation = "log2(x + 1)"),
           as_data_frame(assay(vsd)[, 1:2]) %>% mutate(transformation = "vst"))
           colnames(df)[1:2] <- c("x", "y")
 
-ggplot(df, aes(x = x, y = y)) + geom_hex(bins = 80) +
+ggplot(df, aes(x = x, y = y)) + labs(subtitle="Figure 1: Graphical representation of the \nvariance-stabilizing transformation \nrelative to the standard transformation of log2(x+1).\nThis reduces variance purely due to low read counts") + geom_hex(bins = 80) +
   coord_fixed() + facet_grid( . ~ transformation) 
 
-cat("PCA 1: The first PCA demonstrates batch effect between the Nigerian patients and TCGA patients, which would be presumed given that these experiments were done in different settings at different times. The TCGA patients also appear to have internal batch effect that is not race-driven given distribution into 2 separate groups.")
-plotPCA(vsd) #PCA1: Raw counts
+plotPCA(vsd) + labs(subtitle = "PCA 1: first PCA demonstrates batch effect between\nthe Nigerian patients and TCGA patients,\nwhich would be presumed given that these experiments\nwere done in different settings at different times.\nThe TCGA patients also appear to have internal\nbatch effect that is not race-driven\ngiven distribution into 2 separate groups") #PCA1: Raw counts
 
-cat("Heat map 1: Relative VST-transformed counts across samples")
 topVarGenes <- head(order(rowVars(assay(vsd)), decreasing = TRUE), 1000)
 hm  <- assay(vsd)[ topVarGenes, ]
 hm  <- hm - rowMeans(hm)
 anno <- as.data.frame(colData(vsd)[, c("condition")])
 rownames(anno) <- colnames(vsd)
 pheatmap(hm, annotation_col = anno, cluster_rows=FALSE, show_rownames=FALSE,
-         cluster_cols=FALSE)
+         cluster_cols=FALSE, main="Heat map 1: \nRelative VST-transformed counts across samples")
 
-cat("PCA2: The second PCA represents removal of batch effect using the limma removeBatchEffect method. This largely accounts for the batch effect noticed in PCA1. There remain some outliers, primarily from the Nigerian patients.")
 mat <- assay(vsd) #PCA2: Removing the batch effect created by the separate batch processing of the TCGA and Nigerian samples (although this may overcorrect for the actual difference between these two populations).  
 mat <- limma::removeBatchEffect(mat, vsd$condition)
 assay(vsd) <- mat
-plotPCA(vsd)
+plotPCA(vsd) + labs(subtitle="PCA2: The second PCA represents removal of batch effect using the limma removeBatchEffect method.\nThis largely accounts for the batch effect noticed in PCA1. \nThere remain some outliers, primarily from the Nigerian patients.")
 
-cat("Heat map 2: Batch-effect-corrected relative VST-transformed counts across samples")
 topVarGenes <- head(order(rowVars(assay(vsd)), decreasing = TRUE), 1000)
 hm  <- assay(vsd)[ topVarGenes, ]
 hm  <- hm - rowMeans(hm)
 anno <- as.data.frame(colData(vsd)[, c("condition")])
 rownames(anno) <- colnames(vsd)
 pheatmap(hm, annotation_col = anno, cluster_rows=FALSE, show_rownames=FALSE,
-         cluster_cols=FALSE)
+         cluster_cols=FALSE, main="Heat map 2: Batch-effect-corrected relative\n VST-transformed counts across samples")
 ```
+
 
 #Using sva to additionally account for batch effect related to the Nigerian/TCGA samples
 ```{r Batch effect assessment, message=FALSE}
@@ -157,205 +130,3 @@ ddsHTSeqMFbe <- DESeqDataSetFromHTSeqCount(sampleTable=sampleTablebe,
 
 ddsHTSeqMFbe <- ddsHTSeqMFbe[rowSums(counts(ddsHTSeqMFbe)) > 1, ]
 ```
-
-#Differential expression analysis
-This is the actual differential expression analysis with false discovery threshold of 0.05. I am performing this for both the standard and batch-effect-corrected versions of the DESeq2 model to allow comparison. 
-```{r Differential expression analysis and visualization}
-ddsMF <- DESeq(ddsHTSeqMF)
-ddsMFbe <-DESeq(ddsHTSeqMFbe)
-
-resultsNames(ddsMF)
-resultsNames(ddsMFbe)
-#"Intercept"                        "condition_TCGA_black_vs_Nigerian"
-#"condition_TCGA_other_vs_Nigerian" "condition_TCGA_white_vs_Nigerian"
-
-
-#MAPlot: log2 fold changes attributable to the condition over the mean of normalized counts for all the samples in the DESeqDataSet. Points will be colored red if the adjusted p value is less than 0.1. Points which fall out of the window are plotted as open triangles pointing either up or down.
-cat("MA Plot 1: Original differential expression")
-res <- lfcShrink(ddsMF, coef="condition_TCGA_white_vs_Nigerian", type="apeglm")
-plotMA(res, ylim = c(-5, 5))
-
-cat("MA Plot 2: Batch-corrected differential expression")
-res <- lfcShrink(ddsMFbe, coef="condition_TCGA_white_vs_Nigerian", type="apeglm")
-plotMA(res, ylim = c(-5, 5))
-```
-
-Sorting the greatest differentially expressed genes and providing output. (Please note: This is using the standard differential expression analysis without batch effect correction as this may overcorrect for differentially expressed genes and provide more false negatives.)
-```{r Sorting the greatest log change and p-values}
-
-#Produce results with the false-discovery threshold of 0.05 with the Nigerian patients in the numerator of the ratio and the TCGA patients in the denominator
-reswhiteNigerian <- results(ddsMF, contrast=c("condition","Nigerian","TCGA_white"), alpha=0.05)
-resblackNigerian <- results(ddsMF, contrast=c("condition","Nigerian","TCGA_black"), alpha=0.05)
-#summary(reswhiteNigerian)
-#summary(resblackNigerian)
-
-#Output of results
-#DataFrame with 6 rows and 2 columns
-#                       type                                        description
-#                <character>                                        <character>
-#baseMean       intermediate          mean of normalized counts for all samples, average of the normalized count values, divided by the size factors, taken over all samples in the DESeqDataSet. 
-#log2FoldChange      results log2 fold change (MLE): condition TCGA vs Nigerian, effect size estimate
-#lfcSE               results         standard error: condition TCGA vs Nigerian
-#stat                results         Wald statistic: condition TCGA vs Nigerian
-#pvalue              results      Wald test p-value: condition TCGA vs Nigerian
-#padj                results                               BH adjusted p-values
-
-resSigwhite <- subset(reswhiteNigerian, padj < 0.05) 
-resSigblack <- subset(resblackNigerian, padj < 0.05) #Puts all significantly differentially expressed genes into a table
-
-#Provided method for annotating genes from Bioconductor/DESeq2
-#txdb <- makeTxDbFromBiomart(biomart="ENSEMBL_MART_ENSEMBL",
-#                     dataset="hsapiens_gene_ensembl",
-#                     transcript_ids=NULL,
-#                     circ_seqs=DEFAULT_CIRC_SEQS,
-#                     filter=NULL,
-#                     id_prefix="ensembl_",
-#                     host="www.ensembl.org",
-#                     port=80,
-#                     taxonomyId=NA,
-#                     miRBaseBuild=NA)
-
-#mart = useMart("ensembl", dataset=
-#                      "hsapiens_gene_ensembl")
-
-resSigwhite$temp <- row.names(resSigwhite)
-resSigwhite$temp <- gsub("[.].+", "", resSigwhite$temp)
-
-resSigwhite$symbol <- mapIds(EnsDb.Hsapiens.v75,
-                     keys=resSigwhite$temp,
-                     column="SYMBOL",
-                     keytype="GENEID",           
-                     multiVals="first")
-
-resSigwhite$biotype <- mapIds(EnsDb.Hsapiens.v75,
-                     keys=resSigwhite$temp,
-                     column="GENEBIOTYPE",
-                     keytype="GENEID",           
-                     multiVals="first")
-
-resSigwhite$chr <- mapIds(EnsDb.Hsapiens.v75,
-                     keys=resSigwhite$temp,
-                     column="SEQNAME",
-                     keytype="GENEID",           
-                     multiVals="first")
-
-resSigwhite$locstart <- mapIds(EnsDb.Hsapiens.v75,
-                     keys=resSigwhite$temp,
-                     column="GENESEQSTART",
-                     keytype="GENEID",
-                     multiVals="first")
-
-resSigwhite$locend <- mapIds(EnsDb.Hsapiens.v75,
-                     keys=resSigwhite$temp,
-                     column="GENESEQEND",
-                     keytype="GENEID",
-                     multiVals="first")
-
-resSigblack$temp <- row.names(resSigblack)
-resSigblack$temp <- gsub("[.].+", "", resSigblack$temp)
-
-
-resSigblack$symbol <- mapIds(EnsDb.Hsapiens.v75,
-                     keys=resSigblack$temp,
-                     column="SYMBOL",
-                     keytype="GENEID",           
-                     multiVals="first")
-
-resSigblack$biotype <- mapIds(EnsDb.Hsapiens.v75,
-                     keys=resSigblack$temp,
-                     column="GENEBIOTYPE",
-                     keytype="GENEID",           
-                     multiVals="first")
-
-resSigblack$chr <- mapIds(EnsDb.Hsapiens.v75,
-                     keys=resSigblack$temp,
-                     column="SEQNAME",
-                     keytype="GENEID",           
-                     multiVals="first")
-
-resSigblack$locstart <- mapIds(EnsDb.Hsapiens.v75,
-                     keys=resSigblack$temp,
-                     column="GENESEQSTART",
-                     keytype="GENEID",
-                     multiVals="first")
-
-resSigblack$locend <- mapIds(EnsDb.Hsapiens.v75,
-                     keys=resSigblack$temp,
-                     column="GENESEQEND",
-                     keytype="GENEID",
-                     multiVals="first")
-
-head (resSigblack)
-head (resSigwhite)
-resSigwhitehead <- head(resSigwhite[ order(resSigwhite$log2FoldChange), ],10)
-resSigwhitehead
-#write.table(resSigwhitehead,"Nigerian-TCGAwhiteDiffExpGenes100-pos",sep="\t",row.names=TRUE)
-
-resSigwhitetail <- tail(resSigwhite[order(resSigwhite$log2FoldChange), ],10)
-resSigwhitetail
-#write.table(resSigwhitetail,"Nigerian-TCGAwhiteDiffExpGenes100-pos2",sep="\t",row.names=TRUE)
-
-resSigblackhead <- head(resSigblack[ order(resSigblack$log2FoldChange), ],10)
-resSigblackhead
-#write.table(resSigblackhead,"Nigerian-TCGAblackDiffExpGenes100-neg",sep="\t",row.names=TRUE)
-
-resSigblacktail <- tail(resSigblack[order(resSigblack$log2FoldChange), ],10)
-resSigblacktail
-#write.table(resSigblacktail,"Nigerian-TCGAblackDiffExpGenes100-pos",sep="\t",row.names=TRUE)
-
-```
-
-R version 3.5.0 (2018-04-23)
-Platform: x86_64-apple-darwin15.6.0 (64-bit)
-Running under: macOS Sierra 10.12.5
-
-Matrix products: default
-BLAS: /System/Library/Frameworks/Accelerate.framework/Versions/A/Frameworks/vecLib.framework/Versions/A/libBLAS.dylib
-LAPACK: /Library/Frameworks/R.framework/Versions/3.5/Resources/lib/libRlapack.dylib
-
-locale:
-[1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
-
-attached base packages:
-[1] parallel  stats4    stats     graphics  grDevices utils     datasets  methods   base     
-
-other attached packages:
- [1] pheatmap_1.0.10             apeglm_1.4.1                sva_3.30.0                 
- [4] genefilter_1.64.0           mgcv_1.8-25                 nlme_3.1-137               
- [7] EnsDb.Hsapiens.v75_2.99.0   ensembldb_2.6.3             AnnotationFilter_1.6.0     
-[10] biomaRt_2.38.0              GenomicFeatures_1.34.1      org.Hs.eg.db_3.7.0         
-[13] AnnotationDbi_1.44.0        hexbin_1.27.2               stringi_1.2.4              
-[16] DESeq2_1.22.1               SummarizedExperiment_1.12.0 DelayedArray_0.8.0         
-[19] BiocParallel_1.16.0         matrixStats_0.54.0          Biobase_2.42.0             
-[22] GenomicRanges_1.34.0        GenomeInfoDb_1.18.1         IRanges_2.16.0             
-[25] S4Vectors_0.20.1            BiocGenerics_0.28.0         rmarkdown_1.10             
-[28] testit_0.9                  forcats_0.3.0               stringr_1.3.1              
-[31] dplyr_0.7.8                 purrr_0.2.5                 readr_1.1.1                
-[34] tidyr_0.8.2                 tibble_1.4.2                ggplot2_3.1.0              
-[37] tidyverse_1.2.1            
-
-loaded via a namespace (and not attached):
- [1] colorspace_1.3-2         rprojroot_1.3-2          htmlTable_1.12           XVector_0.22.0          
- [5] base64enc_0.1-3          rstudioapi_0.8           bit64_0.9-7              lubridate_1.7.4         
- [9] xml2_1.2.0               splines_3.5.0            geneplotter_1.60.0       knitr_1.20              
-[13] Formula_1.2-3            jsonlite_1.5             Rsamtools_1.34.0         broom_0.5.0             
-[17] annotate_1.60.0          cluster_2.0.7-1          compiler_3.5.0           httr_1.3.1              
-[21] backports_1.1.2          assertthat_0.2.0         Matrix_1.2-15            lazyeval_0.2.1          
-[25] limma_3.38.2             cli_1.0.1                prettyunits_1.0.2        acepack_1.4.1           
-[29] htmltools_0.3.6          tools_3.5.0              bindrcpp_0.2.2           coda_0.19-2             
-[33] gtable_0.2.0             glue_1.3.0               GenomeInfoDbData_1.2.0   reshape2_1.4.3          
-[37] Rcpp_1.0.0               bbmle_1.0.20             cellranger_1.1.0         Biostrings_2.50.1       
-[41] rtracklayer_1.42.0       rvest_0.3.2              XML_3.98-1.16            MASS_7.3-51.1           
-[45] zlibbioc_1.28.0          scales_1.0.0             ProtGenerics_1.14.0      hms_0.4.2               
-[49] RColorBrewer_1.1-2       curl_3.2                 yaml_2.2.0               memoise_1.1.0           
-[53] gridExtra_2.3            emdbook_1.3.10           rpart_4.1-13             latticeExtra_0.6-28     
-[57] RSQLite_2.1.1            checkmate_1.8.5          rlang_0.3.0.1            pkgconfig_2.0.2         
-[61] bitops_1.0-6             evaluate_0.12            lattice_0.20-38          bindr_0.1.1             
-[65] GenomicAlignments_1.18.0 htmlwidgets_1.3          labeling_0.3             bit_1.1-14              
-[69] tidyselect_0.2.5         plyr_1.8.4               magrittr_1.5             R6_2.3.0                
-[73] Hmisc_4.1-1              DBI_1.0.0                pillar_1.3.0             haven_1.1.2             
-[77] foreign_0.8-71           withr_2.1.2              survival_2.43-1          RCurl_1.95-4.11         
-[81] nnet_7.3-12              modelr_0.1.2             crayon_1.3.4             progress_1.2.0          
-[85] locfit_1.5-9.1           grid_3.5.0               readxl_1.1.0             data.table_1.11.8       
-[89] blob_1.1.1               digest_0.6.18            xtable_1.8-3             numDeriv_2016.8-1       
-[93] munsell_0.5.0    

@@ -1,0 +1,143 @@
+
+#Differential expression analysis
+This is the actual differential expression analysis with false discovery threshold of 0.05. I am performing this for both the standard and batch-effect-corrected versions of the DESeq2 model to allow comparison. 
+```{r Differential expression analysis and visualization}
+ddsMF <- DESeq(ddsHTSeqMF)
+ddsMFbe <-DESeq(ddsHTSeqMFbe)
+
+resultsNames(ddsMF)
+resultsNames(ddsMFbe)
+#MAPlot: log2 fold changes attributable to the condition over the mean of normalized counts for all the samples in the DESeqDataSet. Points will be colored red if the adjusted p value is less than 0.1. Points which fall out of the window are plotted as open triangles pointing either up or down.
+cat("MA Plot 1: Original differential expression")
+res <- lfcShrink(ddsMF, coef="condition_TCGA_white_vs_Nigerian", type="apeglm")
+plotMA(res, ylim = c(-5, 5))
+
+cat("MA Plot 2: Batch-corrected differential expression")
+res <- lfcShrink(ddsMFbe, coef="condition_TCGA_white_vs_Nigerian", type="apeglm")
+plotMA(res, ylim = c(-5, 5))
+```
+
+Sorting the greatest differentially expressed genes and providing output. (Please note: This is using the standard differential expression analysis without batch effect correction as this may overcorrect for differentially expressed genes and provide more false negatives.)
+```{r Sorting the greatest log change and p-values}
+
+#Produce results with the false-discovery threshold of 0.05 with the Nigerian patients in the numerator of the ratio and the TCGA patients in the denominator
+reswhiteNigerian <- results(ddsMF, contrast=c("condition","Nigerian","TCGA_white"), alpha=0.05)
+resblackNigerian <- results(ddsMF, contrast=c("condition","Nigerian","TCGA_black"), alpha=0.05)
+#summary(reswhiteNigerian)
+#summary(resblackNigerian)
+
+#Output of results
+#DataFrame with 6 rows and 2 columns
+#                       type                                        description
+#                <character>                                        <character>
+#baseMean       intermediate          mean of normalized counts for all samples, average of the normalized count values, divided by the size factors, taken over all samples in the DESeqDataSet. 
+#log2FoldChange      results log2 fold change (MLE): condition TCGA vs Nigerian, effect size estimate
+#lfcSE               results         standard error: condition TCGA vs Nigerian
+#stat                results         Wald statistic: condition TCGA vs Nigerian
+#pvalue              results      Wald test p-value: condition TCGA vs Nigerian
+#padj                results                               BH adjusted p-values
+
+resSigwhite <- subset(reswhiteNigerian, padj < 0.05) 
+resSigblack <- subset(resblackNigerian, padj < 0.05) #Puts all significantly differentially expressed genes into a table
+
+#Provided method for annotating genes from Bioconductor/DESeq2
+#txdb <- makeTxDbFromBiomart(biomart="ENSEMBL_MART_ENSEMBL",
+#                     dataset="hsapiens_gene_ensembl",
+#                     transcript_ids=NULL,
+#                     circ_seqs=DEFAULT_CIRC_SEQS,
+#                     filter=NULL,
+#                     id_prefix="ensembl_",
+#                     host="www.ensembl.org",
+#                     port=80,
+#                     taxonomyId=NA,
+#                     miRBaseBuild=NA)
+
+#mart = useMart("ensembl", dataset=
+#                      "hsapiens_gene_ensembl")
+
+resSigwhite$temp <- row.names(resSigwhite)
+resSigwhite$temp <- gsub("[.].+", "", resSigwhite$temp)
+
+resSigwhite$symbol <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=resSigwhite$temp,
+                     column="SYMBOL",
+                     keytype="GENEID",           
+                     multiVals="first")
+
+resSigwhite$biotype <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=resSigwhite$temp,
+                     column="GENEBIOTYPE",
+                     keytype="GENEID",           
+                     multiVals="first")
+
+resSigwhite$chr <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=resSigwhite$temp,
+                     column="SEQNAME",
+                     keytype="GENEID",           
+                     multiVals="first")
+
+resSigwhite$locstart <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=resSigwhite$temp,
+                     column="GENESEQSTART",
+                     keytype="GENEID",
+                     multiVals="first")
+
+resSigwhite$locend <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=resSigwhite$temp,
+                     column="GENESEQEND",
+                     keytype="GENEID",
+                     multiVals="first")
+
+resSigblack$temp <- row.names(resSigblack)
+resSigblack$temp <- gsub("[.].+", "", resSigblack$temp)
+
+
+resSigblack$symbol <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=resSigblack$temp,
+                     column="SYMBOL",
+                     keytype="GENEID",           
+                     multiVals="first")
+
+resSigblack$biotype <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=resSigblack$temp,
+                     column="GENEBIOTYPE",
+                     keytype="GENEID",           
+                     multiVals="first")
+
+resSigblack$chr <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=resSigblack$temp,
+                     column="SEQNAME",
+                     keytype="GENEID",           
+                     multiVals="first")
+
+resSigblack$locstart <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=resSigblack$temp,
+                     column="GENESEQSTART",
+                     keytype="GENEID",
+                     multiVals="first")
+
+resSigblack$locend <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=resSigblack$temp,
+                     column="GENESEQEND",
+                     keytype="GENEID",
+                     multiVals="first")
+
+head (resSigblack)
+head (resSigwhite)
+resSigwhitehead <- head(resSigwhite[ order(resSigwhite$log2FoldChange), ],10)
+resSigwhitehead
+#write.table(resSigwhitehead,"Nigerian-TCGAwhiteDiffExpGenes100-pos",sep="\t",row.names=TRUE)
+
+resSigwhitetail <- tail(resSigwhite[order(resSigwhite$log2FoldChange), ],10)
+resSigwhitetail
+#write.table(resSigwhitetail,"Nigerian-TCGAwhiteDiffExpGenes100-pos2",sep="\t",row.names=TRUE)
+
+resSigblackhead <- head(resSigblack[ order(resSigblack$log2FoldChange), ],10)
+resSigblackhead
+#write.table(resSigblackhead,"Nigerian-TCGAblackDiffExpGenes100-neg",sep="\t",row.names=TRUE)
+
+resSigblacktail <- tail(resSigblack[order(resSigblack$log2FoldChange), ],10)
+resSigblacktail
+#write.table(resSigblacktail,"Nigerian-TCGAblackDiffExpGenes100-pos",sep="\t",row.names=TRUE)
+
+```

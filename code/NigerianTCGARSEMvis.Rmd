@@ -1,0 +1,105 @@
+---
+title: "Nigerian-TCGA Initial Visualization of RSEM Data"
+output: html_notebook
+---
+
+```{r Formatting the Nigerian RSEM data for TPM counts}
+library(tidyverse)
+library(tidyr)
+library(dplyr)
+library(readr)
+
+setwd("~/Research-Local/RNAseq-Local/Inputs/Nigerian-RNA-RSEM/NigerianRNAGenes")
+FOLDER <- "/Users/parajago/Research-Local/RNAseq-Local/Inputs/Nigerian-RNA-RSEM/NigerianRNAGenes"
+
+###############################################################################
+###############################################################################
+
+#NigerianRNApatients <- read_table2("NigerianRNApatients.txt",col_names = FALSE)
+#colnames(NigerianRNApatients) <- c("Patient")
+#NigerianRNApatients <- as.character(as.matrix(NigerianRNApatients))
+
+# Read only genes.results files
+files <- list.files(".")
+files <- files[grepl("*.genes.results", files)]
+
+file1=files[1]
+name <- gsub(".RSEM_Quant.genes.results", "", file1)
+path <- file.path(FOLDER, file1)
+temp.table <- read.table(path, header=TRUE)
+NigerianRNAFormat <- temp.table[,c("gene_id", "TPM")]
+
+for (file in files) {
+    name <- gsub(".RSEM_Quant.genes.results", "", file)
+    path <- file.path(FOLDER, file)
+    temp.table <- read.table(path, header=TRUE)
+    temp.genes <- temp.table[,c("gene_id")]
+    if (all(temp.genes==NigerianRNAFormat[,1])){
+      NigerianRNAFormat <- cbind(NigerianRNAFormat, temp.table[,c("TPM")])
+      names (NigerianRNAFormat)[[ncol(NigerianRNAFormat)]] <- name
+    } else {
+      cat ("There are new genes!")
+    }
+}
+NigerianRNAFormat$TPM <- NULL
+write.table(NigerianRNAFormat,"NigerianRNATPMFormatted.txt",sep="\t",row.names=FALSE)
+
+```
+
+```{r Formatting the TCGA RSEM data for TPM counts}
+setwd("~/Research-Local/RNAseq-Local/Inputs/TCGA-RNA-RSEM/TCGARNAGenes")
+FOLDER <- "/Users/parajago/Research-Local/RNAseq-Local/Inputs/TCGA-RNA-RSEM/TCGARNAGenes"
+
+###############################################################################
+###############################################################################
+
+# Read only genes.results files
+files <- list.files(".")
+files <- files[grepl("*.genes.results", files)]
+
+file1=files[1]
+name <- gsub(".RSEM_Quant.genes.results", "", file1)
+path <- file.path(FOLDER, file1)
+temp.table <- read.table(path, header=TRUE)
+TCGARNAFormat <- temp.table[,c("gene_id", "TPM")]
+
+for (file in files) {
+    name <- gsub(".RSEM_Quant.genes.results", "", file)
+    path <- file.path(FOLDER, file)
+    temp.table <- read.table(path, header=TRUE)
+    temp.genes <- temp.table[,c("gene_id")]
+    if (all(temp.genes==TCGARNAFormat[,1])){
+      TCGARNAFormat <- cbind(TCGARNAFormat, temp.table[,c("TPM")])
+      names (TCGARNAFormat)[[ncol(TCGARNAFormat)]] <- name
+    } else {
+      cat ("There are new genes!")
+    }
+}
+
+TCGARNAFormat$TPM <- NULL
+write.table(TCGARNAFormat,"TCGARNATPMFormatted.txt",sep="\t",row.names=FALSE)
+
+```
+
+```{r Visualization of RSEM TPM}
+library(ggplot2)
+library(devtools)
+install_github("vqv/ggbiplot")
+library(ggbiplot)
+library(factoextra)
+
+totaltpm <- merge(NigerianRNAFormat, TCGARNAFormat, by="gene_id")
+logtx.totaltpm <- log2(totaltpm[,2:220]+1)
+pca.totaltpm = prcomp(t(logtx.totaltpm), center=TRUE)
+
+fviz_pca_ind(pca.totaltpm,
+             col.ind = "cos2", # Color by the quality of representation
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+             repel = TRUE     # Avoid text overlapping
+)
+
+plot(pca.totaltpm$x[,1],pca.totaltpm$x[,2], xlab = "PC1", ylab = "PC2",main ="PCA of RSEM TPM between TCGA and Nigerian samples")
+text(pca.totaltpm$x[,1], pca.totaltpm$x[,2], rownames(pca.totaltpm$x), pos= 3 )
+
+```
+
