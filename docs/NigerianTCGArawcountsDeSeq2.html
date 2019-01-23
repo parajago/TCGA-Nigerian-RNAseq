@@ -28,9 +28,8 @@
 <script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
 <link href="site_libs/pagedtable-1.1/css/pagedtable.css" rel="stylesheet" />
 <script src="site_libs/pagedtable-1.1/js/pagedtable.js"></script>
-<link href="site_libs/font-awesome-5.0.13/css/fa-svg-with-js.css" rel="stylesheet" />
-<script src="site_libs/font-awesome-5.0.13/js/fontawesome-all.min.js"></script>
-<script src="site_libs/font-awesome-5.0.13/js/fa-v4-shims.min.js"></script>
+<link href="site_libs/font-awesome-5.1.0/css/all.css" rel="stylesheet" />
+<link href="site_libs/font-awesome-5.1.0/css/v4-shims.css" rel="stylesheet" />
 
 <style type="text/css">code{white-space: pre;}</style>
 <style type="text/css">
@@ -105,6 +104,9 @@ img {
 button.code-folding-btn:focus {
   outline: none;
 }
+summary {
+  display: list-item;
+}
 </style>
 
 
@@ -119,7 +121,6 @@ body {
   padding-top: 56px;
   margin-top: -56px;
 }
-
 .section h2 {
   padding-top: 56px;
   margin-top: -56px;
@@ -139,6 +140,43 @@ body {
 .section h6 {
   padding-top: 56px;
   margin-top: -56px;
+}
+.dropdown-submenu {
+  position: relative;
+}
+.dropdown-submenu>.dropdown-menu {
+  top: 0;
+  left: 100%;
+  margin-top: -6px;
+  margin-left: -1px;
+  border-radius: 0 6px 6px 6px;
+}
+.dropdown-submenu:hover>.dropdown-menu {
+  display: block;
+}
+.dropdown-submenu>a:after {
+  display: block;
+  content: " ";
+  float: right;
+  width: 0;
+  height: 0;
+  border-color: transparent;
+  border-style: solid;
+  border-width: 5px 0 5px 5px;
+  border-left-color: #cccccc;
+  margin-top: 5px;
+  margin-right: -10px;
+}
+.dropdown-submenu:hover>a:after {
+  border-left-color: #ffffff;
+}
+.dropdown-submenu.pull-left {
+  float: none;
+}
+.dropdown-submenu.pull-left>.dropdown-menu {
+  left: -100%;
+  margin-left: 10px;
+  border-radius: 6px 0 6px 6px;
 }
 </style>
 
@@ -160,18 +198,77 @@ $(document).ready(function () {
 });
 </script>
 
-
 <div class="container-fluid main-container">
 
 <!-- tabsets -->
+
+<style type="text/css">
+.tabset-dropdown > .nav-tabs {
+  display: inline-table;
+  max-height: 500px;
+  min-height: 44px;
+  overflow-y: auto;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs > li.active:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
+  content: "&#xe258;";
+  border: none;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs > li.active {
+  display: block;
+}
+
+.tabset-dropdown > .nav-tabs > li > a,
+.tabset-dropdown > .nav-tabs > li > a:focus,
+.tabset-dropdown > .nav-tabs > li > a:hover {
+  border: none;
+  display: inline-block;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li {
+  display: block;
+  float: none;
+}
+
+.tabset-dropdown > .nav-tabs > li {
+  display: none;
+}
+</style>
+
 <script>
 $(document).ready(function () {
   window.buildTabsets("TOC");
 });
+
+$(document).ready(function () {
+  $('.tabset-dropdown > .nav-tabs > li').click(function () {
+    $(this).parent().toggleClass('nav-tabs-open')
+  });
+});
 </script>
 
 <!-- code folding -->
-
 
 
 
@@ -319,12 +416,12 @@ div.section {
 
 <h1 class="title toc-ignore">Nigerian-TCGA Differential Expression Analysis Using DeSeq2</h1>
 <h4 class="author"><em>Padma Sheila Rajagopal, MD MPH</em></h4>
-<h4 class="date"><em>1/16/2019</em></h4>
+<h4 class="date"><em>1/23/2019</em></h4>
 
 </div>
 
 
-<p><strong>Last updated:</strong> 2019-01-16</p>
+<p><strong>Last updated:</strong> 2019-01-23</p>
 <strong>workflowr checks:</strong> <small>(Click a bullet for more information)</small>
 <ul>
 <li>
@@ -347,13 +444,15 @@ div.section {
 </details>
 </li>
 <li>
-<p><details> <summary> <strong style="color:blue;">✔</strong> <strong>Repository version:</strong> <a href="https://github.com/parajago/TCGA-Nigerian-RNAseq/tree/c927d91afe56f0e449f9d6ce6e3e8ffcae080ea0" target="_blank">c927d91</a> </summary></p>
+<p><details> <summary> <strong style="color:blue;">✔</strong> <strong>Repository version:</strong> <a href="https://github.com/parajago/TCGA-Nigerian-RNAseq/tree/616d47012ac13731ce150d005296f7bcdcac52b9" target="_blank">616d470</a> </summary></p>
 Great! You are using Git for version control. Tracking code development and connecting the code version to the results is critical for reproducibility. The version displayed above was the version of the Git repository at the time these results were generated. <br><br> Note that you need to be careful to ensure that all relevant files for the analysis have been committed to Git prior to generating the results (you can use <code>wflow_publish</code> or <code>wflow_git_commit</code>). workflowr only checks the R Markdown file, but you know if there are other scripts or data files that it depends on. Below is the status of the Git repository when the results were generated:
 <pre><code>
 Ignored files:
     Ignored:    .DS_Store
+    Ignored:    analysis/.DS_Store
     Ignored:    code/.DS_Store
     Ignored:    docs/.DS_Store
+    Ignored:    output/.DS_Store
 
 Unstaged changes:
     Modified:   analysis/NigerianTCGArawcountsDeSeq2.Rmd
@@ -385,6 +484,57 @@ Message
 </tr>
 </thead>
 <tbody>
+<tr>
+<td style="text-align:left;">
+Rmd
+</td>
+<td style="text-align:left;">
+<a href="https://github.com/parajago/TCGA-Nigerian-RNAseq/blob/616d47012ac13731ce150d005296f7bcdcac52b9/analysis/NigerianTCGArawcountsDeSeq2.Rmd" target="_blank">616d470</a>
+</td>
+<td style="text-align:left;">
+Sheila Rajagopal
+</td>
+<td style="text-align:left;">
+2019-01-23
+</td>
+<td style="text-align:left;">
+Batch effect corrected noted in Rmd file
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Rmd
+</td>
+<td style="text-align:left;">
+<a href="https://github.com/parajago/TCGA-Nigerian-RNAseq/blob/d47a998f13b96ba2dab3394fb2b26251eb015be4/analysis/NigerianTCGArawcountsDeSeq2.Rmd" target="_blank">d47a998</a>
+</td>
+<td style="text-align:left;">
+Sheila Rajagopal
+</td>
+<td style="text-align:left;">
+2019-01-22
+</td>
+<td style="text-align:left;">
+Cleanup of website, no formal changes made
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+html
+</td>
+<td style="text-align:left;">
+<a href="https://cdn.rawgit.com/parajago/TCGA-Nigerian-RNAseq/d47a998f13b96ba2dab3394fb2b26251eb015be4/docs/NigerianTCGArawcountsDeSeq2.html" target="_blank">d47a998</a>
+</td>
+<td style="text-align:left;">
+Sheila Rajagopal
+</td>
+<td style="text-align:left;">
+2019-01-22
+</td>
+<td style="text-align:left;">
+Cleanup of website, no formal changes made
+</td>
+</tr>
 <tr>
 <td style="text-align:left;">
 html
@@ -445,11 +595,10 @@ Sheila Rajagopal
 <h1>Translation from HTSeq -&gt; DESeq2 table</h1>
 <p>I have 86 TCGA patients with whole-genome sequencing data and RNAseq data as well as 99 Nigerian patients with RNA-seq data. Raw counts were initially processed using HTSeq, so HTSeq data is being formatted for use with DESeq2.</p>
 <pre class="r"><code>FOLDER &lt;- &quot;/Users/parajago/Research-Local/RNAseq-Local/Inputs/NigerianTCGA_quants&quot;
-
 sampleFiles &lt;- grep(&quot;htseq.counts&quot;,list.files(FOLDER),value=TRUE)
-sampleCondition &lt;- sub(&quot;(.*LIB).*&quot;,&quot;\\1&quot;,sampleFiles)
 
 #Differential gene expression setup for TCGA (all) + Nigerian
+#sampleCondition &lt;- sub(&quot;(.*LIB).*&quot;,&quot;\\1&quot;,sampleFiles)
 #countVar=1
 #for (sample in sampleCondition){
 #  if (grepl(sample,&quot;LIB&quot;)==TRUE){
@@ -502,20 +651,19 @@ head(sampleTable2)</code></pre>
                                        directory=FOLDER,
                                        design=~condition)</code></pre>
 </div>
-<div id="brief-exploratory-analysis" class="section level1">
-<h1>Brief exploratory analysis</h1>
+<div id="variance-transformation-batch-effect-assessment-and-initial-exploratory-analysis" class="section level1">
+<h1>Variance transformation, batch effect assessment and initial exploratory analysis</h1>
 <p>I am now running initial variance transformations and plotting count data with a PCA.</p>
 <pre class="r"><code>ddsHTSeqMF &lt;- ddsHTSeqMF[rowSums(counts(ddsHTSeqMF)) &gt; 1, ] #Pre-filtering the dataset by removing the rows without information about gene expression
 
+dds &lt;- estimateSizeFactors(ddsHTSeqMF) #The size factor is the median ratio of the sample over a &quot;pseudosample&quot;: for each gene, the geometric mean of all samples.
+dds$condition &lt;- relevel(dds$condition, ref = &quot;Nigerian&quot;) #explicitng making the Nigerian patients the reference population 
+
 vsd &lt;- vst(ddsHTSeqMF, blind = TRUE) #Variance-stabilizing transformation
 
-# Plotting transformed counts. Differences between patients and condition WILL contribute to the expected variance-mean trend of the experiment. This represents a fully unsupervised transformation, one can set blind = TRUE (which is the default).
-
-dds &lt;- estimateSizeFactors(ddsHTSeqMF) 
-#The size factor is the median ratio of the sample over a &quot;pseudosample&quot;: 
-#for each gene, the geometric mean of all samples.
-
-df &lt;- bind_rows(
+cat(&quot;Figure 1: Graphical representation of the variance-stabilizing transformation relative to the standard transformation of log2(x+1). This reduces variance purely due to low read counts&quot;)</code></pre>
+<pre><code>Figure 1: Graphical representation of the variance-stabilizing transformation relative to the standard transformation of log2(x+1). This reduces variance purely due to low read counts</code></pre>
+<pre class="r"><code>df &lt;- bind_rows( #Graphical representation of the variance-stabilizing transformation
           as_data_frame(log2(counts(dds, normalized=TRUE)[, 1:2]+1)) %&gt;%
           mutate(transformation = &quot;log2(x + 1)&quot;),
           as_data_frame(assay(vsd)[, 1:2]) %&gt;% mutate(transformation = &quot;vst&quot;))
@@ -523,23 +671,90 @@ df &lt;- bind_rows(
 
 ggplot(df, aes(x = x, y = y)) + geom_hex(bins = 80) +
   coord_fixed() + facet_grid( . ~ transformation) </code></pre>
-<p><img src="figure/NigerianTCGArawcountsDeSeq2.Rmd/Exploratory%20analysis%20and%20PCA%20the%20batches-1.png" width="672" style="display: block; margin: auto;" /></p>
-<pre class="r"><code>pcaData &lt;- plotPCA(vsd, intgroup = c(&quot;condition&quot;), returnData = TRUE)
-percentVar &lt;- round(100 * attr(pcaData, &quot;percentVar&quot;))
+<p><img src="figure/NigerianTCGArawcountsDeSeq2.Rmd/Variance%20transformation%20and%20batch%20effect%20assessment-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>cat(&quot;PCA 1: The first PCA demonstrates batch effect between the Nigerian patients and TCGA patients, which would be presumed given that these experiments were done in different settings at different times. The TCGA patients also appear to have internal batch effect that is not race-driven given distribution into 2 separate groups.&quot;)</code></pre>
+<pre><code>PCA 1: The first PCA demonstrates batch effect between the Nigerian patients and TCGA patients, which would be presumed given that these experiments were done in different settings at different times. The TCGA patients also appear to have internal batch effect that is not race-driven given distribution into 2 separate groups.</code></pre>
+<pre class="r"><code>plotPCA(vsd) #PCA1: Raw counts</code></pre>
+<p><img src="figure/NigerianTCGArawcountsDeSeq2.Rmd/Variance%20transformation%20and%20batch%20effect%20assessment-2.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>cat(&quot;Heat map 1: Relative VST-transformed counts across samples&quot;)</code></pre>
+<pre><code>Heat map 1: Relative VST-transformed counts across samples</code></pre>
+<pre class="r"><code>topVarGenes &lt;- head(order(rowVars(assay(vsd)), decreasing = TRUE), 1000)
+hm  &lt;- assay(vsd)[ topVarGenes, ]
+hm  &lt;- hm - rowMeans(hm)
+anno &lt;- as.data.frame(colData(vsd)[, c(&quot;condition&quot;)])
+rownames(anno) &lt;- colnames(vsd)
+pheatmap(hm, annotation_col = anno, cluster_rows=FALSE, show_rownames=FALSE,
+         cluster_cols=FALSE)</code></pre>
+<p><img src="figure/NigerianTCGArawcountsDeSeq2.Rmd/Variance%20transformation%20and%20batch%20effect%20assessment-3.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>cat(&quot;PCA2: The second PCA represents removal of batch effect using the limma removeBatchEffect method. This largely accounts for the batch effect noticed in PCA1. There remain some outliers, primarily from the Nigerian patients.&quot;)</code></pre>
+<pre><code>PCA2: The second PCA represents removal of batch effect using the limma removeBatchEffect method. This largely accounts for the batch effect noticed in PCA1. There remain some outliers, primarily from the Nigerian patients.</code></pre>
+<pre class="r"><code>mat &lt;- assay(vsd) #PCA2: Removing the batch effect created by the separate batch processing of the TCGA and Nigerian samples (although this may overcorrect for the actual difference between these two populations).  
+mat &lt;- limma::removeBatchEffect(mat, vsd$condition)
+assay(vsd) &lt;- mat
+plotPCA(vsd)</code></pre>
+<p><img src="figure/NigerianTCGArawcountsDeSeq2.Rmd/Variance%20transformation%20and%20batch%20effect%20assessment-4.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>cat(&quot;Heat map 2: Batch-effect-corrected relative VST-transformed counts across samples&quot;)</code></pre>
+<pre><code>Heat map 2: Batch-effect-corrected relative VST-transformed counts across samples</code></pre>
+<pre class="r"><code>topVarGenes &lt;- head(order(rowVars(assay(vsd)), decreasing = TRUE), 1000)
+hm  &lt;- assay(vsd)[ topVarGenes, ]
+hm  &lt;- hm - rowMeans(hm)
+anno &lt;- as.data.frame(colData(vsd)[, c(&quot;condition&quot;)])
+rownames(anno) &lt;- colnames(vsd)
+pheatmap(hm, annotation_col = anno, cluster_rows=FALSE, show_rownames=FALSE,
+         cluster_cols=FALSE)</code></pre>
+<p><img src="figure/NigerianTCGArawcountsDeSeq2.Rmd/Variance%20transformation%20and%20batch%20effect%20assessment-5.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
+<div id="using-sva-to-additionally-account-for-batch-effect-related-to-the-nigeriantcga-samples" class="section level1">
+<h1>Using sva to additionally account for batch effect related to the Nigerian/TCGA samples</h1>
+<pre class="r"><code>dat  &lt;- counts(dds, normalized = TRUE)
+idx  &lt;- rowMeans(dat) &gt; 1
+dat  &lt;- dat[idx, ]
+mod  &lt;- model.matrix(~condition, colData(dds))
+mod0 &lt;- model.matrix(~   1, colData(dds))
+svseq &lt;- svaseq(dat, mod, mod0, n.sv = 1)</code></pre>
+<pre><code>Number of significant surrogate variables is:  1 
+Iteration (out of 5 ):1  2  3  4  5  </code></pre>
+<pre class="r"><code>sampleTablebe &lt;- data.frame(sampleName=gsub(&quot;.htseq.counts&quot;,&quot;&quot;,sampleFiles),
+                          fileName=sampleFiles,
+                          condition=sampleConditionrace, 
+                          be=svseq$sv[,1])
 
-ggplot(pcaData, aes(x = PC1, y = PC2, color = condition)) +
-  geom_point(size =1) +
-  xlab(paste0(&quot;PC1: &quot;, percentVar[1], &quot;% variance&quot;)) +
-  ylab(paste0(&quot;PC2: &quot;, percentVar[2], &quot;% variance&quot;)) +
-  coord_fixed()</code></pre>
-<p><img src="figure/NigerianTCGArawcountsDeSeq2.Rmd/Exploratory%20analysis%20and%20PCA%20the%20batches-2.png" width="672" style="display: block; margin: auto;" /> We see here that the PCA demonstrates batch effect between the Nigerian patients and TGCA patients. TCGA patients also appear to have internal batch effect.</p>
+ddsHTSeqMFbe &lt;- DESeqDataSetFromHTSeqCount(sampleTable=sampleTablebe,
+                                       directory=FOLDER,
+                                       design=~condition + be)
+
+ddsHTSeqMFbe &lt;- ddsHTSeqMFbe[rowSums(counts(ddsHTSeqMFbe)) &gt; 1, ]</code></pre>
 </div>
 <div id="differential-expression-analysis" class="section level1">
 <h1>Differential expression analysis</h1>
-<p>This is the actual differential expression analysis with false discovery threshold of 0.05. Then we are sorting out the results for both the white and black TCGA patients separately. Differential expression results are annotated.</p>
+<p>This is the actual differential expression analysis with false discovery threshold of 0.05. I am performing this for both the standard and batch-effect-corrected versions of the DESeq2 model to allow comparison.</p>
 <pre class="r"><code>ddsMF &lt;- DESeq(ddsHTSeqMF)
+ddsMFbe &lt;-DESeq(ddsHTSeqMFbe)
 
-#Produce results with the false-discovery threshold of 0.05 with the Nigerian patients in the numerator of the ratio and the TCGA patients in the denominator
+resultsNames(ddsMF)</code></pre>
+<pre><code>[1] &quot;Intercept&quot;                        &quot;condition_TCGA_black_vs_Nigerian&quot;
+[3] &quot;condition_TCGA_other_vs_Nigerian&quot; &quot;condition_TCGA_white_vs_Nigerian&quot;</code></pre>
+<pre class="r"><code>resultsNames(ddsMFbe)</code></pre>
+<pre><code>[1] &quot;Intercept&quot;                        &quot;condition_TCGA_black_vs_Nigerian&quot;
+[3] &quot;condition_TCGA_other_vs_Nigerian&quot; &quot;condition_TCGA_white_vs_Nigerian&quot;
+[5] &quot;be&quot;                              </code></pre>
+<pre class="r"><code>#&quot;Intercept&quot;                        &quot;condition_TCGA_black_vs_Nigerian&quot;
+#&quot;condition_TCGA_other_vs_Nigerian&quot; &quot;condition_TCGA_white_vs_Nigerian&quot;
+
+
+#MAPlot: log2 fold changes attributable to the condition over the mean of normalized counts for all the samples in the DESeqDataSet. Points will be colored red if the adjusted p value is less than 0.1. Points which fall out of the window are plotted as open triangles pointing either up or down.
+cat(&quot;MA Plot 1: Original differential expression&quot;)</code></pre>
+<pre><code>MA Plot 1: Original differential expression</code></pre>
+<pre class="r"><code>res &lt;- lfcShrink(ddsMF, coef=&quot;condition_TCGA_white_vs_Nigerian&quot;, type=&quot;apeglm&quot;)
+plotMA(res, ylim = c(-5, 5))</code></pre>
+<p><img src="figure/NigerianTCGArawcountsDeSeq2.Rmd/Differential%20expression%20analysis%20and%20visualization-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>cat(&quot;MA Plot 2: Batch-corrected differential expression&quot;)</code></pre>
+<pre><code>MA Plot 2: Batch-corrected differential expression</code></pre>
+<pre class="r"><code>res &lt;- lfcShrink(ddsMFbe, coef=&quot;condition_TCGA_white_vs_Nigerian&quot;, type=&quot;apeglm&quot;)
+plotMA(res, ylim = c(-5, 5))</code></pre>
+<p><img src="figure/NigerianTCGArawcountsDeSeq2.Rmd/Differential%20expression%20analysis%20and%20visualization-2.png" width="672" style="display: block; margin: auto;" /></p>
+<p>Sorting the greatest differentially expressed genes and providing output. (Please note: This is using the standard differential expression analysis without batch effect correction as this may overcorrect for differentially expressed genes and provide more false negatives.)</p>
+<pre class="r"><code>#Produce results with the false-discovery threshold of 0.05 with the Nigerian patients in the numerator of the ratio and the TCGA patients in the denominator
 reswhiteNigerian &lt;- results(ddsMF, contrast=c(&quot;condition&quot;,&quot;Nigerian&quot;,&quot;TCGA_white&quot;), alpha=0.05)
 resblackNigerian &lt;- results(ddsMF, contrast=c(&quot;condition&quot;,&quot;Nigerian&quot;,&quot;TCGA_black&quot;), alpha=0.05)
 #summary(reswhiteNigerian)
@@ -713,38 +928,6 @@ ENSG00000000419.8  protein_coding          20  49551404  49575092
 ENSG00000000938.8  protein_coding           1  27938575  27961788
 ENSG00000000971.11 protein_coding           1 196621008 196716634
 ENSG00000001036.9  protein_coding           6 143815948 143832827</code></pre>
-<p>This is code that can be used for batch effect assessment but I am not sure how to intepret the results or incorporate this into the rest of the analysis. Batch effect should be corrected prior to running the differential expression.</p>
-<pre class="r"><code>dat  &lt;- counts(ddsMF, normalized = TRUE)
-idx  &lt;- rowMeans(dat) &gt; 1
-dat  &lt;- dat[idx, ]
-mod  &lt;- model.matrix(~condition, colData(ddsMF))
-mod0 &lt;- model.matrix(~   1, colData(ddsMF))
-svseq &lt;- svaseq(dat, mod, mod0, n.sv = 2)</code></pre>
-<pre><code>Number of significant surrogate variables is:  2 
-Iteration (out of 5 ):1  2  3  4  5  </code></pre>
-<pre class="r"><code>par(mfrow = c(2, 1), mar = c(3,5,3,1))
-for (i in 1:2) {
-  stripchart(svseq$sv[, i] ~ dds$condition, vertical = TRUE, main = paste0(&quot;SV&quot;, i))
-  abline(h = 0)
-}</code></pre>
-<p><img src="figure/NigerianTCGArawcountsDeSeq2.Rmd/Batch%20effect%20assessment-1.png" width="672" style="display: block; margin: auto;" /></p>
-<p>These are two visualization methods for seeing the differential expression results. (1) is a MAplot and (2) is a heat map.</p>
-<pre class="r"><code>resultsNames(ddsMF)</code></pre>
-<pre><code>[1] &quot;Intercept&quot;                        &quot;condition_TCGA_black_vs_Nigerian&quot;
-[3] &quot;condition_TCGA_other_vs_Nigerian&quot; &quot;condition_TCGA_white_vs_Nigerian&quot;</code></pre>
-<pre class="r"><code>#&quot;Intercept&quot;                        &quot;condition_TCGA_black_vs_Nigerian&quot;
-#&quot;condition_TCGA_other_vs_Nigerian&quot; &quot;condition_TCGA_white_vs_Nigerian&quot;
-res &lt;- lfcShrink(ddsMF, coef=&quot;condition_TCGA_white_vs_Nigerian&quot;, type=&quot;apeglm&quot;)
-plotMA(res, ylim = c(-5, 5))</code></pre>
-<p><img src="figure/NigerianTCGArawcountsDeSeq2.Rmd/Visualizing%20the%20differentially%20expressed%20genes-1.png" width="672" style="display: block; margin: auto;" /></p>
-<pre class="r"><code>topVarGenes &lt;- head(order(rowVars(assay(vsd)), decreasing = TRUE), 100)
-mat  &lt;- assay(vsd)[ topVarGenes, ]
-mat  &lt;- mat - rowMeans(mat)
-anno &lt;- as.data.frame(colData(vsd)[, c(&quot;condition&quot;)])
-rownames(anno) &lt;- colnames(vsd)
-pheatmap(mat, annotation_col = anno)</code></pre>
-<p><img src="figure/NigerianTCGArawcountsDeSeq2.Rmd/Visualizing%20the%20differentially%20expressed%20genes-2.png" width="672" style="display: block; margin: auto;" /></p>
-<p>Sorting the greatest differentially expressed genes and providing output.</p>
 <pre class="r"><code>resSigwhitehead &lt;- head(resSigwhite[ order(resSigwhite$log2FoldChange), ],10)
 resSigwhitehead</code></pre>
 <pre><code>log2 fold change (MLE): condition Nigerian vs TCGA_white 
@@ -1024,67 +1207,68 @@ attached base packages:
 [8] methods   base     
 
 other attached packages:
- [1] sva_3.30.0                  mgcv_1.8-25                
- [3] nlme_3.1-137                pheatmap_1.0.10            
- [5] genefilter_1.64.0           apeglm_1.4.1               
- [7] EnsDb.Hsapiens.v75_2.99.0   ensembldb_2.6.3            
- [9] AnnotationFilter_1.6.0      biomaRt_2.38.0             
-[11] GenomicFeatures_1.34.1      org.Hs.eg.db_3.7.0         
-[13] AnnotationDbi_1.44.0        hexbin_1.27.2              
-[15] ggplot2_3.1.0               dplyr_0.7.8                
-[17] stringi_1.2.4               DESeq2_1.22.1              
-[19] SummarizedExperiment_1.12.0 DelayedArray_0.8.0         
-[21] BiocParallel_1.16.0         matrixStats_0.54.0         
-[23] Biobase_2.42.0              GenomicRanges_1.34.0       
-[25] GenomeInfoDb_1.18.1         IRanges_2.16.0             
-[27] S4Vectors_0.20.1            BiocGenerics_0.28.0        
+ [1] limma_3.38.3                sva_3.30.1                 
+ [3] mgcv_1.8-26                 nlme_3.1-137               
+ [5] pheatmap_1.0.12             genefilter_1.64.0          
+ [7] apeglm_1.4.2                EnsDb.Hsapiens.v75_2.99.0  
+ [9] ensembldb_2.6.3             AnnotationFilter_1.6.0     
+[11] biomaRt_2.38.0              GenomicFeatures_1.34.1     
+[13] org.Hs.eg.db_3.7.0          AnnotationDbi_1.44.0       
+[15] hexbin_1.27.2               ggplot2_3.1.0              
+[17] dplyr_0.7.8                 stringi_1.2.4              
+[19] DESeq2_1.22.2               SummarizedExperiment_1.12.0
+[21] DelayedArray_0.8.0          BiocParallel_1.16.5        
+[23] matrixStats_0.54.0          Biobase_2.42.0             
+[25] GenomicRanges_1.34.0        GenomeInfoDb_1.18.1        
+[27] IRanges_2.16.0              S4Vectors_0.20.1           
+[29] BiocGenerics_0.28.0        
 
 loaded via a namespace (and not attached):
- [1] colorspace_1.3-2         rprojroot_1.3-2         
- [3] htmlTable_1.12           XVector_0.22.0          
- [5] base64enc_0.1-3          rstudioapi_0.8          
+ [1] colorspace_1.4-0         rprojroot_1.3-2         
+ [3] htmlTable_1.13.1         XVector_0.22.0          
+ [5] base64enc_0.1-3          rstudioapi_0.9.0        
  [7] bit64_0.9-7              splines_3.5.0           
  [9] R.methodsS3_1.7.1        geneplotter_1.60.0      
-[11] knitr_1.20               jsonlite_1.5            
+[11] knitr_1.21               jsonlite_1.6            
 [13] Formula_1.2-3            workflowr_1.1.1         
 [15] Rsamtools_1.34.0         annotate_1.60.0         
 [17] cluster_2.0.7-1          R.oo_1.22.0             
-[19] compiler_3.5.0           httr_1.3.1              
-[21] backports_1.1.2          assertthat_0.2.0        
+[19] compiler_3.5.0           httr_1.4.0              
+[21] backports_1.1.3          assertthat_0.2.0        
 [23] Matrix_1.2-15            lazyeval_0.2.1          
-[25] limma_3.38.2             acepack_1.4.1           
-[27] htmltools_0.3.6          prettyunits_1.0.2       
-[29] tools_3.5.0              bindrcpp_0.2.2          
-[31] coda_0.19-2              gtable_0.2.0            
-[33] glue_1.3.0               GenomeInfoDbData_1.2.0  
-[35] reshape2_1.4.3           Rcpp_1.0.0              
-[37] bbmle_1.0.20             Biostrings_2.50.1       
-[39] rtracklayer_1.42.0       stringr_1.3.1           
+[25] acepack_1.4.1            htmltools_0.3.6         
+[27] prettyunits_1.0.2        tools_3.5.0             
+[29] bindrcpp_0.2.2           coda_0.19-2             
+[31] gtable_0.2.0             glue_1.3.0              
+[33] GenomeInfoDbData_1.2.0   reshape2_1.4.3          
+[35] Rcpp_1.0.0               bbmle_1.0.20            
+[37] Biostrings_2.50.2        rtracklayer_1.42.1      
+[39] xfun_0.4                 stringr_1.3.1           
 [41] XML_3.98-1.16            zlibbioc_1.28.0         
 [43] MASS_7.3-51.1            scales_1.0.0            
 [45] hms_0.4.2                ProtGenerics_1.14.0     
 [47] RColorBrewer_1.1-2       yaml_2.2.0              
-[49] curl_3.2                 memoise_1.1.0           
+[49] curl_3.3                 memoise_1.1.0           
 [51] gridExtra_2.3            emdbook_1.3.10          
 [53] rpart_4.1-13             latticeExtra_0.6-28     
-[55] RSQLite_2.1.1            checkmate_1.8.5         
-[57] rlang_0.3.0.1            pkgconfig_2.0.2         
+[55] RSQLite_2.1.1            checkmate_1.9.1         
+[57] rlang_0.3.1              pkgconfig_2.0.2         
 [59] bitops_1.0-6             evaluate_0.12           
 [61] lattice_0.20-38          purrr_0.2.5             
 [63] bindr_0.1.1              labeling_0.3            
-[65] GenomicAlignments_1.18.0 htmlwidgets_1.3         
+[65] GenomicAlignments_1.18.1 htmlwidgets_1.3         
 [67] bit_1.1-14               tidyselect_0.2.5        
 [69] plyr_1.8.4               magrittr_1.5            
 [71] R6_2.3.0                 Hmisc_4.1-1             
-[73] DBI_1.0.0                pillar_1.3.0            
+[73] DBI_1.0.0                pillar_1.3.1            
 [75] whisker_0.3-2            foreign_0.8-71          
-[77] withr_2.1.2              survival_2.43-1         
+[77] withr_2.1.2              survival_2.43-3         
 [79] RCurl_1.95-4.11          nnet_7.3-12             
-[81] tibble_1.4.2             crayon_1.3.4            
-[83] rmarkdown_1.10           progress_1.2.0          
+[81] tibble_2.0.1             crayon_1.3.4            
+[83] rmarkdown_1.11           progress_1.2.0          
 [85] locfit_1.5-9.1           grid_3.5.0              
-[87] data.table_1.11.8        blob_1.1.1              
-[89] git2r_0.23.0             digest_0.6.18           
+[87] data.table_1.12.0        blob_1.1.1              
+[89] git2r_0.24.0             digest_0.6.18           
 [91] xtable_1.8-3             numDeriv_2016.8-1       
 [93] R.utils_2.7.0            munsell_0.5.0           </code></pre>
 </div>

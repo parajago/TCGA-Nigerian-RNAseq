@@ -113,11 +113,13 @@ cat("PCA 1: The first PCA demonstrates batch effect between the Nigerian patient
 plotPCA(vsd) #PCA1: Raw counts
 
 cat("Heat map 1: Relative VST-transformed counts across samples")
-topVarGenes <- head(order(rowVars(assay(vsd)), decreasing = TRUE), 20)
-hm  <- assay(vsd)[topVarGenes, ]
+topVarGenes <- head(order(rowVars(assay(vsd)), decreasing = TRUE), 1000)
+hm  <- assay(vsd)[ topVarGenes, ]
 hm  <- hm - rowMeans(hm)
-anno <- as.data.frame(colData(vsd)[, c("Batch-Race")])
-pheatmap(hm, annotation_col = anno)
+anno <- as.data.frame(colData(vsd)[, c("condition")])
+rownames(anno) <- colnames(vsd)
+pheatmap(hm, annotation_col = anno, cluster_rows=FALSE, show_rownames=FALSE,
+         cluster_cols=FALSE)
 
 cat("PCA2: The second PCA represents removal of batch effect using the limma removeBatchEffect method. This largely accounts for the batch effect noticed in PCA1. There remain some outliers, primarily from the Nigerian patients.")
 mat <- assay(vsd) #PCA2: Removing the batch effect created by the separate batch processing of the TCGA and Nigerian samples (although this may overcorrect for the actual difference between these two populations).  
@@ -126,11 +128,13 @@ assay(vsd) <- mat
 plotPCA(vsd)
 
 cat("Heat map 2: Batch-effect-corrected relative VST-transformed counts across samples")
-topVarGenes <- head(order(rowVars(assay(vsd)), decreasing = TRUE), 20)
-hm  <- assay(vsd)[topVarGenes, ]
+topVarGenes <- head(order(rowVars(assay(vsd)), decreasing = TRUE), 1000)
+hm  <- assay(vsd)[ topVarGenes, ]
 hm  <- hm - rowMeans(hm)
-anno <- as.data.frame(colData(vsd)[, c("Batch-Race")])
-pheatmap(hm, annotation_col = anno)
+anno <- as.data.frame(colData(vsd)[, c("condition")])
+rownames(anno) <- colnames(vsd)
+pheatmap(hm, annotation_col = anno, cluster_rows=FALSE, show_rownames=FALSE,
+         cluster_cols=FALSE)
 ```
 
 #Using sva to additionally account for batch effect related to the Nigerian/TCGA samples
