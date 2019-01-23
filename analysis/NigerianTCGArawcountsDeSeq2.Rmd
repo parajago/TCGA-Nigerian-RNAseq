@@ -1,7 +1,7 @@
 ---
 title: "Nigerian-TCGA Differential Expression Analysis Using DeSeq2"
 author: "Padma Sheila Rajagopal, MD MPH"
-date: "1/16/2019"
+date: "1/23/2019"
 
 site: workflowr::wflow_site
 output:
@@ -27,6 +27,7 @@ library(apeglm)
 library("genefilter")
 library(pheatmap)
 library("sva")
+library(limma)
 setwd("~/Research-Local/RNAseq-Local/Inputs/NigerianTCGA_quants")
 ```
 
@@ -34,11 +35,10 @@ setwd("~/Research-Local/RNAseq-Local/Inputs/NigerianTCGA_quants")
 I have 86 TCGA patients with whole-genome sequencing data and RNAseq data as well as 99 Nigerian patients with RNA-seq data. Raw counts were initially processed using HTSeq, so HTSeq data is being formatted for use with DESeq2.
 ```{r Preparing the sampleTable using HTSeq raw counts}
 FOLDER <- "/Users/parajago/Research-Local/RNAseq-Local/Inputs/NigerianTCGA_quants"
-
 sampleFiles <- grep("htseq.counts",list.files(FOLDER),value=TRUE)
-sampleCondition <- sub("(.*LIB).*","\\1",sampleFiles)
 
 #Differential gene expression setup for TCGA (all) + Nigerian
+#sampleCondition <- sub("(.*LIB).*","\\1",sampleFiles)
 #countVar=1
 #for (sample in sampleCondition){
 #  if (grepl(sample,"LIB")==TRUE){
@@ -89,20 +89,18 @@ ddsHTSeqMF <- DESeqDataSetFromHTSeqCount(sampleTable=sampleTable2,
 ```
 
 
-#Brief exploratory analysis
+#Variance transformation, batch effect assessment and initial exploratory analysis
 I am now running initial variance transformations and plotting count data with a PCA. 
-```{r Exploratory analysis and PCA the batches}
+```{r Variance transformation and batch effect assessment}
 ddsHTSeqMF <- ddsHTSeqMF[rowSums(counts(ddsHTSeqMF)) > 1, ] #Pre-filtering the dataset by removing the rows without information about gene expression
+
+dds <- estimateSizeFactors(ddsHTSeqMF) #The size factor is the median ratio of the sample over a "pseudosample": for each gene, the geometric mean of all samples.
+dds$condition <- relevel(dds$condition, ref = "Nigerian") #explicitng making the Nigerian patients the reference population 
 
 vsd <- vst(ddsHTSeqMF, blind = TRUE) #Variance-stabilizing transformation
 
-# Plotting transformed counts. Differences between patients and condition WILL contribute to the expected variance-mean trend of the experiment. This represents a fully unsupervised transformation, one can set blind = TRUE (which is the default).
-
-dds <- estimateSizeFactors(ddsHTSeqMF) 
-#The size factor is the median ratio of the sample over a "pseudosample": 
-#for each gene, the geometric mean of all samples.
-
-df <- bind_rows(
+cat("Figure 1: Graphical representation of the variance-stabilizing transformation relative to the standard transformation of log2(x+1). This reduces variance purely due to low read counts")
+df <- bind_rows( #Graphical representation of the variance-stabilizing transformation
           as_data_frame(log2(counts(dds, normalized=TRUE)[, 1:2]+1)) %>%
           mutate(transformation = "log2(x + 1)"),
           as_data_frame(assay(vsd)[, 1:2]) %>% mutate(transformation = "vst"))
@@ -111,22 +109,75 @@ df <- bind_rows(
 ggplot(df, aes(x = x, y = y)) + geom_hex(bins = 80) +
   coord_fixed() + facet_grid( . ~ transformation) 
 
-pcaData <- plotPCA(vsd, intgroup = c("condition"), returnData = TRUE)
-percentVar <- round(100 * attr(pcaData, "percentVar"))
+cat("PCA 1: The first PCA demonstrates batch effect between the Nigerian patients and TCGA patients, which would be presumed given that these experiments were done in different settings at different times. The TCGA patients also appear to have internal batch effect that is not race-driven given distribution into 2 separate groups.")
+plotPCA(vsd) #PCA1: Raw counts
 
-ggplot(pcaData, aes(x = PC1, y = PC2, color = condition)) +
-  geom_point(size =1) +
-  xlab(paste0("PC1: ", percentVar[1], "% variance")) +
-  ylab(paste0("PC2: ", percentVar[2], "% variance")) +
-  coord_fixed()
+cat("Heat map 1: Relative VST-transformed counts across samples")
+topVarGenes <- head(order(rowVars(assay(vsd)), decreasing = TRUE), 20)
+hm  <- assay(vsd)[topVarGenes, ]
+hm  <- hm - rowMeans(hm)
+anno <- as.data.frame(colData(vsd)[, c("Batch-Race")])
+pheatmap(hm, annotation_col = anno)
 
+cat("PCA2: The second PCA represents removal of batch effect using the limma removeBatchEffect method. This largely accounts for the batch effect noticed in PCA1. There remain some outliers, primarily from the Nigerian patients.")
+mat <- assay(vsd) #PCA2: Removing the batch effect created by the separate batch processing of the TCGA and Nigerian samples (although this may overcorrect for the actual difference between these two populations).  
+mat <- limma::removeBatchEffect(mat, vsd$condition)
+assay(vsd) <- mat
+plotPCA(vsd)
+
+cat("Heat map 2: Batch-effect-corrected relative VST-transformed counts across samples")
+topVarGenes <- head(order(rowVars(assay(vsd)), decreasing = TRUE), 20)
+hm  <- assay(vsd)[topVarGenes, ]
+hm  <- hm - rowMeans(hm)
+anno <- as.data.frame(colData(vsd)[, c("Batch-Race")])
+pheatmap(hm, annotation_col = anno)
 ```
-We see here that the PCA demonstrates batch effect between the Nigerian patients and TGCA patients. TCGA patients also appear to have internal batch effect.
+
+#Using sva to additionally account for batch effect related to the Nigerian/TCGA samples
+```{r Batch effect assessment, message=FALSE}
+dat  <- counts(dds, normalized = TRUE)
+idx  <- rowMeans(dat) > 1
+dat  <- dat[idx, ]
+mod  <- model.matrix(~condition, colData(dds))
+mod0 <- model.matrix(~   1, colData(dds))
+svseq <- svaseq(dat, mod, mod0, n.sv = 1)
+
+sampleTablebe <- data.frame(sampleName=gsub(".htseq.counts","",sampleFiles),
+                          fileName=sampleFiles,
+                          condition=sampleConditionrace, 
+                          be=svseq$sv[,1])
+
+ddsHTSeqMFbe <- DESeqDataSetFromHTSeqCount(sampleTable=sampleTablebe,
+                                       directory=FOLDER,
+                                       design=~condition + be)
+
+ddsHTSeqMFbe <- ddsHTSeqMFbe[rowSums(counts(ddsHTSeqMFbe)) > 1, ]
+```
 
 #Differential expression analysis
-This is the actual differential expression analysis with false discovery threshold of 0.05. Then we are sorting out the results for both the white and black TCGA patients separately. Differential expression results are annotated. 
-```{r Differential expression analysis}
+This is the actual differential expression analysis with false discovery threshold of 0.05. I am performing this for both the standard and batch-effect-corrected versions of the DESeq2 model to allow comparison. 
+```{r Differential expression analysis and visualization}
 ddsMF <- DESeq(ddsHTSeqMF)
+ddsMFbe <-DESeq(ddsHTSeqMFbe)
+
+resultsNames(ddsMF)
+resultsNames(ddsMFbe)
+#"Intercept"                        "condition_TCGA_black_vs_Nigerian"
+#"condition_TCGA_other_vs_Nigerian" "condition_TCGA_white_vs_Nigerian"
+
+
+#MAPlot: log2 fold changes attributable to the condition over the mean of normalized counts for all the samples in the DESeqDataSet. Points will be colored red if the adjusted p value is less than 0.1. Points which fall out of the window are plotted as open triangles pointing either up or down.
+cat("MA Plot 1: Original differential expression")
+res <- lfcShrink(ddsMF, coef="condition_TCGA_white_vs_Nigerian", type="apeglm")
+plotMA(res, ylim = c(-5, 5))
+
+cat("MA Plot 2: Batch-corrected differential expression")
+res <- lfcShrink(ddsMFbe, coef="condition_TCGA_white_vs_Nigerian", type="apeglm")
+plotMA(res, ylim = c(-5, 5))
+```
+
+Sorting the greatest differentially expressed genes and providing output. (Please note: This is using the standard differential expression analysis without batch effect correction as this may overcorrect for differentially expressed genes and provide more false negatives.)
+```{r Sorting the greatest log change and p-values}
 
 #Produce results with the false-discovery threshold of 0.05 with the Nigerian patients in the numerator of the ratio and the TCGA patients in the denominator
 reswhiteNigerian <- results(ddsMF, contrast=c("condition","Nigerian","TCGA_white"), alpha=0.05)
@@ -232,46 +283,6 @@ resSigblack$locend <- mapIds(EnsDb.Hsapiens.v75,
 
 head (resSigblack)
 head (resSigwhite)
-```
-
-
-This is code that can be used for batch effect assessment but I am not sure how to intepret the results or incorporate this into the rest of the analysis. Batch effect should be corrected prior to running the differential expression. 
-```{r Batch effect assessment, message=FALSE}
-dat  <- counts(ddsMF, normalized = TRUE)
-idx  <- rowMeans(dat) > 1
-dat  <- dat[idx, ]
-mod  <- model.matrix(~condition, colData(ddsMF))
-mod0 <- model.matrix(~   1, colData(ddsMF))
-svseq <- svaseq(dat, mod, mod0, n.sv = 2)
-
-par(mfrow = c(2, 1), mar = c(3,5,3,1))
-for (i in 1:2) {
-  stripchart(svseq$sv[, i] ~ dds$condition, vertical = TRUE, main = paste0("SV", i))
-  abline(h = 0)
-}
-```
-
-
-These are two visualization methods for seeing the differential expression results. (1) is a MAplot and (2) is a heat map. 
-```{r Visualizing the differentially expressed genes}
-resultsNames(ddsMF)
-#"Intercept"                        "condition_TCGA_black_vs_Nigerian"
-#"condition_TCGA_other_vs_Nigerian" "condition_TCGA_white_vs_Nigerian"
-res <- lfcShrink(ddsMF, coef="condition_TCGA_white_vs_Nigerian", type="apeglm")
-plotMA(res, ylim = c(-5, 5))
-
-topVarGenes <- head(order(rowVars(assay(vsd)), decreasing = TRUE), 100)
-mat  <- assay(vsd)[ topVarGenes, ]
-mat  <- mat - rowMeans(mat)
-anno <- as.data.frame(colData(vsd)[, c("condition")])
-rownames(anno) <- colnames(vsd)
-pheatmap(mat, annotation_col = anno)
-```
-
-
-Sorting the greatest differentially expressed genes and providing output. 
-```{r Sorting the greatest log change and p-values}
-
 resSigwhitehead <- head(resSigwhite[ order(resSigwhite$log2FoldChange), ],10)
 resSigwhitehead
 #write.table(resSigwhitehead,"Nigerian-TCGAwhiteDiffExpGenes100-pos",sep="\t",row.names=TRUE)
