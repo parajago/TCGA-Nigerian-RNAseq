@@ -1,22 +1,4 @@
 
-#Differential expression analysis
-This is the actual differential expression analysis with false discovery threshold of 0.05. I am performing this for both the standard and batch-effect-corrected versions of the DESeq2 model to allow comparison. 
-```{r Differential expression analysis and visualization}
-ddsMF <- DESeq(ddsHTSeqMF)
-ddsMFbe <-DESeq(ddsHTSeqMFbe)
-
-resultsNames(ddsMF)
-resultsNames(ddsMFbe)
-#MAPlot: log2 fold changes attributable to the condition over the mean of normalized counts for all the samples in the DESeqDataSet. Points will be colored red if the adjusted p value is less than 0.1. Points which fall out of the window are plotted as open triangles pointing either up or down.
-cat("MA Plot 1: Original differential expression")
-res <- lfcShrink(ddsMF, coef="condition_TCGA_white_vs_Nigerian", type="apeglm")
-plotMA(res, ylim = c(-5, 5))
-
-cat("MA Plot 2: Batch-corrected differential expression")
-res <- lfcShrink(ddsMFbe, coef="condition_TCGA_white_vs_Nigerian", type="apeglm")
-plotMA(res, ylim = c(-5, 5))
-```
-
 Sorting the greatest differentially expressed genes and providing output. (Please note: This is using the standard differential expression analysis without batch effect correction as this may overcorrect for differentially expressed genes and provide more false negatives.)
 ```{r Sorting the greatest log change and p-values}
 

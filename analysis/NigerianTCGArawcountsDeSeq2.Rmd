@@ -56,13 +56,41 @@ for (sample in sampleConditionrace){
   }
 }
 
+#Condition based on PAM50 subtype 
+sampleConditionPAM50 <- sampleFiles
+countVar2=1
+for (sample in sampleConditionPAM50){
+  if (stri_detect_fixed(sample,"Her2")==TRUE){
+    sampleConditionPAM50[countVar2] <- "Her2"
+    countVar2=countVar2+1
+  } else if (stri_detect_fixed(sample,"Basal")==TRUE){
+    sampleConditionPAM50[countVar2] <- "Basal"
+    countVar2=countVar2+1
+  } else if (stri_detect_fixed(sample,"LumA")==TRUE){
+    sampleConditionPAM50[countVar2] <- "LumA"
+    countVar2=countVar2+1
+  } else if (stri_detect_fixed(sample,"LumB")==TRUE){
+    sampleConditionPAM50[countVar2] <- "LumB"
+    countVar2=countVar2+1
+  } else if (stri_detect_fixed(sample,"PAMNL")==TRUE){
+    sampleConditionPAM50[countVar2] <- "Normal"
+    countVar2=countVar2+1
+  } else{
+    sampleConditionPAM50[countVar2] <- "PAM_other"
+    countVar2=countVar2+1
+  }
+}
+
 sampleTable2 <- data.frame(sampleName=gsub(".htseq.counts","",sampleFiles),
                           fileName=sampleFiles,
-                          condition=sampleConditionrace)
+                          condition1=sampleConditionrace,
+                          condition2=sampleConditionPAM50)
+
+sampleTable2$sampleCondition <- paste(sampleTable2$condition1, sampleTable2$condition2, sep=".")
 
 ddsHTSeqMF <- DESeqDataSetFromHTSeqCount(sampleTable=sampleTable2,
                                        directory=FOLDER,
-                                       design=~condition)
+                                       design=~sampleCondition)
 ```
 
 
@@ -72,7 +100,7 @@ I am now performing different visualization approaches to assess the variance of
 ddsHTSeqMF <- ddsHTSeqMF[rowSums(counts(ddsHTSeqMF)) > 1, ] #Pre-filtering the dataset by removing the rows without information about gene expression
 
 dds <- estimateSizeFactors(ddsHTSeqMF) #The size factor is the median ratio of the sample over a "pseudosample": for each gene, the geometric mean of all samples.
-dds$condition <- relevel(dds$condition, ref = "Nigerian") #explicitng making the Nigerian patients the reference population 
+dds$condition1 <- relevel(dds$condition1, ref = "Nigerian") #explicitng making the Nigerian patients the reference population 
 
 vsd <- vst(ddsHTSeqMF, blind = TRUE) #Variance-stabilizing transformation
 
@@ -85,48 +113,24 @@ df <- bind_rows( #Graphical representation of the variance-stabilizing transform
 ggplot(df, aes(x = x, y = y)) + labs(subtitle="Figure 1: Graphical representation of the \nvariance-stabilizing transformation \nrelative to the standard transformation of log2(x+1).\nThis reduces variance purely due to low read counts") + geom_hex(bins = 80) +
   coord_fixed() + facet_grid( . ~ transformation) 
 
-plotPCA(vsd) + labs(subtitle = "PCA 1: first PCA demonstrates batch effect between\nthe Nigerian patients and TCGA patients,\nwhich would be presumed given that these experiments\nwere done in different settings at different times.\nThe TCGA patients also appear to have internal\nbatch effect that is not race-driven\ngiven distribution into 2 separate groups") #PCA1: Raw counts
+#PCA1: Raw counts
+plotPCA(vsd, intgroup=c("condition1")) + labs(subtitle = "PCA 1-1:PCA demonstrating batch effect between\nthe Nigerian patients and TCGA patients,\nwhich would be presumed given that these experiments\nwere done in different settings at different times.\nThe TCGA patients also appear to have internal\nbatch effect that is not race-driven\ngiven distribution into 2 separate groups") 
 
-topVarGenes <- head(order(rowVars(assay(vsd)), decreasing = TRUE), 1000)
-hm  <- assay(vsd)[ topVarGenes, ]
-hm  <- hm - rowMeans(hm)
-anno <- as.data.frame(colData(vsd)[, c("condition")])
-rownames(anno) <- colnames(vsd)
-pheatmap(hm, annotation_col = anno, cluster_rows=FALSE, show_rownames=FALSE,
-         cluster_cols=FALSE, main="Heat map 1: \nRelative VST-transformed counts across samples")
+plotPCA(vsd, intgroup=c("condition2")) + labs(subtitle = "PCA 1-2:PCA demonstrating association\nwith breast cancer subtype and gene expression.\nThis is noted in both groups and not likely due to batch effect.") 
 
-mat <- assay(vsd) #PCA2: Removing the batch effect created by the separate batch processing of the TCGA and Nigerian samples (although this may overcorrect for the actual difference between these two populations).  
-mat <- limma::removeBatchEffect(mat, vsd$condition)
+plotPCA(vsd, intgroup=c("condition1", "condition2")) + labs(subtitle = "PCA 1-3: Integrated PCA demonstrating combined effect of\n breast cancer subtype and race.\n There is likely some contributor of batch effect to this presentation.") 
+
+#PCA2: Removing the batch effect created by the separate batch processing of the TCGA and Nigerian samples (although this may overcorrect for the actual difference between these two populations).  
+mat <- assay(vsd) 
+mat <- limma::removeBatchEffect(mat, vsd$condition1)
 assay(vsd) <- mat
-plotPCA(vsd) + labs(subtitle="PCA2: The second PCA represents removal of batch effect using the limma removeBatchEffect method.\nThis largely accounts for the batch effect noticed in PCA1. \nThere remain some outliers, primarily from the Nigerian patients.")
+plotPCA(vsd, intgroup=c("condition1", "condition2")) + labs(subtitle="PCA2-1: We have accounted for batch effect using the limma removeBatchEffect method.\nThis largely accounts for the batch effect noticed in PCA1-Nigerian vs TCGA. \nThere remain some outliers, primarily from the Nigerian patients.")
 
-topVarGenes <- head(order(rowVars(assay(vsd)), decreasing = TRUE), 1000)
+topVarGenes <- head(order(rowVars(assay(vsd)), decreasing = TRUE), 500)
 hm  <- assay(vsd)[ topVarGenes, ]
 hm  <- hm - rowMeans(hm)
-anno <- as.data.frame(colData(vsd)[, c("condition")])
+anno <- as.data.frame(colData(vsd)[, c("condition1", "condition2")])
 rownames(anno) <- colnames(vsd)
-pheatmap(hm, annotation_col = anno, cluster_rows=FALSE, show_rownames=FALSE,
-         cluster_cols=FALSE, main="Heat map 2: Batch-effect-corrected relative\n VST-transformed counts across samples")
-```
-
-
-#Using sva to additionally account for batch effect related to the Nigerian/TCGA samples
-```{r Batch effect assessment, message=FALSE}
-dat  <- counts(dds, normalized = TRUE)
-idx  <- rowMeans(dat) > 1
-dat  <- dat[idx, ]
-mod  <- model.matrix(~condition, colData(dds))
-mod0 <- model.matrix(~   1, colData(dds))
-svseq <- svaseq(dat, mod, mod0, n.sv = 1)
-
-sampleTablebe <- data.frame(sampleName=gsub(".htseq.counts","",sampleFiles),
-                          fileName=sampleFiles,
-                          condition=sampleConditionrace, 
-                          be=svseq$sv[,1])
-
-ddsHTSeqMFbe <- DESeqDataSetFromHTSeqCount(sampleTable=sampleTablebe,
-                                       directory=FOLDER,
-                                       design=~condition + be)
-
-ddsHTSeqMFbe <- ddsHTSeqMFbe[rowSums(counts(ddsHTSeqMFbe)) > 1, ]
+pheatmap(hm, annotation_col = anno, cluster_rows=FALSE, show_rownames=FALSE, show_colnames = FALSE,
+         cluster_cols=FALSE, main="Heat map: \nRelative VST-transformed counts across samples")
 ```
