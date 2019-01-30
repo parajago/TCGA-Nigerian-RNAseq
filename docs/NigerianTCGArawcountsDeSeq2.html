@@ -444,7 +444,7 @@ div.section {
 </details>
 </li>
 <li>
-<p><details> <summary> <strong style="color:blue;">✔</strong> <strong>Repository version:</strong> <a href="https://github.com/parajago/TCGA-Nigerian-RNAseq/tree/fde4c6ffc89c1502ff62ffa1d707bd5ca850c521" target="_blank">fde4c6f</a> </summary></p>
+<p><details> <summary> <strong style="color:blue;">✔</strong> <strong>Repository version:</strong> <a href="https://github.com/parajago/TCGA-Nigerian-RNAseq/tree/bb42865c36f25e0657a0881f01403860a27236b9" target="_blank">bb42865</a> </summary></p>
 Great! You are using Git for version control. Tracking code development and connecting the code version to the results is critical for reproducibility. The version displayed above was the version of the Git repository at the time these results were generated. <br><br> Note that you need to be careful to ensure that all relevant files for the analysis have been committed to Git prior to generating the results (you can use <code>wflow_publish</code> or <code>wflow_git_commit</code>). workflowr only checks the R Markdown file, but you know if there are other scripts or data files that it depends on. Below is the status of the Git repository when the results were generated:
 <pre><code>
 Ignored files:
@@ -457,7 +457,6 @@ Ignored files:
     Ignored:    plots/.DS_Store
 
 Unstaged changes:
-    Modified:   analysis/NigerianTCGArawcountsDeSeq2-part2temp.Rmd
     Modified:   analysis/NigerianTCGArawcountsDeSeq2.Rmd
 
 </code></pre>
@@ -487,6 +486,40 @@ Message
 </tr>
 </thead>
 <tbody>
+<tr>
+<td style="text-align:left;">
+Rmd
+</td>
+<td style="text-align:left;">
+<a href="https://github.com/parajago/TCGA-Nigerian-RNAseq/blob/bb42865c36f25e0657a0881f01403860a27236b9/analysis/NigerianTCGArawcountsDeSeq2.Rmd" target="_blank">bb42865</a>
+</td>
+<td style="text-align:left;">
+Sheila Rajagopal
+</td>
+<td style="text-align:left;">
+2019-01-30
+</td>
+<td style="text-align:left;">
+breast cancer subtype information added
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+html
+</td>
+<td style="text-align:left;">
+<a href="https://cdn.rawgit.com/parajago/TCGA-Nigerian-RNAseq/bb42865c36f25e0657a0881f01403860a27236b9/docs/NigerianTCGArawcountsDeSeq2.html" target="_blank">bb42865</a>
+</td>
+<td style="text-align:left;">
+Sheila Rajagopal
+</td>
+<td style="text-align:left;">
+2019-01-30
+</td>
+<td style="text-align:left;">
+breast cancer subtype information added
+</td>
+</tr>
 <tr>
 <td style="text-align:left;">
 Rmd
@@ -712,10 +745,40 @@ for (sample in sampleConditionPAM50){
   }
 }
 
-sampleTable2 &lt;- data.frame(sampleName=gsub(&quot;.htseq.counts&quot;,&quot;&quot;,sampleFiles),
+#Condition based on PAM50 subtype 
+batchval &lt;- sampleFiles
+countVar2=1
+for (sample in batchval){
+  if (stri_detect_fixed(sample,&quot;batch1&quot;)==TRUE){
+    batchval[countVar2] &lt;- &quot;batch1&quot;
+    countVar2=countVar2+1
+  } else if (stri_detect_fixed(sample,&quot;batch23&quot;)==TRUE){
+    batchval[countVar2] &lt;- &quot;batch23&quot;
+    countVar2=countVar2+1
+  } else if (stri_detect_fixed(sample,&quot;batch4&quot;)==TRUE){
+    batchval[countVar2] &lt;- &quot;batch4&quot;
+    countVar2=countVar2+1
+  } else if (stri_detect_fixed(sample,&quot;batch5&quot;)==TRUE){
+    batchval[countVar2] &lt;- &quot;batch5&quot;
+    countVar2=countVar2+1
+  } else{
+    batchval[countVar2] &lt;- &quot;batchT&quot;
+    countVar2=countVar2+1
+  }
+}
+
+table(sampleConditionrace, sampleConditionPAM50)</code></pre>
+<pre><code>                   sampleConditionPAM50
+sampleConditionrace Basal Her2 LumA LumB Normal PAM_other
+         Nigerian      32   26   16   18      7         0
+         TCGA_black    25    0    4    4      0         0
+         TCGA_other     0    0    0    0      0        14
+         TCGA_white    17    5    8    9      0         0</code></pre>
+<pre class="r"><code>sampleTable2 &lt;- data.frame(sampleName=gsub(&quot;.htseq.counts&quot;,&quot;&quot;,sampleFiles),
                           fileName=sampleFiles,
                           condition1=sampleConditionrace,
-                          condition2=sampleConditionPAM50)
+                          condition2=sampleConditionPAM50,
+                          batch=batchval)
 
 sampleTable2$sampleCondition &lt;- paste(sampleTable2$condition1, sampleTable2$condition2, sep=&quot;.&quot;)
 
@@ -784,7 +847,7 @@ Sheila Rajagopal
 </table>
 <p></details></p>
 <pre class="r"><code>#PCA1: Raw counts
-plotPCA(vsd, intgroup=c(&quot;condition1&quot;)) + labs(subtitle = &quot;PCA 1-1:PCA demonstrating batch effect between\nthe Nigerian patients and TCGA patients,\nwhich would be presumed given that these experiments\nwere done in different settings at different times.\nThe TCGA patients also appear to have internal\nbatch effect that is not race-driven\ngiven distribution into 2 separate groups&quot;) </code></pre>
+plotPCA(vsd, intgroup=c(&quot;condition1&quot;, &quot;batch&quot;)) + labs(subtitle = &quot;PCA 1-1:PCA demonstrating batch effect between\nthe Nigerian patients and TCGA patients,\nwhich would be expected given that these experiments\nwere done in different settings at different times.\nThe TCGA patients also appear to have internal\nbatch effect that is not completely race-consistent.\nNo clear effect from internal batches of Nigerian samples&quot;) </code></pre>
 <p><img src="figure/NigerianTCGArawcountsDeSeq2.Rmd/Variance%20transformation%20and%20batch%20effect%20assessment-2.png" width="672" style="display: block; margin: auto;" /></p>
 <details> <summary><em>Expand here to see past versions of Variance transformation and batch effect assessment-2.png:</em></summary>
 <table style="border-collapse:separate; border-spacing:5px;">
@@ -802,6 +865,17 @@ Date
 </tr>
 </thead>
 <tbody>
+<tr>
+<td style="text-align:left;">
+<a href="https://github.com/parajago/TCGA-Nigerian-RNAseq/blob/bb42865c36f25e0657a0881f01403860a27236b9/docs/figure/NigerianTCGArawcountsDeSeq2.Rmd/Variance transformation and batch effect assessment-2.png" target="_blank">bb42865</a>
+</td>
+<td style="text-align:left;">
+Sheila Rajagopal
+</td>
+<td style="text-align:left;">
+2019-01-30
+</td>
+</tr>
 <tr>
 <td style="text-align:left;">
 <a href="https://github.com/parajago/TCGA-Nigerian-RNAseq/blob/45f3be0ed3e9bfa9a545b381c78eb70f96eb3482/docs/figure/NigerianTCGArawcountsDeSeq2.Rmd/Variance transformation and batch effect assessment-2.png" target="_blank">45f3be0</a>
@@ -827,7 +901,7 @@ Sheila Rajagopal
 </tbody>
 </table>
 <p></details></p>
-<pre class="r"><code>plotPCA(vsd, intgroup=c(&quot;condition2&quot;)) + labs(subtitle = &quot;PCA 1-2:PCA demonstrating association\nwith breast cancer subtype and gene expression.\nThis is noted in both groups and not likely due to batch effect.&quot;) </code></pre>
+<pre class="r"><code>plotPCA(vsd, intgroup=c(&quot;condition2&quot;)) + labs(subtitle = &quot;PCA 1-3:PCA demonstrating association\nwith breast cancer subtype and gene expression.\nThis is noted in both groups and not likely due to batch effect.&quot;) </code></pre>
 <p><img src="figure/NigerianTCGArawcountsDeSeq2.Rmd/Variance%20transformation%20and%20batch%20effect%20assessment-3.png" width="672" style="display: block; margin: auto;" /></p>
 <details> <summary><em>Expand here to see past versions of Variance transformation and batch effect assessment-3.png:</em></summary>
 <table style="border-collapse:separate; border-spacing:5px;">
@@ -845,6 +919,17 @@ Date
 </tr>
 </thead>
 <tbody>
+<tr>
+<td style="text-align:left;">
+<a href="https://github.com/parajago/TCGA-Nigerian-RNAseq/blob/bb42865c36f25e0657a0881f01403860a27236b9/docs/figure/NigerianTCGArawcountsDeSeq2.Rmd/Variance transformation and batch effect assessment-3.png" target="_blank">bb42865</a>
+</td>
+<td style="text-align:left;">
+Sheila Rajagopal
+</td>
+<td style="text-align:left;">
+2019-01-30
+</td>
+</tr>
 <tr>
 <td style="text-align:left;">
 <a href="https://github.com/parajago/TCGA-Nigerian-RNAseq/blob/45f3be0ed3e9bfa9a545b381c78eb70f96eb3482/docs/figure/NigerianTCGArawcountsDeSeq2.Rmd/Variance transformation and batch effect assessment-3.png" target="_blank">45f3be0</a>
@@ -890,6 +975,17 @@ Date
 <tbody>
 <tr>
 <td style="text-align:left;">
+<a href="https://github.com/parajago/TCGA-Nigerian-RNAseq/blob/bb42865c36f25e0657a0881f01403860a27236b9/docs/figure/NigerianTCGArawcountsDeSeq2.Rmd/Variance transformation and batch effect assessment-4.png" target="_blank">bb42865</a>
+</td>
+<td style="text-align:left;">
+Sheila Rajagopal
+</td>
+<td style="text-align:left;">
+2019-01-30
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
 <a href="https://github.com/parajago/TCGA-Nigerian-RNAseq/blob/45f3be0ed3e9bfa9a545b381c78eb70f96eb3482/docs/figure/NigerianTCGArawcountsDeSeq2.Rmd/Variance transformation and batch effect assessment-4.png" target="_blank">45f3be0</a>
 </td>
 <td style="text-align:left;">
@@ -915,8 +1011,9 @@ Sheila Rajagopal
 <p></details></p>
 <pre class="r"><code>#PCA2: Removing the batch effect created by the separate batch processing of the TCGA and Nigerian samples (although this may overcorrect for the actual difference between these two populations).  
 mat &lt;- assay(vsd) 
-mat &lt;- limma::removeBatchEffect(mat, vsd$condition1)
-assay(vsd) &lt;- mat
+mat &lt;- limma::removeBatchEffect(mat, vsd$condition1, vsd$batch)</code></pre>
+<pre><code>Coefficients not estimable: batch24 </code></pre>
+<pre class="r"><code>assay(vsd) &lt;- mat
 plotPCA(vsd, intgroup=c(&quot;condition1&quot;, &quot;condition2&quot;)) + labs(subtitle=&quot;PCA2-1: We have accounted for batch effect using the limma removeBatchEffect method.\nThis largely accounts for the batch effect noticed in PCA1-Nigerian vs TCGA. \nThere remain some outliers, primarily from the Nigerian patients.&quot;)</code></pre>
 <p><img src="figure/NigerianTCGArawcountsDeSeq2.Rmd/Variance%20transformation%20and%20batch%20effect%20assessment-5.png" width="672" style="display: block; margin: auto;" /></p>
 <details> <summary><em>Expand here to see past versions of Variance transformation and batch effect assessment-5.png:</em></summary>
@@ -935,6 +1032,17 @@ Date
 </tr>
 </thead>
 <tbody>
+<tr>
+<td style="text-align:left;">
+<a href="https://github.com/parajago/TCGA-Nigerian-RNAseq/blob/bb42865c36f25e0657a0881f01403860a27236b9/docs/figure/NigerianTCGArawcountsDeSeq2.Rmd/Variance transformation and batch effect assessment-5.png" target="_blank">bb42865</a>
+</td>
+<td style="text-align:left;">
+Sheila Rajagopal
+</td>
+<td style="text-align:left;">
+2019-01-30
+</td>
+</tr>
 <tr>
 <td style="text-align:left;">
 <a href="https://github.com/parajago/TCGA-Nigerian-RNAseq/blob/45f3be0ed3e9bfa9a545b381c78eb70f96eb3482/docs/figure/NigerianTCGArawcountsDeSeq2.Rmd/Variance transformation and batch effect assessment-5.png" target="_blank">45f3be0</a>
@@ -968,6 +1076,62 @@ rownames(anno) &lt;- colnames(vsd)
 pheatmap(hm, annotation_col = anno, cluster_rows=FALSE, show_rownames=FALSE, show_colnames = FALSE,
          cluster_cols=FALSE, main=&quot;Heat map: \nRelative VST-transformed counts across samples&quot;)</code></pre>
 <p><img src="figure/NigerianTCGArawcountsDeSeq2.Rmd/Variance%20transformation%20and%20batch%20effect%20assessment-6.png" width="672" style="display: block; margin: auto;" /></p>
+<details> <summary><em>Expand here to see past versions of Variance transformation and batch effect assessment-6.png:</em></summary>
+<table style="border-collapse:separate; border-spacing:5px;">
+<thead>
+<tr>
+<th style="text-align:left;">
+Version
+</th>
+<th style="text-align:left;">
+Author
+</th>
+<th style="text-align:left;">
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+<a href="https://github.com/parajago/TCGA-Nigerian-RNAseq/blob/bb42865c36f25e0657a0881f01403860a27236b9/docs/figure/NigerianTCGArawcountsDeSeq2.Rmd/Variance transformation and batch effect assessment-6.png" target="_blank">bb42865</a>
+</td>
+<td style="text-align:left;">
+Sheila Rajagopal
+</td>
+<td style="text-align:left;">
+2019-01-30
+</td>
+</tr>
+</tbody>
+</table>
+<p></details></p>
+</div>
+<div id="using-sva-to-additionally-account-for-batch-effect-related-to-the-nigeriantcga-samples" class="section level1">
+<h1>Using sva to additionally account for batch effect related to the Nigerian/TCGA samples</h1>
+<pre class="r"><code>dat  &lt;- counts(dds, normalized = TRUE)
+idx  &lt;- rowMeans(dat) &gt; 1
+dat  &lt;- dat[idx, ]
+mod  &lt;- model.matrix(~condition1, colData(dds))
+mod0 &lt;- model.matrix(~   1, colData(dds))
+svseq &lt;- svaseq(dat, mod, mod0, n.sv = 2)</code></pre>
+<pre><code>Number of significant surrogate variables is:  2 
+Iteration (out of 5 ):1  2  3  4  5  </code></pre>
+<pre class="r"><code>sampleTablebe &lt;- data.frame(sampleName=gsub(&quot;.htseq.counts&quot;,&quot;&quot;,sampleFiles),
+                          fileName=sampleFiles,
+                          condition1=sampleConditionrace,
+                          condition2=sampleConditionPAM50,
+                          be1=svseq$sv[,1],
+                          be2=svseq$sv[,2],
+                          batch=batchval)
+
+sampleTablebe$sampleCondition &lt;- paste(sampleTablebe$condition1, sampleTablebe$condition2, sep=&quot;.&quot;)
+
+ddsHTSeqMFbe &lt;- DESeqDataSetFromHTSeqCount(sampleTable=sampleTablebe,
+                                       directory=FOLDER,
+                                       design=~sampleCondition + be1 + be2)
+
+ddsHTSeqMFbe &lt;- ddsHTSeqMFbe[rowSums(counts(ddsHTSeqMFbe)) &gt; 1, ]</code></pre>
 <div id="session-information" class="section level2">
 <h2>Session information</h2>
 <pre class="r"><code>sessionInfo()</code></pre>
