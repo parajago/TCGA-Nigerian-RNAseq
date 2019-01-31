@@ -8,23 +8,18 @@ Aim: To identify unique population-specific genomic drivers and subclone express
 Pending analyses: 
 N Comments:
 -Check the 14q gene loss across the groups
--Make a volcano plot
--Assess driver candidate genes, subtypes and protein coding genes
+-Assess driver candidate genes and protein coding genes
 -Redo the analysis with whole genome sequencing only
 
 H Comments:
--*Correlate significant genes to function via gencode 26 assuming +/- annotation did not work out and isolate differential expression of protein coding genes
+-Isolate differential expression of protein coding genes
 
 A Comments: 
 -Reverse TSNE of the data to understand if any correlative relationships
 -Read about cross-validated lasso and GLMnet -> visual outputs (2 hours)
 
-M Comments:
--Redo normalization
--Breast cancer subtypes
-
 Me: 
-	-Perform analyses detailed in RNASeq workflow from the summer
+-Perform analyses detailed in RNASeq workflow from the summer
 
 *Overall differences in candidate driver gene expression | controlling for subtype
 *Allele-specific expression for specific SNVs, copy number variations or indels identified as different
@@ -35,12 +30,10 @@ Me:
 *Immunogenomics expression? / HLA LOH
 
 
-
 Folders:
 -Code: DESeq2
 -Output: Differential expression analysis tables  
 -Plots: Visualization of RNAseq data (batch effect and differential expression)
-
 
 
 Workflow:

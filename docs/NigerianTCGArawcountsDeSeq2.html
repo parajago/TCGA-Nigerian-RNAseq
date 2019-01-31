@@ -416,12 +416,12 @@ div.section {
 
 <h1 class="title toc-ignore">Nigerian-TCGA Differential Expression Analysis Using DeSeq2</h1>
 <h4 class="author"><em>Padma Sheila Rajagopal, MD MPH</em></h4>
-<h4 class="date"><em>1/23/2019</em></h4>
+<h4 class="date"><em>1/30/2019</em></h4>
 
 </div>
 
 
-<p><strong>Last updated:</strong> 2019-01-30</p>
+<p><strong>Last updated:</strong> 2019-01-31</p>
 <strong>workflowr checks:</strong> <small>(Click a bullet for more information)</small>
 <ul>
 <li>
@@ -444,7 +444,7 @@ div.section {
 </details>
 </li>
 <li>
-<p><details> <summary> <strong style="color:blue;">✔</strong> <strong>Repository version:</strong> <a href="https://github.com/parajago/TCGA-Nigerian-RNAseq/tree/bb42865c36f25e0657a0881f01403860a27236b9" target="_blank">bb42865</a> </summary></p>
+<p><details> <summary> <strong style="color:blue;">✔</strong> <strong>Repository version:</strong> <a href="https://github.com/parajago/TCGA-Nigerian-RNAseq/tree/39e89b8bf84293c89d0b87a82a6b12fcc07bd614" target="_blank">39e89b8</a> </summary></p>
 Great! You are using Git for version control. Tracking code development and connecting the code version to the results is critical for reproducibility. The version displayed above was the version of the Git repository at the time these results were generated. <br><br> Note that you need to be careful to ensure that all relevant files for the analysis have been committed to Git prior to generating the results (you can use <code>wflow_publish</code> or <code>wflow_git_commit</code>). workflowr only checks the R Markdown file, but you know if there are other scripts or data files that it depends on. Below is the status of the Git repository when the results were generated:
 <pre><code>
 Ignored files:
@@ -456,7 +456,12 @@ Ignored files:
     Ignored:    docs/figure/NigerianTCGArawcountsDeSeq2.Rmd/.DS_Store
     Ignored:    plots/.DS_Store
 
+Untracked files:
+    Untracked:  analysis/figure/
+
 Unstaged changes:
+    Modified:   README.md
+    Deleted:    analysis/NigerianTCGArawcountsDeSeq2-part2temp.Rmd
     Modified:   analysis/NigerianTCGArawcountsDeSeq2.Rmd
 
 </code></pre>
@@ -486,6 +491,40 @@ Message
 </tr>
 </thead>
 <tbody>
+<tr>
+<td style="text-align:left;">
+Rmd
+</td>
+<td style="text-align:left;">
+<a href="https://github.com/parajago/TCGA-Nigerian-RNAseq/blob/39e89b8bf84293c89d0b87a82a6b12fcc07bd614/analysis/NigerianTCGArawcountsDeSeq2.Rmd" target="_blank">39e89b8</a>
+</td>
+<td style="text-align:left;">
+Sheila Rajagopal
+</td>
+<td style="text-align:left;">
+2019-01-30
+</td>
+<td style="text-align:left;">
+breast cancer subtype information updated
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+html
+</td>
+<td style="text-align:left;">
+<a href="https://cdn.rawgit.com/parajago/TCGA-Nigerian-RNAseq/39e89b8bf84293c89d0b87a82a6b12fcc07bd614/docs/NigerianTCGArawcountsDeSeq2.html" target="_blank">39e89b8</a>
+</td>
+<td style="text-align:left;">
+Sheila Rajagopal
+</td>
+<td style="text-align:left;">
+2019-01-30
+</td>
+<td style="text-align:left;">
+breast cancer subtype information updated
+</td>
+</tr>
 <tr>
 <td style="text-align:left;">
 Rmd
@@ -802,8 +841,7 @@ df &lt;- bind_rows( #Graphical representation of the variance-stabilizing transf
           as_data_frame(assay(vsd)[, 1:2]) %&gt;% mutate(transformation = &quot;vst&quot;))
           colnames(df)[1:2] &lt;- c(&quot;x&quot;, &quot;y&quot;)
 
-ggplot(df, aes(x = x, y = y)) + labs(subtitle=&quot;Figure 1: Graphical representation of the \nvariance-stabilizing transformation \nrelative to the standard transformation of log2(x+1).\nThis reduces variance purely due to low read counts&quot;) + geom_hex(bins = 80) +
-  coord_fixed() + facet_grid( . ~ transformation) </code></pre>
+ggplot(df, aes(x = x, y = y)) + geom_hex(bins = 80) + coord_fixed() + facet_grid( . ~ transformation)</code></pre>
 <p><img src="figure/NigerianTCGArawcountsDeSeq2.Rmd/Variance%20transformation%20and%20batch%20effect%20assessment-1.png" width="672" style="display: block; margin: auto;" /></p>
 <details> <summary><em>Expand here to see past versions of Variance transformation and batch effect assessment-1.png:</em></summary>
 <table style="border-collapse:separate; border-spacing:5px;">
@@ -846,269 +884,47 @@ Sheila Rajagopal
 </tbody>
 </table>
 <p></details></p>
-<pre class="r"><code>#PCA1: Raw counts
-plotPCA(vsd, intgroup=c(&quot;condition1&quot;, &quot;batch&quot;)) + labs(subtitle = &quot;PCA 1-1:PCA demonstrating batch effect between\nthe Nigerian patients and TCGA patients,\nwhich would be expected given that these experiments\nwere done in different settings at different times.\nThe TCGA patients also appear to have internal\nbatch effect that is not completely race-consistent.\nNo clear effect from internal batches of Nigerian samples&quot;) </code></pre>
-<p><img src="figure/NigerianTCGArawcountsDeSeq2.Rmd/Variance%20transformation%20and%20batch%20effect%20assessment-2.png" width="672" style="display: block; margin: auto;" /></p>
-<details> <summary><em>Expand here to see past versions of Variance transformation and batch effect assessment-2.png:</em></summary>
-<table style="border-collapse:separate; border-spacing:5px;">
-<thead>
-<tr>
-<th style="text-align:left;">
-Version
-</th>
-<th style="text-align:left;">
-Author
-</th>
-<th style="text-align:left;">
-Date
-</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:left;">
-<a href="https://github.com/parajago/TCGA-Nigerian-RNAseq/blob/bb42865c36f25e0657a0881f01403860a27236b9/docs/figure/NigerianTCGArawcountsDeSeq2.Rmd/Variance transformation and batch effect assessment-2.png" target="_blank">bb42865</a>
-</td>
-<td style="text-align:left;">
-Sheila Rajagopal
-</td>
-<td style="text-align:left;">
-2019-01-30
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-<a href="https://github.com/parajago/TCGA-Nigerian-RNAseq/blob/45f3be0ed3e9bfa9a545b381c78eb70f96eb3482/docs/figure/NigerianTCGArawcountsDeSeq2.Rmd/Variance transformation and batch effect assessment-2.png" target="_blank">45f3be0</a>
-</td>
-<td style="text-align:left;">
-Sheila Rajagopal
-</td>
-<td style="text-align:left;">
-2019-01-23
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-<a href="https://github.com/parajago/TCGA-Nigerian-RNAseq/blob/3ce51dded4a551b7bcf18fbaac17daf9745fceee/docs/figure/NigerianTCGArawcountsDeSeq2.Rmd/Variance transformation and batch effect assessment-2.png" target="_blank">3ce51dd</a>
-</td>
-<td style="text-align:left;">
-Sheila Rajagopal
-</td>
-<td style="text-align:left;">
-2019-01-23
-</td>
-</tr>
-</tbody>
-</table>
-<p></details></p>
-<pre class="r"><code>plotPCA(vsd, intgroup=c(&quot;condition2&quot;)) + labs(subtitle = &quot;PCA 1-3:PCA demonstrating association\nwith breast cancer subtype and gene expression.\nThis is noted in both groups and not likely due to batch effect.&quot;) </code></pre>
-<p><img src="figure/NigerianTCGArawcountsDeSeq2.Rmd/Variance%20transformation%20and%20batch%20effect%20assessment-3.png" width="672" style="display: block; margin: auto;" /></p>
-<details> <summary><em>Expand here to see past versions of Variance transformation and batch effect assessment-3.png:</em></summary>
-<table style="border-collapse:separate; border-spacing:5px;">
-<thead>
-<tr>
-<th style="text-align:left;">
-Version
-</th>
-<th style="text-align:left;">
-Author
-</th>
-<th style="text-align:left;">
-Date
-</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:left;">
-<a href="https://github.com/parajago/TCGA-Nigerian-RNAseq/blob/bb42865c36f25e0657a0881f01403860a27236b9/docs/figure/NigerianTCGArawcountsDeSeq2.Rmd/Variance transformation and batch effect assessment-3.png" target="_blank">bb42865</a>
-</td>
-<td style="text-align:left;">
-Sheila Rajagopal
-</td>
-<td style="text-align:left;">
-2019-01-30
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-<a href="https://github.com/parajago/TCGA-Nigerian-RNAseq/blob/45f3be0ed3e9bfa9a545b381c78eb70f96eb3482/docs/figure/NigerianTCGArawcountsDeSeq2.Rmd/Variance transformation and batch effect assessment-3.png" target="_blank">45f3be0</a>
-</td>
-<td style="text-align:left;">
-Sheila Rajagopal
-</td>
-<td style="text-align:left;">
-2019-01-23
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-<a href="https://github.com/parajago/TCGA-Nigerian-RNAseq/blob/3ce51dded4a551b7bcf18fbaac17daf9745fceee/docs/figure/NigerianTCGArawcountsDeSeq2.Rmd/Variance transformation and batch effect assessment-3.png" target="_blank">3ce51dd</a>
-</td>
-<td style="text-align:left;">
-Sheila Rajagopal
-</td>
-<td style="text-align:left;">
-2019-01-23
-</td>
-</tr>
-</tbody>
-</table>
-<p></details></p>
-<pre class="r"><code>plotPCA(vsd, intgroup=c(&quot;condition1&quot;, &quot;condition2&quot;)) + labs(subtitle = &quot;PCA 1-3: Integrated PCA demonstrating combined effect of\n breast cancer subtype and race.\n There is likely some contributor of batch effect to this presentation.&quot;) </code></pre>
-<p><img src="figure/NigerianTCGArawcountsDeSeq2.Rmd/Variance%20transformation%20and%20batch%20effect%20assessment-4.png" width="672" style="display: block; margin: auto;" /></p>
-<details> <summary><em>Expand here to see past versions of Variance transformation and batch effect assessment-4.png:</em></summary>
-<table style="border-collapse:separate; border-spacing:5px;">
-<thead>
-<tr>
-<th style="text-align:left;">
-Version
-</th>
-<th style="text-align:left;">
-Author
-</th>
-<th style="text-align:left;">
-Date
-</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:left;">
-<a href="https://github.com/parajago/TCGA-Nigerian-RNAseq/blob/bb42865c36f25e0657a0881f01403860a27236b9/docs/figure/NigerianTCGArawcountsDeSeq2.Rmd/Variance transformation and batch effect assessment-4.png" target="_blank">bb42865</a>
-</td>
-<td style="text-align:left;">
-Sheila Rajagopal
-</td>
-<td style="text-align:left;">
-2019-01-30
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-<a href="https://github.com/parajago/TCGA-Nigerian-RNAseq/blob/45f3be0ed3e9bfa9a545b381c78eb70f96eb3482/docs/figure/NigerianTCGArawcountsDeSeq2.Rmd/Variance transformation and batch effect assessment-4.png" target="_blank">45f3be0</a>
-</td>
-<td style="text-align:left;">
-Sheila Rajagopal
-</td>
-<td style="text-align:left;">
-2019-01-23
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-<a href="https://github.com/parajago/TCGA-Nigerian-RNAseq/blob/3ce51dded4a551b7bcf18fbaac17daf9745fceee/docs/figure/NigerianTCGArawcountsDeSeq2.Rmd/Variance transformation and batch effect assessment-4.png" target="_blank">3ce51dd</a>
-</td>
-<td style="text-align:left;">
-Sheila Rajagopal
-</td>
-<td style="text-align:left;">
-2019-01-23
-</td>
-</tr>
-</tbody>
-</table>
-<p></details></p>
+<p>Figure 1: Graphical representation of the variance-stabilizing transformation relative to the standard transformation of log2(x+1).This reduces variance purely due to low read counts</p>
+<pre class="r"><code>#PCAs at this point of the analysis are all of the HTSeq-input raw counts
+plotPCA(vsd, intgroup=c(&quot;condition1&quot;, &quot;batch&quot;)) </code></pre>
+<p><img src="figure/NigerianTCGArawcountsDeSeq2.Rmd/Batch%20effect%20assessment-PCAs-1-1.png" width="672" style="display: block; margin: auto;" /> PCA 1-1:PCA demonstrating batch effect between the Nigerian patients and TCGA patients, which would be expected given that these experiments were done in different settings at different times. The TCGA patients also appear to have internal batch effect that is not completely race-consistent. No clear effect from internal batches of Nigerian samples</p>
+<pre class="r"><code>plotPCA(vsd, intgroup=c(&quot;condition2&quot;))</code></pre>
+<p><img src="figure/NigerianTCGArawcountsDeSeq2.Rmd/Batch%20effect%20assessment-PCAs-2-1.png" width="672" style="display: block; margin: auto;" /> PCA 1-2:PCA demonstrating association with breast cancer subtype and gene expression. This is noted in both groups and not likely due to batch effect given known biology.</p>
+<pre class="r"><code>plotPCA(vsd, intgroup=c(&quot;condition1&quot;, &quot;condition2&quot;))</code></pre>
+<p><img src="figure/NigerianTCGArawcountsDeSeq2.Rmd/Batch%20effect%20assessment-PCAs-3-1.png" width="672" style="display: block; margin: auto;" /> PCA 1-3: Integrated PCA demonstrating combined effect of breast cancer subtype and race. There is likely some contributor of batch effect to this presentation (which would be expected, again, from the different assays in which the Nigerian and TCGA analyses were performed)</p>
 <pre class="r"><code>#PCA2: Removing the batch effect created by the separate batch processing of the TCGA and Nigerian samples (although this may overcorrect for the actual difference between these two populations).  
 mat &lt;- assay(vsd) 
 mat &lt;- limma::removeBatchEffect(mat, vsd$condition1, vsd$batch)</code></pre>
 <pre><code>Coefficients not estimable: batch24 </code></pre>
 <pre class="r"><code>assay(vsd) &lt;- mat
-plotPCA(vsd, intgroup=c(&quot;condition1&quot;, &quot;condition2&quot;)) + labs(subtitle=&quot;PCA2-1: We have accounted for batch effect using the limma removeBatchEffect method.\nThis largely accounts for the batch effect noticed in PCA1-Nigerian vs TCGA. \nThere remain some outliers, primarily from the Nigerian patients.&quot;)</code></pre>
-<p><img src="figure/NigerianTCGArawcountsDeSeq2.Rmd/Variance%20transformation%20and%20batch%20effect%20assessment-5.png" width="672" style="display: block; margin: auto;" /></p>
-<details> <summary><em>Expand here to see past versions of Variance transformation and batch effect assessment-5.png:</em></summary>
-<table style="border-collapse:separate; border-spacing:5px;">
-<thead>
-<tr>
-<th style="text-align:left;">
-Version
-</th>
-<th style="text-align:left;">
-Author
-</th>
-<th style="text-align:left;">
-Date
-</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:left;">
-<a href="https://github.com/parajago/TCGA-Nigerian-RNAseq/blob/bb42865c36f25e0657a0881f01403860a27236b9/docs/figure/NigerianTCGArawcountsDeSeq2.Rmd/Variance transformation and batch effect assessment-5.png" target="_blank">bb42865</a>
-</td>
-<td style="text-align:left;">
-Sheila Rajagopal
-</td>
-<td style="text-align:left;">
-2019-01-30
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-<a href="https://github.com/parajago/TCGA-Nigerian-RNAseq/blob/45f3be0ed3e9bfa9a545b381c78eb70f96eb3482/docs/figure/NigerianTCGArawcountsDeSeq2.Rmd/Variance transformation and batch effect assessment-5.png" target="_blank">45f3be0</a>
-</td>
-<td style="text-align:left;">
-Sheila Rajagopal
-</td>
-<td style="text-align:left;">
-2019-01-23
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-<a href="https://github.com/parajago/TCGA-Nigerian-RNAseq/blob/3ce51dded4a551b7bcf18fbaac17daf9745fceee/docs/figure/NigerianTCGArawcountsDeSeq2.Rmd/Variance transformation and batch effect assessment-5.png" target="_blank">3ce51dd</a>
-</td>
-<td style="text-align:left;">
-Sheila Rajagopal
-</td>
-<td style="text-align:left;">
-2019-01-23
-</td>
-</tr>
-</tbody>
-</table>
-<p></details></p>
-<pre class="r"><code>topVarGenes &lt;- head(order(rowVars(assay(vsd)), decreasing = TRUE), 500)
+plotPCA(vsd, intgroup=c(&quot;condition1&quot;, &quot;condition2&quot;))</code></pre>
+<p><img src="figure/NigerianTCGArawcountsDeSeq2.Rmd/Batch%20effect%20assessment-PCAs-4-1.png" width="672" style="display: block; margin: auto;" /> PCA 2-1: We have accounted for batch effect in this PCA only using the limma removeBatchEffect method.This largely accounts for the batch effect noticed in PCA1-Nigerian vs TCGA. There remain some outliers, primarily from the Nigerian patients.</p>
+<pre class="r"><code>#Heatmap to assess clusters pre-analysis
+topVarGenes &lt;- head(order(rowVars(assay(vsd)), decreasing = TRUE), 2000)
 hm  &lt;- assay(vsd)[ topVarGenes, ]
 hm  &lt;- hm - rowMeans(hm)
 anno &lt;- as.data.frame(colData(vsd)[, c(&quot;condition1&quot;, &quot;condition2&quot;)])
 rownames(anno) &lt;- colnames(vsd)
 pheatmap(hm, annotation_col = anno, cluster_rows=FALSE, show_rownames=FALSE, show_colnames = FALSE,
-         cluster_cols=FALSE, main=&quot;Heat map: \nRelative VST-transformed counts across samples&quot;)</code></pre>
-<p><img src="figure/NigerianTCGArawcountsDeSeq2.Rmd/Variance%20transformation%20and%20batch%20effect%20assessment-6.png" width="672" style="display: block; margin: auto;" /></p>
-<details> <summary><em>Expand here to see past versions of Variance transformation and batch effect assessment-6.png:</em></summary>
-<table style="border-collapse:separate; border-spacing:5px;">
-<thead>
-<tr>
-<th style="text-align:left;">
-Version
-</th>
-<th style="text-align:left;">
-Author
-</th>
-<th style="text-align:left;">
-Date
-</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:left;">
-<a href="https://github.com/parajago/TCGA-Nigerian-RNAseq/blob/bb42865c36f25e0657a0881f01403860a27236b9/docs/figure/NigerianTCGArawcountsDeSeq2.Rmd/Variance transformation and batch effect assessment-6.png" target="_blank">bb42865</a>
-</td>
-<td style="text-align:left;">
-Sheila Rajagopal
-</td>
-<td style="text-align:left;">
-2019-01-30
-</td>
-</tr>
-</tbody>
-</table>
-<p></details></p>
+cluster_cols=FALSE, main=&quot;Heat map: \nRelative VST-transformed counts across samples&quot;)</code></pre>
+<p><img src="figure/NigerianTCGArawcountsDeSeq2.Rmd/Heatmap%20to%20assess%20clusters%20pre-analysis-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>## Perform the hierarchical clustering with A distance based on Pearson-correlation coefficient and average linkage clustering as agglomeration criteria
+heatmap.2(as.matrix(hm), 
+          scale=&quot;row&quot;, 
+          hclust=function(x) hclust(x,method=&quot;average&quot;), 
+          trace=&quot;none&quot;, 
+          density=&quot;none&quot;, 
+          labRow=&quot;&quot;,
+          cexCol=0.7,
+          main=&quot;Hierarchical clustering heat map \nwith VST-transformed counts&quot;)</code></pre>
+<p><img src="figure/NigerianTCGArawcountsDeSeq2.Rmd/Heatmap%20to%20assess%20clusters%20pre-analysis-2.png" width="672" style="display: block; margin: auto;" /> These heatmaps are only using the top 2000 genes. The heirarchical clustering heat map appears to show more groupings that are consistent with the PCA results.</p>
+<pre class="r"><code>boxplot(log2(counts(dds)), las=2, ylab=&quot;log2(Raw Counts)&quot;, xlab=&quot;Samples&quot;, main=&quot;Boxplot of raw counts before\n batch correction/transformation&quot;)</code></pre>
+<p><img src="figure/NigerianTCGArawcountsDeSeq2.Rmd/:%20Boxplots%20of%20counts%20before%20and%20after%20DESeq2%20normalization-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>boxplot(log2(counts(dds, normalized=TRUE)), las=2, ylab=&quot;log2(Raw Counts)&quot;, xlab=&quot;Samples&quot;, main=&quot;Boxplot of batch corrected/transformed counts&quot;)</code></pre>
+<p><img src="figure/NigerianTCGArawcountsDeSeq2.Rmd/:%20Boxplots%20of%20counts%20before%20and%20after%20DESeq2%20normalization-2.png" width="672" style="display: block; margin: auto;" /> These boxplots demonstrate the effect of the DESeq2 normalization process. The normalized DESeq2 values are incorporated into the batch corrected model (as below).</p>
 </div>
-<div id="using-sva-to-additionally-account-for-batch-effect-related-to-the-nigeriantcga-samples" class="section level1">
-<h1>Using sva to additionally account for batch effect related to the Nigerian/TCGA samples</h1>
+<div id="using-sva-to-account-for-batch-effect-related-to-the-nigeriantcga-samples" class="section level1">
+<h1>Using sva to account for batch effect related to the Nigerian/TCGA samples</h1>
 <pre class="r"><code>dat  &lt;- counts(dds, normalized = TRUE)
 idx  &lt;- rowMeans(dat) &gt; 1
 dat  &lt;- dat[idx, ]
@@ -1132,6 +948,1073 @@ ddsHTSeqMFbe &lt;- DESeqDataSetFromHTSeqCount(sampleTable=sampleTablebe,
                                        design=~sampleCondition + be1 + be2)
 
 ddsHTSeqMFbe &lt;- ddsHTSeqMFbe[rowSums(counts(ddsHTSeqMFbe)) &gt; 1, ]</code></pre>
+</div>
+<div id="differential-expression-analysis" class="section level1">
+<h1>Differential expression analysis</h1>
+<p>This is the actual differential expression analysis with false discovery threshold of 0.05. I am performing this for both the standard and batch-effect-corrected versions of the DESeq2 model to allow comparison.</p>
+<pre class="r"><code>ddsMF &lt;- DESeq(ddsHTSeqMF) #This will refer to a version that does not include batch correction outside of what is accomplished through DESeq2 alone. 
+ddsMFbe &lt;-DESeq(ddsHTSeqMFbe) #This will refer to a version that batch-corrects using sva for 2 variables and overtly acknowledges that the TCGA-Nigerian platform is part of this batch effect issue. 
+
+resultsNames(ddsMF)</code></pre>
+<pre><code> [1] &quot;Intercept&quot;                                             
+ [2] &quot;sampleCondition_Nigerian.Her2_vs_Nigerian.Basal&quot;       
+ [3] &quot;sampleCondition_Nigerian.LumA_vs_Nigerian.Basal&quot;       
+ [4] &quot;sampleCondition_Nigerian.LumB_vs_Nigerian.Basal&quot;       
+ [5] &quot;sampleCondition_Nigerian.Normal_vs_Nigerian.Basal&quot;     
+ [6] &quot;sampleCondition_TCGA_black.Basal_vs_Nigerian.Basal&quot;    
+ [7] &quot;sampleCondition_TCGA_black.LumA_vs_Nigerian.Basal&quot;     
+ [8] &quot;sampleCondition_TCGA_black.LumB_vs_Nigerian.Basal&quot;     
+ [9] &quot;sampleCondition_TCGA_other.PAM_other_vs_Nigerian.Basal&quot;
+[10] &quot;sampleCondition_TCGA_white.Basal_vs_Nigerian.Basal&quot;    
+[11] &quot;sampleCondition_TCGA_white.Her2_vs_Nigerian.Basal&quot;     
+[12] &quot;sampleCondition_TCGA_white.LumA_vs_Nigerian.Basal&quot;     
+[13] &quot;sampleCondition_TCGA_white.LumB_vs_Nigerian.Basal&quot;     </code></pre>
+<pre class="r"><code>resultsNames(ddsMFbe)</code></pre>
+<pre><code> [1] &quot;Intercept&quot;                                             
+ [2] &quot;sampleCondition_Nigerian.Her2_vs_Nigerian.Basal&quot;       
+ [3] &quot;sampleCondition_Nigerian.LumA_vs_Nigerian.Basal&quot;       
+ [4] &quot;sampleCondition_Nigerian.LumB_vs_Nigerian.Basal&quot;       
+ [5] &quot;sampleCondition_Nigerian.Normal_vs_Nigerian.Basal&quot;     
+ [6] &quot;sampleCondition_TCGA_black.Basal_vs_Nigerian.Basal&quot;    
+ [7] &quot;sampleCondition_TCGA_black.LumA_vs_Nigerian.Basal&quot;     
+ [8] &quot;sampleCondition_TCGA_black.LumB_vs_Nigerian.Basal&quot;     
+ [9] &quot;sampleCondition_TCGA_other.PAM_other_vs_Nigerian.Basal&quot;
+[10] &quot;sampleCondition_TCGA_white.Basal_vs_Nigerian.Basal&quot;    
+[11] &quot;sampleCondition_TCGA_white.Her2_vs_Nigerian.Basal&quot;     
+[12] &quot;sampleCondition_TCGA_white.LumA_vs_Nigerian.Basal&quot;     
+[13] &quot;sampleCondition_TCGA_white.LumB_vs_Nigerian.Basal&quot;     
+[14] &quot;be1&quot;                                                   
+[15] &quot;be2&quot;                                                   </code></pre>
+<pre class="r"><code>#MAPlot: log2 fold changes attributable to the condition over the mean of normalized counts for all the samples in the DESeqDataSet. Points will be colored red if the adjusted p value is less than 0.1. Points which fall out of the window are plotted as open triangles pointing either up or down.
+cat(&quot;MA Plot 1: Original differential expression&quot;)</code></pre>
+<pre><code>MA Plot 1: Original differential expression</code></pre>
+<pre class="r"><code>res &lt;- lfcShrink(ddsMF, coef=&quot;sampleCondition_TCGA_white.Basal_vs_Nigerian.Basal&quot;, type=&quot;apeglm&quot;)
+DESeq2::plotMA(res, ylim=c(-10,10), xlim=c(0.1,200))</code></pre>
+<p><img src="figure/NigerianTCGArawcountsDeSeq2.Rmd/Differential%20expression%20analysis%20and%20visualization-1.png" width="672" style="display: block; margin: auto;" /></p>
+<details> <summary><em>Expand here to see past versions of Differential expression analysis and visualization-1.png:</em></summary>
+<table style="border-collapse:separate; border-spacing:5px;">
+<thead>
+<tr>
+<th style="text-align:left;">
+Version
+</th>
+<th style="text-align:left;">
+Author
+</th>
+<th style="text-align:left;">
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+<a href="https://github.com/parajago/TCGA-Nigerian-RNAseq/blob/3ce51dded4a551b7bcf18fbaac17daf9745fceee/docs/figure/NigerianTCGArawcountsDeSeq2.Rmd/Differential expression analysis and visualization-1.png" target="_blank">3ce51dd</a>
+</td>
+<td style="text-align:left;">
+Sheila Rajagopal
+</td>
+<td style="text-align:left;">
+2019-01-23
+</td>
+</tr>
+</tbody>
+</table>
+<p></details></p>
+<pre class="r"><code>cat(&quot;MA Plot 2: Batch-corrected differential expression&quot;)</code></pre>
+<pre><code>MA Plot 2: Batch-corrected differential expression</code></pre>
+<pre class="r"><code>res2 &lt;- lfcShrink(ddsMFbe, coef=&quot;sampleCondition_TCGA_white.Basal_vs_Nigerian.Basal&quot;, type=&quot;apeglm&quot;)
+DESeq2::plotMA(res2, ylim=c(-10,10), xlim=c(0.1,200))</code></pre>
+<p><img src="figure/NigerianTCGArawcountsDeSeq2.Rmd/Differential%20expression%20analysis%20and%20visualization-2.png" width="672" style="display: block; margin: auto;" /></p>
+<details> <summary><em>Expand here to see past versions of Differential expression analysis and visualization-2.png:</em></summary>
+<table style="border-collapse:separate; border-spacing:5px;">
+<thead>
+<tr>
+<th style="text-align:left;">
+Version
+</th>
+<th style="text-align:left;">
+Author
+</th>
+<th style="text-align:left;">
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+<a href="https://github.com/parajago/TCGA-Nigerian-RNAseq/blob/3ce51dded4a551b7bcf18fbaac17daf9745fceee/docs/figure/NigerianTCGArawcountsDeSeq2.Rmd/Differential expression analysis and visualization-2.png" target="_blank">3ce51dd</a>
+</td>
+<td style="text-align:left;">
+Sheila Rajagopal
+</td>
+<td style="text-align:left;">
+2019-01-23
+</td>
+</tr>
+</tbody>
+</table>
+<p></details></p>
+<p>This is just an MA-plot demonstration of the efficacy of the batch effect correction (using TCGA-white basal breast cancer patients vs Nigerian basal breast cancer patients as an example). The second MA plot with batch-corrected differential expression looks like it is more appropriately assessing significantly differentially expressed genes between these two populations.</p>
+<p>This is a comparison of 32 Nigerian basal cases and 17 TCGA white basal cases.</p>
+<pre class="r"><code>resBasal&lt;- results(ddsMFbe, contrast=c(&quot;sampleCondition&quot;, &quot;Nigerian.Basal&quot;, &quot;TCGA_white.Basal&quot;), alpha=0.05)
+resBasal &lt;- subset(resBasal, padj &lt; 0.05) #Selecting only the lowest threshold of significant findings
+resBasal$temp &lt;- row.names(resBasal)
+resBasal$temp &lt;- gsub(&quot;[.].+&quot;, &quot;&quot;, resBasal$temp)
+
+resBasal$symbol &lt;- mapIds(EnsDb.Hsapiens.v75,
+                     keys=resBasal$temp,
+                     column=&quot;SYMBOL&quot;,
+                     keytype=&quot;GENEID&quot;,           
+                     multiVals=&quot;first&quot;)
+
+resBasal$biotype &lt;- mapIds(EnsDb.Hsapiens.v75,
+                     keys=resBasal$temp,
+                     column=&quot;GENEBIOTYPE&quot;,
+                     keytype=&quot;GENEID&quot;,           
+                     multiVals=&quot;first&quot;)
+
+resBasal$chr &lt;- mapIds(EnsDb.Hsapiens.v75,
+                     keys=resBasal$temp,
+                     column=&quot;SEQNAME&quot;,
+                     keytype=&quot;GENEID&quot;,           
+                     multiVals=&quot;first&quot;)
+
+resBasal$locstart &lt;- mapIds(EnsDb.Hsapiens.v75,
+                     keys=resBasal$temp,
+                     column=&quot;GENESEQSTART&quot;,
+                     keytype=&quot;GENEID&quot;,
+                     multiVals=&quot;first&quot;)
+
+resBasal$locend &lt;- mapIds(EnsDb.Hsapiens.v75,
+                     keys=resBasal$temp,
+                     column=&quot;GENESEQEND&quot;,
+                     keytype=&quot;GENEID&quot;,
+                     multiVals=&quot;first&quot;)
+
+with(resBasal, plot(log2FoldChange, -log10(padj), pch=20, main=&quot;Volcano plot of differential gene expression between basal \nbreast cancers in Nigerian and \nTCGA white breast cancer patients&quot;, xlim=c(-50,50), ylim=c(0,70)))
+with(subset(resBasal, resBasal$biotype==&quot;protein_coding&quot; &amp; padj&lt;0.01 &amp; abs(log2FoldChange)&gt;25), points(log2FoldChange, -log10(pvalue), pch=20, col=&quot;blue&quot;))
+with(subset(resBasal, padj&lt;0.01 &amp; abs(log2FoldChange)&gt;25), textxy(log2FoldChange, -log10(padj), labs=symbol, cex=.5))</code></pre>
+<p><img src="figure/NigerianTCGArawcountsDeSeq2.Rmd/DE:%20Basal%20breast%20-%20Nigerian%20and%20TCGA%20white-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>resBasalhead &lt;- head(resBasal[ order(resBasal$log2FoldChange, resBasal$padj), ],100)
+resBasaltail &lt;- tail(resBasal[ order(resBasal$log2FoldChange, resBasal$padj), ],100)
+write.table(resBasalhead,&quot;Nigerian-TCGAwhite-BasalDiffExpGenes100-Head&quot;,sep=&quot;\t&quot;,row.names=TRUE)
+write.table(resBasaltail,&quot;Nigerian-TCGAwhite-BasalDiffExpGenes100-Tail&quot;,sep=&quot;\t&quot;,row.names=TRUE)
+
+head(resBasalhead)</code></pre>
+<pre><code>log2 fold change (MLE): sampleCondition Nigerian.Basal vs TCGA_white.Basal 
+Wald test p-value: sampleCondition Nigerian.Basal vs TCGA_white.Basal 
+DataFrame with 6 rows and 12 columns
+                           baseMean    log2FoldChange            lfcSE
+                          &lt;numeric&gt;         &lt;numeric&gt;        &lt;numeric&gt;
+ENSG00000230617.1  2.84196058022575 -29.3408150007174 5.93161243762255
+ENSG00000259361.1 0.811401726213036 -28.8997862817775 5.19509213630147
+ENSG00000230950.1  1.22047374942426  -27.523650614254 3.64833357667873
+ENSG00000216713.1  1.05812809586578 -27.3624258984575 2.08757595645103
+ENSG00000226313.1  1.16412992939372 -26.9429760313173  5.9318766198655
+ENSG00000250739.1  2.05777591495937 -24.0182885734859 5.74916038652669
+                               stat               pvalue
+                          &lt;numeric&gt;            &lt;numeric&gt;
+ENSG00000230617.1 -4.94651586044577 7.55535743495079e-07
+ENSG00000259361.1 -5.56290158548604 2.65325537777004e-08
+ENSG00000230950.1 -7.54417051943761 4.55175249735559e-14
+ENSG00000216713.1 -13.1072720079488  2.9916707209046e-39
+ENSG00000226313.1 -4.54206615509953 5.57055531016196e-06
+ENSG00000250739.1 -4.17770369213796 2.94466919679893e-05
+                                  padj            temp        symbol
+                             &lt;numeric&gt;     &lt;character&gt;   &lt;character&gt;
+ENSG00000230617.1 5.53602218229905e-06 ENSG00000230617    AC079987.2
+ENSG00000259361.1 2.57443402138414e-07 ENSG00000259361     LINC00927
+ENSG00000230950.1 1.05055405272629e-12 ENSG00000230950      MTND2P21
+ENSG00000216713.1 5.33109648006883e-37 ENSG00000216713      MTND4P13
+ENSG00000226313.1 3.42357045103704e-05 ENSG00000226313 RP11-585K14.2
+ENSG00000250739.1  0.00015465681052308 ENSG00000250739 RP11-462G22.1
+                      biotype         chr  locstart    locend
+                  &lt;character&gt; &lt;character&gt; &lt;integer&gt; &lt;integer&gt;
+ENSG00000230617.1  pseudogene           7  83054196  83054318
+ENSG00000259361.1     lincRNA          15  80555410  80634147
+ENSG00000230950.1  pseudogene           2 117782653 117783694
+ENSG00000216713.1  pseudogene           6 153990014 153991036
+ENSG00000226313.1  pseudogene           X   5087553   5088686
+ENSG00000250739.1     lincRNA           4 190580759 190582640</code></pre>
+<pre class="r"><code>tail(resBasaltail)</code></pre>
+<pre><code>log2 fold change (MLE): sampleCondition Nigerian.Basal vs TCGA_white.Basal 
+Wald test p-value: sampleCondition Nigerian.Basal vs TCGA_white.Basal 
+DataFrame with 6 rows and 12 columns
+                          baseMean   log2FoldChange            lfcSE
+                         &lt;numeric&gt;        &lt;numeric&gt;        &lt;numeric&gt;
+ENSG00000249623.1 2.92032822558045 29.9783496821036 2.64864099209198
+ENSG00000201179.1 3.54164432786419 29.9818845154691 3.23070214445682
+ENSG00000163286.3 3.35887700800795 29.9867473154939 2.00075606797425
+ENSG00000253168.1 18.7877335489444 29.9893531026431 2.54258403884082
+ENSG00000268257.2 7.72168742110791 29.9898700457195 1.49860266914579
+ENSG00000227948.3 24.6937104582477 29.9937303770279  1.8128332888666
+                              stat               pvalue
+                         &lt;numeric&gt;            &lt;numeric&gt;
+ENSG00000249623.1 11.3183892311603 1.06409100374882e-29
+ENSG00000201179.1 9.28029981560248 1.69002334473305e-20
+ENSG00000163286.3 14.9877077948115 8.83501043058866e-51
+ENSG00000253168.1 11.7948325972798 4.15025085502657e-32
+ENSG00000268257.2 20.0118888503073 4.33892262686785e-89
+ENSG00000227948.3 16.5452226419453 1.73322791897628e-61
+                                  padj            temp        symbol
+                             &lt;numeric&gt;     &lt;character&gt;   &lt;character&gt;
+ENSG00000249623.1 1.04635615368634e-27 ENSG00000249623 RP11-610J23.1
+ENSG00000201179.1 7.91043593558048e-19 ENSG00000201179    RNU6-1322P
+ENSG00000163286.3 3.07082218976054e-48 ENSG00000163286        ALPPL2
+ENSG00000253168.1 4.77687069723632e-30 ENSG00000253168  RP11-326L2.1
+ENSG00000268257.2 4.23105218933878e-86 ENSG00000268257          AIRN
+ENSG00000227948.3 9.65793112629559e-59 ENSG00000227948    AC003989.4
+                         biotype         chr  locstart    locend
+                     &lt;character&gt; &lt;character&gt; &lt;integer&gt; &lt;integer&gt;
+ENSG00000249623.1      antisense           4 169569047 169569738
+ENSG00000201179.1          snRNA           7 104973237 104973343
+ENSG00000163286.3 protein_coding           2 233271553 233275424
+ENSG00000253168.1      antisense           8  17561497  17563696
+ENSG00000268257.2      antisense           6 160424323 160428696
+ENSG00000227948.3     pseudogene           7 111051375 111051939</code></pre>
+<p>This is a comparison of 32 Nigerian basal cases and 25 TCGA black basal cases.</p>
+<pre class="r"><code>resBasalblack&lt;- results(ddsMFbe, contrast=c(&quot;sampleCondition&quot;, &quot;Nigerian.Basal&quot;, &quot;TCGA_black.Basal&quot;), alpha=0.05)
+resBasalblack &lt;- subset(resBasalblack, padj &lt; 0.05) #Selecting only the lowest threshold of significant findings
+resBasalblack$temp &lt;- row.names(resBasalblack)
+resBasalblack$temp &lt;- gsub(&quot;[.].+&quot;, &quot;&quot;, resBasalblack$temp)
+
+resBasalblack$symbol &lt;- mapIds(EnsDb.Hsapiens.v75,
+                     keys=resBasalblack$temp,
+                     column=&quot;SYMBOL&quot;,
+                     keytype=&quot;GENEID&quot;,           
+                     multiVals=&quot;first&quot;)
+
+resBasalblack$biotype &lt;- mapIds(EnsDb.Hsapiens.v75,
+                     keys=resBasalblack$temp,
+                     column=&quot;GENEBIOTYPE&quot;,
+                     keytype=&quot;GENEID&quot;,           
+                     multiVals=&quot;first&quot;)
+
+resBasalblack$chr &lt;- mapIds(EnsDb.Hsapiens.v75,
+                     keys=resBasalblack$temp,
+                     column=&quot;SEQNAME&quot;,
+                     keytype=&quot;GENEID&quot;,           
+                     multiVals=&quot;first&quot;)
+
+resBasalblack$locstart &lt;- mapIds(EnsDb.Hsapiens.v75,
+                     keys=resBasalblack$temp,
+                     column=&quot;GENESEQSTART&quot;,
+                     keytype=&quot;GENEID&quot;,
+                     multiVals=&quot;first&quot;)
+
+resBasalblack$locend &lt;- mapIds(EnsDb.Hsapiens.v75,
+                     keys=resBasalblack$temp,
+                     column=&quot;GENESEQEND&quot;,
+                     keytype=&quot;GENEID&quot;,
+                     multiVals=&quot;first&quot;)
+
+with(resBasalblack, plot(log2FoldChange, -log10(padj), pch=20, main=&quot;Volcano plot of differential gene expression between basal \nbreast cancers in Nigerian and \nTCGA black breast cancer patients&quot;, xlim=c(-50,50), ylim=c(0,70)))
+with(subset(resBasalblack, resBasalblack$biotype==&quot;protein_coding&quot; &amp; padj&lt;0.01 &amp; abs(log2FoldChange)&gt;25), points(log2FoldChange, -log10(pvalue), pch=20, col=&quot;blue&quot;))
+with(subset(resBasalblack, padj&lt;0.01 &amp; abs(log2FoldChange)&gt;25), textxy(log2FoldChange, -log10(padj), labs=symbol, cex=.5))</code></pre>
+<p><img src="figure/NigerianTCGArawcountsDeSeq2.Rmd/DE:%20Basal%20breast%20-%20Nigerian%20and%20TCGA%20black-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>resBasalblackhead &lt;- head(resBasalblack[ order(resBasalblack$log2FoldChange, resBasalblack$padj), ],100)
+resBasalblacktail &lt;- tail(resBasalblack[ order(resBasalblack$log2FoldChange, resBasalblack$padj), ],100)
+write.table(resBasalblackhead,&quot;Nigerian-TCGAblack-BasalDiffExpGenes100-Head&quot;,sep=&quot;\t&quot;,row.names=TRUE)
+write.table(resBasalblacktail,&quot;Nigerian-TCGAblack-BasalDiffExpGenes100-Tail&quot;,sep=&quot;\t&quot;,row.names=TRUE)
+
+head(resBasalblackhead)</code></pre>
+<pre><code>log2 fold change (MLE): sampleCondition Nigerian.Basal vs TCGA_black.Basal 
+Wald test p-value: sampleCondition Nigerian.Basal vs TCGA_black.Basal 
+DataFrame with 6 rows and 12 columns
+                           baseMean    log2FoldChange            lfcSE
+                          &lt;numeric&gt;         &lt;numeric&gt;        &lt;numeric&gt;
+ENSG00000259361.1 0.811401726213036 -29.9339993814776 4.62721845017773
+ENSG00000253920.1  5.27633995672815 -29.7229961883909 2.49023569959448
+ENSG00000231504.1 0.727937296488775 -29.0297490540206   5.283646547209
+ENSG00000230950.1  1.22047374942426 -28.9963236950207 3.24884733748317
+ENSG00000226389.2  1.46456487020634 -28.9113482641881 5.28351230092717
+ENSG00000230096.1  2.53607497655145 -28.6065148958149 5.26925455467876
+                               stat               pvalue
+                          &lt;numeric&gt;            &lt;numeric&gt;
+ENSG00000259361.1 -6.46911307598366 9.85798088922862e-11
+ENSG00000253920.1  -11.935816434256 7.69996557437128e-33
+ENSG00000231504.1 -5.49426400775334 3.92343186001437e-08
+ENSG00000230950.1 -8.92511118034978  4.4525175076492e-19
+ENSG00000226389.2 -5.47199412389267 4.44999592299521e-08
+ENSG00000230096.1 -5.42894912344178 5.66868392097008e-08
+                                  padj            temp        symbol
+                             &lt;numeric&gt;     &lt;character&gt;   &lt;character&gt;
+ENSG00000259361.1 1.48017287902639e-09 ENSG00000259361     LINC00927
+ENSG00000253920.1 8.26627802716525e-31 ENSG00000253920      IGLV3-31
+ENSG00000231504.1 3.87977677312125e-07 ENSG00000231504        NMD3P2
+ENSG00000230950.1 1.74059718380874e-17 ENSG00000230950      MTND2P21
+ENSG00000226389.2 4.35145144503473e-07 ENSG00000226389 RP11-507K13.4
+ENSG00000230096.1 5.43713521982663e-07 ENSG00000230096  RP11-34C15.2
+                          biotype         chr  locstart    locend
+                      &lt;character&gt; &lt;character&gt; &lt;integer&gt; &lt;integer&gt;
+ENSG00000259361.1         lincRNA          15  80555410  80634147
+ENSG00000253920.1 IG_V_pseudogene          22  22946915  22947635
+ENSG00000231504.1      pseudogene           7  56569977  56570737
+ENSG00000230950.1      pseudogene           2 117782653 117783694
+ENSG00000226389.2      pseudogene          10  50979887  50981345
+ENSG00000230096.1         lincRNA          10   4457497   4468371</code></pre>
+<pre class="r"><code>tail(resBasalblacktail)</code></pre>
+<pre><code>log2 fold change (MLE): sampleCondition Nigerian.Basal vs TCGA_black.Basal 
+Wald test p-value: sampleCondition Nigerian.Basal vs TCGA_black.Basal 
+DataFrame with 6 rows and 12 columns
+                           baseMean log2FoldChange            lfcSE
+                          &lt;numeric&gt;      &lt;numeric&gt;        &lt;numeric&gt;
+ENSG00000203972.5  12.2397767065709             30 2.31699664463604
+ENSG00000235122.3  1.96514365842528             30 2.50894346034379
+ENSG00000260019.1  2.36854898291414             30 2.62758839390097
+ENSG00000265751.1 0.555021662937481             30 3.23770581619657
+ENSG00000258933.1  1.86962843209245             30 3.74195197170682
+ENSG00000248789.1 0.571662549313708             30 5.27734758148672
+                              stat               pvalue
+                         &lt;numeric&gt;            &lt;numeric&gt;
+ENSG00000203972.5 12.9477960485836 2.41796628540355e-38
+ENSG00000235122.3 11.9572244150489 5.95182126792739e-33
+ENSG00000260019.1 11.4173133317359  3.4266364340632e-30
+ENSG00000265751.1 9.26582021440165 1.93583673324029e-20
+ENSG00000258933.1 8.01720605364052 1.08177565244404e-15
+ENSG00000248789.1  5.6846738890654 1.31062508693116e-08
+                                  padj            temp        symbol
+                             &lt;numeric&gt;     &lt;character&gt;   &lt;character&gt;
+ENSG00000203972.5 3.50754985326825e-36 ENSG00000203972       GLYATL3
+ENSG00000235122.3 6.48877905622954e-31 ENSG00000235122  RP3-417L20.4
+ENSG00000260019.1 3.05309827456316e-28 ENSG00000260019  RP11-218F4.1
+ENSG00000265751.1 8.44193149321746e-19 ENSG00000265751 RP11-296E23.1
+ENSG00000258933.1 3.09248650480848e-14 ENSG00000258933  RP11-991C1.1
+ENSG00000248789.1 1.41133416186253e-07 ENSG00000248789  CTD-2203A3.1
+                         biotype         chr  locstart    locend
+                     &lt;character&gt; &lt;character&gt; &lt;integer&gt; &lt;integer&gt;
+ENSG00000203972.5 protein_coding           6  49467671  49494760
+ENSG00000235122.3      antisense           6  49785143  49788155
+ENSG00000260019.1        lincRNA          17  26256574  26301249
+ENSG00000265751.1      antisense          18  18960247  19030978
+ENSG00000258933.1        lincRNA          14  95426614  95429313
+ENSG00000248789.1 protein_coding           5  51303865  51376821</code></pre>
+<p>This is a comparison of 26 Nigerian Her2 cases and 5 TCGA white Her2 cases. There are no TCGA black Her2 cases available for this analysis.</p>
+<pre class="r"><code>resHer2&lt;- results(ddsMFbe, contrast=c(&quot;sampleCondition&quot;, &quot;Nigerian.Her2&quot;, &quot;TCGA_white.Her2&quot;), alpha=0.05)
+resHer2 &lt;- subset(resHer2, padj &lt; 0.05) #Selecting only the lowest threshold of significant findings
+resHer2$temp &lt;- row.names(resHer2)
+resHer2$temp &lt;- gsub(&quot;[.].+&quot;, &quot;&quot;, resHer2$temp)
+
+resHer2$symbol &lt;- mapIds(EnsDb.Hsapiens.v75,
+                     keys=resHer2$temp,
+                     column=&quot;SYMBOL&quot;,
+                     keytype=&quot;GENEID&quot;,           
+                     multiVals=&quot;first&quot;)
+
+resHer2$biotype &lt;- mapIds(EnsDb.Hsapiens.v75,
+                     keys=resHer2$temp,
+                     column=&quot;GENEBIOTYPE&quot;,
+                     keytype=&quot;GENEID&quot;,           
+                     multiVals=&quot;first&quot;)
+
+resHer2$chr &lt;- mapIds(EnsDb.Hsapiens.v75,
+                     keys=resHer2$temp,
+                     column=&quot;SEQNAME&quot;,
+                     keytype=&quot;GENEID&quot;,           
+                     multiVals=&quot;first&quot;)
+
+resHer2$locstart &lt;- mapIds(EnsDb.Hsapiens.v75,
+                     keys=resHer2$temp,
+                     column=&quot;GENESEQSTART&quot;,
+                     keytype=&quot;GENEID&quot;,
+                     multiVals=&quot;first&quot;)
+
+resHer2$locend &lt;- mapIds(EnsDb.Hsapiens.v75,
+                     keys=resHer2$temp,
+                     column=&quot;GENESEQEND&quot;,
+                     keytype=&quot;GENEID&quot;,
+                     multiVals=&quot;first&quot;)
+
+with(resHer2, plot(log2FoldChange, -log10(padj), pch=20, main=&quot;Volcano plot of differential gene expression between Her2 \nbreast cancers in Nigerian and \nTCGA white breast cancer patients&quot;, xlim=c(-50,50), ylim=c(0,70)))
+with(subset(resHer2, resHer2$biotype==&quot;protein_coding&quot; &amp; padj&lt;0.01 &amp; abs(log2FoldChange)&gt;25), points(log2FoldChange, -log10(pvalue), pch=20, col=&quot;blue&quot;))
+with(subset(resHer2, padj&lt;0.01 &amp; abs(log2FoldChange)&gt;25), textxy(log2FoldChange, -log10(padj), labs=symbol, cex=.5))</code></pre>
+<p><img src="figure/NigerianTCGArawcountsDeSeq2.Rmd/DE%20Her2%20breast%20-%20Nigerian%20and%20TCGA%20white-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>resHer2head &lt;- head(resHer2[ order(resHer2$log2FoldChange, resHer2$padj), ],100)
+resHer2tail &lt;- tail(resHer2[ order(resHer2$log2FoldChange, resHer2$padj), ],100)
+write.table(resHer2head,&quot;Nigerian-TCGAwhite-Her2DiffExpGenes100-Head&quot;,sep=&quot;\t&quot;,row.names=TRUE)
+write.table(resHer2tail,&quot;Nigerian-TCGAwhite-Her2DiffExpGenes100-Tail&quot;,sep=&quot;\t&quot;,row.names=TRUE)
+
+head(resHer2head)</code></pre>
+<pre><code>log2 fold change (MLE): sampleCondition Nigerian.Her2 vs TCGA_white.Her2 
+Wald test p-value: sampleCondition Nigerian.Her2 vs TCGA_white.Her2 
+DataFrame with 6 rows and 12 columns
+                          baseMean    log2FoldChange            lfcSE
+                         &lt;numeric&gt;         &lt;numeric&gt;        &lt;numeric&gt;
+ENSG00000230617.1 2.84196058022575 -48.5476923686133 9.71034284144522
+ENSG00000237569.1 2.00089123687214 -31.4554721291093 4.62078543173738
+ENSG00000235550.1 1.85262613904921 -26.9929584768556 9.69138567089642
+ENSG00000233615.1 2.71960322098004 -26.1412053261324 3.69899287852476
+ENSG00000272592.1 1.70100749155397  -23.901526549006 3.13194955855558
+ENSG00000227514.3 2.46285050377348 -22.3398368683044 3.64208956982524
+                               stat               pvalue
+                          &lt;numeric&gt;            &lt;numeric&gt;
+ENSG00000230617.1 -4.99958581909223 5.74535961482897e-07
+ENSG00000237569.1 -6.80738644842946 9.93876991507583e-12
+ENSG00000235550.1 -2.78525273820403  0.00534860154598107
+ENSG00000233615.1 -7.06711426180364 1.58188697862725e-12
+ENSG00000272592.1 -7.63151707974159 2.32007095927222e-14
+ENSG00000227514.3 -6.13379666809687 8.58061769713712e-10
+                                  padj            temp       symbol
+                             &lt;numeric&gt;     &lt;character&gt;  &lt;character&gt;
+ENSG00000230617.1 1.25980370856555e-05 ENSG00000230617   AC079987.2
+ENSG00000237569.1 6.09497085117211e-10 ENSG00000237569        TUBAP
+ENSG00000235550.1   0.0279119959352158 ENSG00000235550    ANKRD26P2
+ENSG00000233615.1 1.10227930529195e-10 ENSG00000233615   HNRNPA1P42
+ENSG00000272592.1 2.12769547061281e-12 ENSG00000272592  RP11-63A2.2
+ENSG00000227514.3 3.57588946350858e-08 ENSG00000227514 RP11-709P2.1
+                      biotype         chr  locstart    locend
+                  &lt;character&gt; &lt;character&gt; &lt;integer&gt; &lt;integer&gt;
+ENSG00000230617.1  pseudogene           7  83054196  83054318
+ENSG00000237569.1  pseudogene          21  24779978  24781448
+ENSG00000235550.1  pseudogene          13  39496864  39510336
+ENSG00000233615.1  pseudogene           1 241082953 241083909
+ENSG00000272592.1   antisense          10  63444650  63445146
+ENSG00000227514.3  pseudogene           8 114388898 114389456</code></pre>
+<pre class="r"><code>tail(resHer2tail)</code></pre>
+<pre><code>log2 fold change (MLE): sampleCondition Nigerian.Her2 vs TCGA_white.Her2 
+Wald test p-value: sampleCondition Nigerian.Her2 vs TCGA_white.Her2 
+DataFrame with 6 rows and 12 columns
+                           baseMean   log2FoldChange            lfcSE
+                          &lt;numeric&gt;        &lt;numeric&gt;        &lt;numeric&gt;
+ENSG00000171560.10 30.1516104193998 31.7888660759103 3.26046007710884
+ENSG00000203972.5  12.2397767065709 31.8104601870932 4.23989129154141
+ENSG00000081248.6  8.22514717361024 32.2793807460115 2.34437728284847
+ENSG00000203933.2  1.46781544351778 33.2047492441598 8.50486089531779
+ENSG00000230223.2  7.78837371614859 34.4240592882386 6.23298609251508
+ENSG00000250739.1  2.05777591495937  36.319284880511 9.40269623771279
+                               stat               pvalue
+                          &lt;numeric&gt;            &lt;numeric&gt;
+ENSG00000171560.10 9.74980994219029  1.8481394602745e-22
+ENSG00000203972.5  7.50265938434674 6.25359029871953e-14
+ENSG00000081248.6  13.7688506803782 3.92406184871243e-43
+ENSG00000203933.2  3.90420838775154 9.45343009873791e-05
+ENSG00000230223.2  5.52288402016122 3.33479878383754e-08
+ENSG00000250739.1   3.8626457733304 0.000112165592797355
+                                   padj            temp        symbol
+                              &lt;numeric&gt;     &lt;character&gt;   &lt;character&gt;
+ENSG00000171560.10 4.42556061868271e-20 ENSG00000171560           FGA
+ENSG00000203972.5  5.36032177536834e-12 ENSG00000203972       GLYATL3
+ENSG00000081248.6  5.38167245906143e-40 ENSG00000081248       CACNA1S
+ENSG00000203933.2   0.00104174175653441 ENSG00000203933       CXorf66
+ENSG00000230223.2   1.0031659910862e-06 ENSG00000230223       ATXN8OS
+ENSG00000250739.1   0.00120105420194817 ENSG00000250739 RP11-462G22.1
+                          biotype         chr  locstart    locend
+                      &lt;character&gt; &lt;character&gt; &lt;integer&gt; &lt;integer&gt;
+ENSG00000171560.10 protein_coding           4 155504278 155511918
+ENSG00000203972.5  protein_coding           6  49467671  49494760
+ENSG00000081248.6  protein_coding           1 201008642 201081694
+ENSG00000203933.2  protein_coding           X 139037884 139047679
+ENSG00000230223.2       antisense          13  70681345  70713561
+ENSG00000250739.1         lincRNA           4 190580759 190582640</code></pre>
+<p>This is a comparison of 16 Nigerian luminal A cases and 8 TCGA white luminal A cases.</p>
+<pre class="r"><code>resLumA&lt;- results(ddsMFbe, contrast=c(&quot;sampleCondition&quot;, &quot;Nigerian.LumA&quot;, &quot;TCGA_white.LumA&quot;), alpha=0.05)
+resLumA &lt;- subset(resLumA, padj &lt; 0.05) #Selecting only the lowest threshold of significant findings
+resLumA$temp &lt;- row.names(resLumA)
+resLumA$temp &lt;- gsub(&quot;[.].+&quot;, &quot;&quot;, resLumA$temp)
+
+resLumA$symbol &lt;- mapIds(EnsDb.Hsapiens.v75,
+                     keys=resLumA$temp,
+                     column=&quot;SYMBOL&quot;,
+                     keytype=&quot;GENEID&quot;,           
+                     multiVals=&quot;first&quot;)
+
+resLumA$biotype &lt;- mapIds(EnsDb.Hsapiens.v75,
+                     keys=resLumA$temp,
+                     column=&quot;GENEBIOTYPE&quot;,
+                     keytype=&quot;GENEID&quot;,           
+                     multiVals=&quot;first&quot;)
+
+resLumA$chr &lt;- mapIds(EnsDb.Hsapiens.v75,
+                     keys=resLumA$temp,
+                     column=&quot;SEQNAME&quot;,
+                     keytype=&quot;GENEID&quot;,           
+                     multiVals=&quot;first&quot;)
+
+resLumA$locstart &lt;- mapIds(EnsDb.Hsapiens.v75,
+                     keys=resLumA$temp,
+                     column=&quot;GENESEQSTART&quot;,
+                     keytype=&quot;GENEID&quot;,
+                     multiVals=&quot;first&quot;)
+
+resLumA$locend &lt;- mapIds(EnsDb.Hsapiens.v75,
+                     keys=resLumA$temp,
+                     column=&quot;GENESEQEND&quot;,
+                     keytype=&quot;GENEID&quot;,
+                     multiVals=&quot;first&quot;)
+
+with(resLumA, plot(log2FoldChange, -log10(padj), pch=20, main=&quot;Volcano plot of differential gene expression between Luminal A \nbreast cancers in Nigerian and \nTCGA white breast cancer patients&quot;, xlim=c(-50,50), ylim=c(0,70)))
+with(subset(resLumA, resLumA$biotype==&quot;protein_coding&quot; &amp; padj&lt;0.01 &amp; abs(log2FoldChange)&gt;25), points(log2FoldChange, -log10(pvalue), pch=20, col=&quot;blue&quot;))
+with(subset(resLumA, padj&lt;0.01 &amp; abs(log2FoldChange)&gt;25), textxy(log2FoldChange, -log10(padj), labs=symbol, cex=.5))</code></pre>
+<p><img src="figure/NigerianTCGArawcountsDeSeq2.Rmd/DE%20LuminalA%20breast%20-%20Nigerian%20and%20TCGA%20white-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>resLumAhead &lt;- head(resLumA[ order(resLumA$log2FoldChange, resLumA$padj), ],100)
+resLumAtail &lt;- tail(resLumA[ order(resLumA$log2FoldChange, resLumA$padj), ],100)
+write.table(resLumAhead,&quot;Nigerian-TCGAwhite-LumADiffExpGenes100-Head&quot;,sep=&quot;\t&quot;,row.names=TRUE)
+write.table(resLumAtail,&quot;Nigerian-TCGAwhite-LumADiffExpGenes100-Tail&quot;,sep=&quot;\t&quot;,row.names=TRUE)
+
+head(resLumAhead)</code></pre>
+<pre><code>log2 fold change (MLE): sampleCondition Nigerian.LumA vs TCGA_white.LumA 
+Wald test p-value: sampleCondition Nigerian.LumA vs TCGA_white.LumA 
+DataFrame with 6 rows and 12 columns
+                          baseMean    log2FoldChange            lfcSE
+                         &lt;numeric&gt;         &lt;numeric&gt;        &lt;numeric&gt;
+ENSG00000231777.1 12.6818502644973 -46.3595011807516 4.00777742082455
+ENSG00000253920.1 5.27633995672815 -45.7536165599682 4.08832346831767
+ENSG00000230617.1 2.84196058022575 -40.4683094027903 8.56739657800521
+ENSG00000214051.3 1.58079877152123 -33.0527828027983 8.56566554789302
+ENSG00000081800.4 3.61494230545257 -26.3142743221192 3.89049286603071
+ENSG00000223721.3 1.80167979818416 -25.8583157150832 8.56686625251835
+                               stat               pvalue
+                          &lt;numeric&gt;            &lt;numeric&gt;
+ENSG00000231777.1 -11.5673841915137 6.02929284985629e-31
+ENSG00000253920.1  -11.191290736786 4.49837123476238e-29
+ENSG00000230617.1 -4.72352470605636 2.31791785264143e-06
+ENSG00000214051.3 -3.85875243645587 0.000113967310551227
+ENSG00000081800.4 -6.76373797054829 1.34476203066463e-11
+ENSG00000223721.3 -3.01841011087126  0.00254104772580397
+                                  padj            temp      symbol
+                             &lt;numeric&gt;     &lt;character&gt; &lt;character&gt;
+ENSG00000231777.1 2.25362347277477e-28 ENSG00000231777    MTND4P21
+ENSG00000253920.1 1.33889021612441e-26 ENSG00000253920    IGLV3-31
+ENSG00000230617.1 3.97383836656847e-05 ENSG00000230617  AC079987.2
+ENSG00000214051.3  0.00114412217291356 ENSG00000214051      ARF4P3
+ENSG00000081800.4 6.71232538442775e-10 ENSG00000081800     SLC13A1
+ENSG00000223721.3   0.0148512689356307 ENSG00000223721   UQCRFS1P2
+                          biotype         chr  locstart    locend
+                      &lt;character&gt; &lt;character&gt; &lt;integer&gt; &lt;integer&gt;
+ENSG00000231777.1      pseudogene           2 132129867 132131223
+ENSG00000253920.1 IG_V_pseudogene          22  22946915  22947635
+ENSG00000230617.1      pseudogene           7  83054196  83054318
+ENSG00000214051.3      pseudogene          13 101408805 101409313
+ENSG00000081800.4  protein_coding           7 122753585 122840040
+ENSG00000223721.3      pseudogene           7 138386352 138387807</code></pre>
+<pre class="r"><code>tail(resLumAtail)</code></pre>
+<pre><code>log2 fold change (MLE): sampleCondition Nigerian.LumA vs TCGA_white.LumA 
+Wald test p-value: sampleCondition Nigerian.LumA vs TCGA_white.LumA 
+DataFrame with 6 rows and 12 columns
+                          baseMean   log2FoldChange            lfcSE
+                         &lt;numeric&gt;        &lt;numeric&gt;        &lt;numeric&gt;
+ENSG00000235838.1  1.5425097133701 30.2428979741808 2.35638989600092
+ENSG00000236272.1 20.5914495571089 30.3316449088146 2.28427314573239
+ENSG00000235746.1 2.32408386204371 30.8910661202459  8.5659423246134
+ENSG00000264734.1 2.60329773056921 32.8697485763372 3.89631103307893
+ENSG00000244039.1 1.68948383848604 33.4783171019849 3.90303453667445
+ENSG00000226389.2 1.46456487020634 33.9228741004258 8.56322511170911
+                              stat               pvalue
+                         &lt;numeric&gt;            &lt;numeric&gt;
+ENSG00000235838.1 12.8344201549611 1.05187550286678e-37
+ENSG00000236272.1 13.2784667041601 3.08649565406676e-40
+ENSG00000235746.1 3.60626594828725 0.000310634779697651
+ENSG00000264734.1 8.43612029360064 3.28045160795166e-17
+ENSG00000244039.1 8.57750982918788 9.69490980052089e-18
+ENSG00000226389.2 3.96146004080176 7.44928500423948e-05
+                                  padj            temp        symbol
+                             &lt;numeric&gt;     &lt;character&gt;   &lt;character&gt;
+ENSG00000235838.1 6.50241116147165e-35 ENSG00000235838     HSP90AB7P
+ENSG00000236272.1 2.02480413877502e-37 ENSG00000236272      Z82214.3
+ENSG00000235746.1  0.00265792559230393 ENSG00000235746       CTBP2P2
+ENSG00000264734.1 3.42370509537683e-15 ENSG00000264734  RP11-260A9.6
+ENSG00000244039.1 1.06000978074063e-15 ENSG00000244039 RP11-379K17.2
+ENSG00000226389.2 0.000795803477770947 ENSG00000226389 RP11-507K13.4
+                      biotype         chr  locstart    locend
+                  &lt;character&gt; &lt;character&gt; &lt;integer&gt; &lt;integer&gt;
+ENSG00000235838.1  pseudogene          10   9763926   9766379
+ENSG00000236272.1   antisense          22  43608680  43609667
+ENSG00000235746.1  pseudogene          10  96406121  96407753
+ENSG00000264734.1     lincRNA          17  25316215  25326967
+ENSG00000244039.1  pseudogene           3 169649786 169651017
+ENSG00000226389.2  pseudogene          10  50979887  50981345</code></pre>
+<p>This is a comparison of 16 Nigerian luminal A cases and 4 TCGA black luminal A cases.</p>
+<pre class="r"><code>resLumAblack&lt;- results(ddsMFbe, contrast=c(&quot;sampleCondition&quot;, &quot;Nigerian.LumA&quot;, &quot;TCGA_black.LumA&quot;), alpha=0.05)
+resLumAblack &lt;- subset(resLumAblack, padj &lt; 0.05) #Selecting only the lowest threshold of significant findings
+resLumAblack$temp &lt;- row.names(resLumAblack)
+resLumAblack$temp &lt;- gsub(&quot;[.].+&quot;, &quot;&quot;, resLumAblack$temp)
+
+resLumAblack$symbol &lt;- mapIds(EnsDb.Hsapiens.v75,
+                     keys=resLumAblack$temp,
+                     column=&quot;SYMBOL&quot;,
+                     keytype=&quot;GENEID&quot;,           
+                     multiVals=&quot;first&quot;)
+
+resLumAblack$biotype &lt;- mapIds(EnsDb.Hsapiens.v75,
+                     keys=resLumAblack$temp,
+                     column=&quot;GENEBIOTYPE&quot;,
+                     keytype=&quot;GENEID&quot;,           
+                     multiVals=&quot;first&quot;)
+
+resLumAblack$chr &lt;- mapIds(EnsDb.Hsapiens.v75,
+                     keys=resLumAblack$temp,
+                     column=&quot;SEQNAME&quot;,
+                     keytype=&quot;GENEID&quot;,           
+                     multiVals=&quot;first&quot;)
+
+resLumAblack$locstart &lt;- mapIds(EnsDb.Hsapiens.v75,
+                     keys=resLumAblack$temp,
+                     column=&quot;GENESEQSTART&quot;,
+                     keytype=&quot;GENEID&quot;,
+                     multiVals=&quot;first&quot;)
+
+resLumAblack$locend &lt;- mapIds(EnsDb.Hsapiens.v75,
+                     keys=resLumAblack$temp,
+                     column=&quot;GENESEQEND&quot;,
+                     keytype=&quot;GENEID&quot;,
+                     multiVals=&quot;first&quot;)
+
+with(resLumAblack, plot(log2FoldChange, -log10(padj), pch=20, main=&quot;Volcano plot of differential gene expression between Luminal A \nbreast cancers in Nigerian and \nTCGA black breast cancer patients&quot;, xlim=c(-50,50), ylim=c(0,70)))
+with(subset(resLumAblack, resLumAblack$biotype==&quot;protein_coding&quot; &amp; padj&lt;0.01 &amp; abs(log2FoldChange)&gt;25), points(log2FoldChange, -log10(pvalue), pch=20, col=&quot;blue&quot;))
+with(subset(resLumAblack, padj&lt;0.01 &amp; abs(log2FoldChange)&gt;25), textxy(log2FoldChange, -log10(padj), labs=symbol, cex=.5))</code></pre>
+<p><img src="figure/NigerianTCGArawcountsDeSeq2.Rmd/DE%20LuminalA%20breast%20-%20Nigerian%20and%20TCGA%20black-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>resLumAblackhead &lt;- head(resLumAblack[ order(resLumAblack$log2FoldChange, resLumAblack$padj), ],100)
+resLumAblacktail &lt;- tail(resLumAblack[ order(resLumAblack$log2FoldChange, resLumAblack$padj), ],100)
+write.table(resLumAblackhead,&quot;Nigerian-TCGAblack-LumADiffExpGenes100-Head&quot;,sep=&quot;\t&quot;,row.names=TRUE)
+write.table(resLumAblacktail,&quot;Nigerian-TCGAblack-LumADiffExpGenes100-Tail&quot;,sep=&quot;\t&quot;,row.names=TRUE)
+
+head(resLumAblackhead)</code></pre>
+<pre><code>log2 fold change (MLE): sampleCondition Nigerian.LumA vs TCGA_black.LumA 
+Wald test p-value: sampleCondition Nigerian.LumA vs TCGA_black.LumA 
+DataFrame with 6 rows and 12 columns
+                          baseMean    log2FoldChange            lfcSE
+                         &lt;numeric&gt;         &lt;numeric&gt;        &lt;numeric&gt;
+ENSG00000216713.1 1.05812809586578 -53.4535426667444 3.87443199259592
+ENSG00000230950.1 1.22047374942426 -51.4991239647311 6.79097764762664
+ENSG00000256994.1 2.17192781076553 -44.3424211086971 6.69642648250783
+ENSG00000215457.5  2.3559174882587   -41.32954595085 5.53492131109173
+ENSG00000260217.1 1.46412830849738 -39.4168212768859  11.011674277046
+ENSG00000198678.5 1.10360854245806  -38.656838207825 11.0116582223782
+                               stat               pvalue
+                          &lt;numeric&gt;            &lt;numeric&gt;
+ENSG00000216713.1 -13.7964849477019 2.67585498264092e-43
+ENSG00000230950.1 -7.58346244634297 3.36452959635295e-14
+ENSG00000256994.1 -6.62180361787392 3.54842279223315e-11
+ENSG00000215457.5 -7.46705212737667 8.20112864310586e-14
+ENSG00000260217.1 -3.57954842153758 0.000344188470185091
+ENSG00000198678.5 -3.51053741654144 0.000447201866465119
+                                  padj            temp       symbol
+                             &lt;numeric&gt;     &lt;character&gt;  &lt;character&gt;
+ENSG00000216713.1 8.33742895491259e-40 ENSG00000216713     MTND4P13
+ENSG00000230950.1 5.11375673966659e-12 ENSG00000230950     MTND2P21
+ENSG00000256994.1 2.93267260902919e-09 ENSG00000256994 RP11-871F6.3
+ENSG00000215457.5  1.1356922944973e-11 ENSG00000215457       RPS8P3
+ENSG00000260217.1  0.00478973843413446 ENSG00000260217 RP11-809F4.3
+ENSG00000198678.5  0.00588674091901993 ENSG00000198678      OR5BS1P
+                      biotype         chr  locstart    locend
+                  &lt;character&gt; &lt;character&gt; &lt;integer&gt; &lt;integer&gt;
+ENSG00000216713.1  pseudogene           6 153990014 153991036
+ENSG00000230950.1  pseudogene           2 117782653 117783694
+ENSG00000256994.1     lincRNA          12  17662287  17742926
+ENSG00000215457.5  pseudogene          18  49371377  49371998
+ENSG00000260217.1     lincRNA           3 175656717 175658825
+ENSG00000198678.5  pseudogene          12  48953665  48956739</code></pre>
+<pre class="r"><code>tail(resLumAblacktail)</code></pre>
+<pre><code>log2 fold change (MLE): sampleCondition Nigerian.LumA vs TCGA_black.LumA 
+Wald test p-value: sampleCondition Nigerian.LumA vs TCGA_black.LumA 
+DataFrame with 6 rows and 12 columns
+                          baseMean   log2FoldChange            lfcSE
+                         &lt;numeric&gt;        &lt;numeric&gt;        &lt;numeric&gt;
+ENSG00000009709.7 49.2056948071621 29.6668262540458 2.61180513370457
+ENSG00000264734.1 2.60329773056921 30.2044106030023 5.03507332160602
+ENSG00000232111.1 10.5012638362261 30.4634757703166 3.97334944886344
+ENSG00000230223.2 7.78837371614859 31.7703779855297 7.08468184110187
+ENSG00000203933.2 1.46781544351778 32.6095667377862 9.67044693560393
+ENSG00000261711.2 2.03337591391377 35.3091867853023 11.0309500464759
+                              stat               pvalue
+                         &lt;numeric&gt;            &lt;numeric&gt;
+ENSG00000009709.7 11.3587441387584 6.71023143480322e-30
+ENSG00000264734.1 5.99880253449181 1.98777900639849e-09
+ENSG00000232111.1 7.66695106040333 1.76132943314369e-14
+ENSG00000230223.2 4.48437610863674 7.31275788438772e-06
+ENSG00000203933.2 3.37208476039786 0.000746014856674372
+ENSG00000261711.2 3.20091983342656  0.00136989639699819
+                                  padj            temp        symbol
+                             &lt;numeric&gt;     &lt;character&gt;   &lt;character&gt;
+ENSG00000009709.7 5.80770530682219e-27 ENSG00000009709          PAX7
+ENSG00000264734.1  1.1933568069627e-07 ENSG00000264734  RP11-260A9.6
+ENSG00000232111.1 2.79997461621894e-12 ENSG00000232111 RP11-126O22.1
+ENSG00000230223.2  0.00018706971277648 ENSG00000230223       ATXN8OS
+ENSG00000203933.2  0.00883478939728623 ENSG00000203933       CXorf66
+ENSG00000261711.2   0.0143040321506935 ENSG00000261711  RP11-80F22.9
+                         biotype         chr  locstart    locend
+                     &lt;character&gt; &lt;character&gt; &lt;integer&gt; &lt;integer&gt;
+ENSG00000009709.7 protein_coding           1  18957500  19075360
+ENSG00000264734.1        lincRNA          17  25316215  25326967
+ENSG00000232111.1     pseudogene           X   9370791   9382606
+ENSG00000230223.2      antisense          13  70681345  70713561
+ENSG00000203933.2 protein_coding           X 139037884 139047679
+ENSG00000261711.2     pseudogene          16  34711785  34714852</code></pre>
+<p>This is a comparison of 18 nigerian luminal B cases and 9 TCGA white luminal B cases.</p>
+<pre class="r"><code>resLumB&lt;- results(ddsMFbe, contrast=c(&quot;sampleCondition&quot;, &quot;Nigerian.LumB&quot;, &quot;TCGA_white.LumB&quot;), alpha=0.05)
+resLumB &lt;- subset(resLumB, padj &lt; 0.05) #Selecting only the lowest threshold of significant findings
+resLumB$temp &lt;- row.names(resLumB)
+resLumB$temp &lt;- gsub(&quot;[.].+&quot;, &quot;&quot;, resLumB$temp)
+
+resLumB$symbol &lt;- mapIds(EnsDb.Hsapiens.v75,
+                     keys=resLumB$temp,
+                     column=&quot;SYMBOL&quot;,
+                     keytype=&quot;GENEID&quot;,           
+                     multiVals=&quot;first&quot;)
+
+resLumB$biotype &lt;- mapIds(EnsDb.Hsapiens.v75,
+                     keys=resLumB$temp,
+                     column=&quot;GENEBIOTYPE&quot;,
+                     keytype=&quot;GENEID&quot;,           
+                     multiVals=&quot;first&quot;)
+
+resLumB$chr &lt;- mapIds(EnsDb.Hsapiens.v75,
+                     keys=resLumB$temp,
+                     column=&quot;SEQNAME&quot;,
+                     keytype=&quot;GENEID&quot;,           
+                     multiVals=&quot;first&quot;)
+
+resLumB$locstart &lt;- mapIds(EnsDb.Hsapiens.v75,
+                     keys=resLumB$temp,
+                     column=&quot;GENESEQSTART&quot;,
+                     keytype=&quot;GENEID&quot;,
+                     multiVals=&quot;first&quot;)
+
+resLumB$locend &lt;- mapIds(EnsDb.Hsapiens.v75,
+                     keys=resLumB$temp,
+                     column=&quot;GENESEQEND&quot;,
+                     keytype=&quot;GENEID&quot;,
+                     multiVals=&quot;first&quot;)
+
+with(resLumB, plot(log2FoldChange, -log10(padj), pch=20, main=&quot;Volcano plot of differential gene expression between Luminal B \nbreast cancers in Nigerian and \nTCGA white breast cancer patients&quot;, xlim=c(-50,50), ylim=c(0,70)))
+with(subset(resLumB, resLumB$biotype==&quot;protein_coding&quot; &amp; padj&lt;0.01 &amp; abs(log2FoldChange)&gt;25), points(log2FoldChange, -log10(pvalue), pch=20, col=&quot;blue&quot;))
+with(subset(resLumB, padj&lt;0.01 &amp; abs(log2FoldChange)&gt;25), textxy(log2FoldChange, -log10(padj), labs=symbol, cex=.5))</code></pre>
+<p><img src="figure/NigerianTCGArawcountsDeSeq2.Rmd/DE%20LuminalB%20breast%20-%20Nigerian%20and%20TCGA%20white-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>resLumBhead &lt;- head(resLumB[ order(resLumB$log2FoldChange, resLumB$padj), ],100)
+resLumBtail &lt;- tail(resLumB[ order(resLumB$log2FoldChange, resLumB$padj), ],100)
+write.table(resLumBhead,&quot;Nigerian-TCGAwhite-LumBDiffExpGenes100-Head&quot;,sep=&quot;\t&quot;,row.names=TRUE)
+write.table(resLumBtail,&quot;Nigerian-TCGAwhite-LumBDiffExpGenes100-Tail&quot;,sep=&quot;\t&quot;,row.names=TRUE)
+
+head(resLumBhead)</code></pre>
+<pre><code>log2 fold change (MLE): sampleCondition Nigerian.LumB vs TCGA_white.LumB 
+Wald test p-value: sampleCondition Nigerian.LumB vs TCGA_white.LumB 
+DataFrame with 6 rows and 12 columns
+                          baseMean    log2FoldChange            lfcSE
+                         &lt;numeric&gt;         &lt;numeric&gt;        &lt;numeric&gt;
+ENSG00000230950.1 1.22047374942426 -56.0147945995376  4.9518933107008
+ENSG00000244039.1 1.68948383848604 -54.6695800479739 3.66767141953163
+ENSG00000216713.1 1.05812809586578 -53.9414877108453 2.83722834938607
+ENSG00000226313.1 1.16412992939372  -52.181781643344 8.06144096971749
+ENSG00000253920.1 5.27633995672815 -47.7176080394783  3.8443203069746
+ENSG00000231777.1 12.6818502644973 -39.1569655500794 3.82650131782815
+                               stat               pvalue
+                          &lt;numeric&gt;            &lt;numeric&gt;
+ENSG00000230950.1 -11.3117935070395 1.14720239981872e-29
+ENSG00000244039.1 -14.9058009277601 3.02167388288004e-50
+ENSG00000216713.1 -19.0120360677057 1.35586335397959e-80
+ENSG00000226313.1 -6.47300921006094 9.60700944515875e-11
+ENSG00000253920.1 -12.4124953773769 2.23574395353702e-35
+ENSG00000231777.1 -10.2330986710085 1.40936260739755e-24
+                                  padj            temp        symbol
+                             &lt;numeric&gt;     &lt;character&gt;   &lt;character&gt;
+ENSG00000230950.1 3.13548529592558e-27 ENSG00000230950      MTND2P21
+ENSG00000244039.1  2.5445760768318e-47 ENSG00000244039 RP11-379K17.2
+ENSG00000216713.1  4.2245990383296e-77 ENSG00000216713      MTND4P13
+ENSG00000226313.1 3.75577415674098e-09 ENSG00000226313 RP11-585K14.2
+ENSG00000253920.1 9.67518195893146e-33 ENSG00000253920      IGLV3-31
+ENSG00000231777.1  2.6138642929341e-22 ENSG00000231777      MTND4P21
+                          biotype         chr  locstart    locend
+                      &lt;character&gt; &lt;character&gt; &lt;integer&gt; &lt;integer&gt;
+ENSG00000230950.1      pseudogene           2 117782653 117783694
+ENSG00000244039.1      pseudogene           3 169649786 169651017
+ENSG00000216713.1      pseudogene           6 153990014 153991036
+ENSG00000226313.1      pseudogene           X   5087553   5088686
+ENSG00000253920.1 IG_V_pseudogene          22  22946915  22947635
+ENSG00000231777.1      pseudogene           2 132129867 132131223</code></pre>
+<pre class="r"><code>tail(resLumBtail)</code></pre>
+<pre><code>log2 fold change (MLE): sampleCondition Nigerian.LumB vs TCGA_white.LumB 
+Wald test p-value: sampleCondition Nigerian.LumB vs TCGA_white.LumB 
+DataFrame with 6 rows and 12 columns
+                          baseMean   log2FoldChange            lfcSE
+                         &lt;numeric&gt;        &lt;numeric&gt;        &lt;numeric&gt;
+ENSG00000226389.2 1.46456487020634 31.3861492810453 8.06014211796757
+ENSG00000111732.6 2.54501192302528  32.765170136005 1.59166201615886
+ENSG00000091482.5  9.4529745707773 32.7849502606895 1.64482664502282
+ENSG00000261711.2 2.03337591391377 33.0107149047691 8.06080070973216
+ENSG00000231421.3 2.73970661032437 35.5060310651823 3.06791067492138
+ENSG00000230223.2 7.78837371614859 39.5898518147244 5.17119751029652
+                              stat               pvalue
+                         &lt;numeric&gt;            &lt;numeric&gt;
+ENSG00000226389.2 3.89399452536695 9.86068758073708e-05
+ENSG00000111732.6 20.5855073522938 3.70142383123073e-94
+ENSG00000091482.5 19.9321614590179 2.14112337962345e-88
+ENSG00000261711.2 4.09521536302389 4.21776129470596e-05
+ENSG00000231421.3 11.5733588188946   5.623713110497e-31
+ENSG00000230223.2 7.65583827264302 1.92055298353458e-14
+                                  padj            temp        symbol
+                             &lt;numeric&gt;     &lt;character&gt;   &lt;character&gt;
+ENSG00000226389.2  0.00097971716722132 ENSG00000226389 RP11-507K13.4
+ENSG00000111732.6  1.6475566247641e-90 ENSG00000111732         AICDA
+ENSG00000091482.5 8.33914028278842e-85 ENSG00000091482          SMPX
+ENSG00000261711.2 0.000473916359251526 ENSG00000261711  RP11-80F22.9
+ENSG00000231421.3 1.75223653096865e-28 ENSG00000231421    AC006050.2
+ENSG00000230223.2 1.24150601371308e-12 ENSG00000230223       ATXN8OS
+                               biotype         chr  locstart    locend
+                           &lt;character&gt; &lt;character&gt; &lt;integer&gt; &lt;integer&gt;
+ENSG00000226389.2           pseudogene          10  50979887  50981345
+ENSG00000111732.6       protein_coding          12   8754762   8765467
+ENSG00000091482.5       protein_coding           X  21724090  21776281
+ENSG00000261711.2           pseudogene          16  34711785  34714852
+ENSG00000231421.3 processed_transcript          17  28900489  28904018
+ENSG00000230223.2            antisense          13  70681345  70713561</code></pre>
+<p>This is a comparison of 18 Nigerian luminal B cases and 4 TCGA black luminal B cases.</p>
+<pre class="r"><code>resLumBblack&lt;- results(ddsMFbe, contrast=c(&quot;sampleCondition&quot;, &quot;Nigerian.LumB&quot;, &quot;TCGA_black.LumB&quot;), alpha=0.05)
+resLumBblack &lt;- subset(resLumBblack, padj &lt; 0.05) #Selecting only the lowest threshold of significant findings
+resLumBblack$temp &lt;- row.names(resLumBblack)
+resLumBblack$temp &lt;- gsub(&quot;[.].+&quot;, &quot;&quot;, resLumBblack$temp)
+
+resLumBblack$symbol &lt;- mapIds(EnsDb.Hsapiens.v75,
+                     keys=resLumBblack$temp,
+                     column=&quot;SYMBOL&quot;,
+                     keytype=&quot;GENEID&quot;,           
+                     multiVals=&quot;first&quot;)
+
+resLumBblack$biotype &lt;- mapIds(EnsDb.Hsapiens.v75,
+                     keys=resLumBblack$temp,
+                     column=&quot;GENEBIOTYPE&quot;,
+                     keytype=&quot;GENEID&quot;,           
+                     multiVals=&quot;first&quot;)
+
+resLumBblack$chr &lt;- mapIds(EnsDb.Hsapiens.v75,
+                     keys=resLumBblack$temp,
+                     column=&quot;SEQNAME&quot;,
+                     keytype=&quot;GENEID&quot;,           
+                     multiVals=&quot;first&quot;)
+
+resLumBblack$locstart &lt;- mapIds(EnsDb.Hsapiens.v75,
+                     keys=resLumBblack$temp,
+                     column=&quot;GENESEQSTART&quot;,
+                     keytype=&quot;GENEID&quot;,
+                     multiVals=&quot;first&quot;)
+
+resLumBblack$locend &lt;- mapIds(EnsDb.Hsapiens.v75,
+                     keys=resLumBblack$temp,
+                     column=&quot;GENESEQEND&quot;,
+                     keytype=&quot;GENEID&quot;,
+                     multiVals=&quot;first&quot;)
+
+with(resLumBblack, plot(log2FoldChange, -log10(padj), pch=20, main=&quot;Volcano plot of differential gene expression between Luminal B \nbreast cancers in Nigerian and \nTCGA black breast cancer patients&quot;, xlim=c(-50,50), ylim=c(0,70)))
+with(subset(resLumBblack, resLumBblack$biotype==&quot;protein_coding&quot; &amp; padj&lt;0.01 &amp; abs(log2FoldChange)&gt;25), points(log2FoldChange, -log10(pvalue), pch=20, col=&quot;blue&quot;))
+with(subset(resLumBblack, padj&lt;0.01 &amp; abs(log2FoldChange)&gt;25), textxy(log2FoldChange, -log10(padj), labs=symbol, cex=.5))</code></pre>
+<p><img src="figure/NigerianTCGArawcountsDeSeq2.Rmd/DE%20LuminalB%20breast%20-%20Nigerian%20and%20TCGA%20black-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>resLumBblackhead &lt;- head(resLumBblack[ order(resLumBblack$log2FoldChange, resLumBblack$padj), ],100)
+resLumBblacktail &lt;- tail(resLumBblack[ order(resLumBblack$log2FoldChange, resLumBblack$padj), ],100)
+write.table(resLumBblackhead,&quot;Nigerian-TCGAblack-LumBDiffExpGenes100-Head&quot;,sep=&quot;\t&quot;,row.names=TRUE)
+write.table(resLumBblacktail,&quot;Nigerian-TCGAblack-LumBDiffExpGenes100-Tail&quot;,sep=&quot;\t&quot;,row.names=TRUE)
+
+head(resLumBblackhead)</code></pre>
+<pre><code>log2 fold change (MLE): sampleCondition Nigerian.LumB vs TCGA_black.LumB 
+Wald test p-value: sampleCondition Nigerian.LumB vs TCGA_black.LumB 
+DataFrame with 6 rows and 12 columns
+                          baseMean    log2FoldChange            lfcSE
+                         &lt;numeric&gt;         &lt;numeric&gt;        &lt;numeric&gt;
+ENSG00000216713.1 1.05812809586578 -55.4861025350659 3.83615243809359
+ENSG00000244039.1 1.68948383848604 -53.7663090410188 4.97686423001067
+ENSG00000231777.1 12.6818502644973 -38.7991404096429 5.18999815493286
+ENSG00000260003.1 1.13545603657327 -33.6511324231296 10.1994032677876
+ENSG00000237569.1 2.00089123687214 -29.0256131854124 5.19871447383417
+ENSG00000132446.5 6.94679531324786 -27.3715053489322 7.24205499200452
+                               stat               pvalue
+                          &lt;numeric&gt;            &lt;numeric&gt;
+ENSG00000216713.1 -14.4639983500344 2.04561210276735e-47
+ENSG00000244039.1 -10.8032501101408 3.32231108673466e-27
+ENSG00000231777.1 -7.47575225489552 7.67634546975135e-14
+ENSG00000260003.1 -3.29932365057166 0.000969181003915711
+ENSG00000237569.1 -5.58322895621642 2.36093602477053e-08
+ENSG00000132446.5 -3.77952188697149 0.000157129781836489
+                                  padj            temp        symbol
+                             &lt;numeric&gt;     &lt;character&gt;   &lt;character&gt;
+ENSG00000216713.1 7.08190909978058e-44 ENSG00000216713      MTND4P13
+ENSG00000244039.1 1.99070324693228e-24 ENSG00000244039 RP11-379K17.2
+ENSG00000231777.1 9.88345339448399e-12 ENSG00000231777      MTND4P21
+ENSG00000260003.1   0.0110533461639845 ENSG00000260003 RP11-279O17.2
+ENSG00000237569.1 1.18232514679395e-06 ENSG00000237569         TUBAP
+ENSG00000132446.5  0.00258696307879189 ENSG00000132446        FTHL17
+                         biotype         chr  locstart    locend
+                     &lt;character&gt; &lt;character&gt; &lt;integer&gt; &lt;integer&gt;
+ENSG00000216713.1     pseudogene           6 153990014 153991036
+ENSG00000244039.1     pseudogene           3 169649786 169651017
+ENSG00000231777.1     pseudogene           2 132129867 132131223
+ENSG00000260003.1        lincRNA          16   8326265   8345702
+ENSG00000237569.1     pseudogene          21  24779978  24781448
+ENSG00000132446.5 protein_coding           X  31089360  31090170</code></pre>
+<pre class="r"><code>tail(resLumBblacktail)</code></pre>
+<pre><code>log2 fold change (MLE): sampleCondition Nigerian.LumB vs TCGA_black.LumB 
+Wald test p-value: sampleCondition Nigerian.LumB vs TCGA_black.LumB 
+DataFrame with 6 rows and 12 columns
+                          baseMean   log2FoldChange            lfcSE
+                         &lt;numeric&gt;        &lt;numeric&gt;        &lt;numeric&gt;
+ENSG00000231131.2 9.58471137365807 28.1004404684513 2.16270115619066
+ENSG00000259041.1 2.98359397784985 30.4494728064058 10.9135468076201
+ENSG00000135902.5 9.51667333744386 30.5707208336853 3.09814171269839
+ENSG00000081248.6 8.22514717361024 30.7308631642822 2.63911125584208
+ENSG00000081051.3 45.1461520068687 35.3425708262877 2.15086517296123
+ENSG00000203933.2 1.46781544351778 40.3339581130024 9.55776587792804
+                              stat               pvalue
+                         &lt;numeric&gt;            &lt;numeric&gt;
+ENSG00000231131.2 12.9932147065325 1.33691218305581e-38
+ENSG00000259041.1 2.79006205252589  0.00526979405180285
+ENSG00000135902.5 9.86743786069719 5.76175053591352e-23
+ENSG00000081248.6 11.6443985058435 2.45044394456808e-31
+ENSG00000081051.3  16.431792783008 1.13260374732445e-60
+ENSG00000203933.2 4.22001947192978 2.44281218318888e-05
+                                  padj            temp       symbol
+                             &lt;numeric&gt;     &lt;character&gt;  &lt;character&gt;
+ENSG00000231131.2 1.98359570474538e-35 ENSG00000231131 RP11-346D6.6
+ENSG00000259041.1   0.0399669798969764 ENSG00000259041 RP11-167B3.1
+ENSG00000135902.5 2.36216609471044e-20 ENSG00000135902        CHRND
+ENSG00000081248.6  2.0092350638119e-28 ENSG00000081248      CACNA1S
+ENSG00000081051.3 1.76448337795676e-56 ENSG00000081051          AFP
+ENSG00000203933.2 0.000555976201634763 ENSG00000203933      CXorf66
+                         biotype         chr  locstart    locend
+                     &lt;character&gt; &lt;character&gt; &lt;integer&gt; &lt;integer&gt;
+ENSG00000231131.2        lincRNA          10  54210634  54230293
+ENSG00000259041.1        lincRNA          15  98825304  98829136
+ENSG00000135902.5 protein_coding           2 233390703 233401377
+ENSG00000081248.6 protein_coding           1 201008642 201081694
+ENSG00000081051.3 protein_coding           4  74296855  74321891
+ENSG00000203933.2 protein_coding           X 139037884 139047679</code></pre>
+</div>
+<div id="protein-coding-assessment" class="section level1">
+<h1>Protein-coding assessment</h1>
+<pre class="r"><code>proteincoding &lt;- (subset(resBasal, biotype==&quot;protein_coding&quot;))
+proteincoding$analysis &lt;- &quot;Nigerian-TCGAwhite.Basal&quot;
+
+proteincoding2 &lt;- (subset(resBasalblack, biotype==&quot;protein_coding&quot;))
+proteincoding2$analysis &lt;- &quot;Nigerian-TCGAblack.Basal&quot;
+
+proteincoding3 &lt;- (subset(resHer2, biotype==&quot;protein_coding&quot;))
+proteincoding3$analysis &lt;- &quot;Nigerian-TCGAwhite.Her2&quot;
+
+proteincoding4 &lt;- (subset(resLumA, biotype==&quot;protein_coding&quot;))
+proteincoding4$analysis &lt;- &quot;Nigerian-TCGAwhite.LuminalA&quot;
+
+proteincoding5 &lt;- (subset(resLumAblack, biotype==&quot;protein_coding&quot;))
+proteincoding5$analysis &lt;- &quot;Nigerian-TCGAblack.LuminalA&quot;
+
+proteincoding6 &lt;- (subset(resLumB, biotype==&quot;protein_coding&quot;))
+proteincoding6$analysis &lt;- &quot;Nigerian-TCGAwhite.LuminalB&quot;
+
+proteincoding7 &lt;- (subset(resLumBblack, biotype==&quot;protein_coding&quot;))
+proteincoding7$analysis &lt;- &quot;Nigerian-TCGAblack.LuminalB&quot;
+
+proteincoding=rbind(proteincoding, proteincoding2, proteincoding3, proteincoding4, proteincoding5, proteincoding6, proteincoding7)
+
+table(proteincoding$analysis)</code></pre>
+<pre><code>
+   Nigerian-TCGAblack.Basal Nigerian-TCGAblack.LuminalA 
+                       8340                        2490 
+Nigerian-TCGAblack.LuminalB    Nigerian-TCGAwhite.Basal 
+                       2640                        8694 
+    Nigerian-TCGAwhite.Her2 Nigerian-TCGAwhite.LuminalA 
+                       4266                        4546 
+Nigerian-TCGAwhite.LuminalB 
+                       4609 </code></pre>
+<pre class="r"><code>summary(proteincoding)</code></pre>
+<pre><code>
+out of 35585 with nonzero total read count
+adjusted p-value &lt; 0.05
+LFC &gt; 0 (up)       : 22664, 64%
+LFC &lt; 0 (down)     : 12921, 36%
+outliers [1]       : 0, 0%
+low counts [2]     : 0, 0%
+(mean count &lt; 1)
+[1] see &#39;cooksCutoff&#39; argument of ?results
+[2] see &#39;independentFiltering&#39; argument of ?results</code></pre>
+<p>This table demonstrates the initial assessment of differentially-expressed protein-coding genes across all analyses.</p>
+<pre class="r"><code>proteincodingsig &lt;- head(proteincoding[order(proteincoding$log2FoldChange, proteincoding$padj), ],100)
+proteincodingsig2 &lt;- tail(proteincoding[ order(proteincoding$log2FoldChange, proteincoding$padj), ],100)
+head(proteincodingsig)</code></pre>
+<pre><code>log2 fold change (MLE): sampleCondition Nigerian.Basal vs TCGA_white.Basal 
+Wald test p-value: sampleCondition Nigerian.Basal vs TCGA_white.Basal 
+DataFrame with 6 rows and 13 columns
+                          baseMean    log2FoldChange            lfcSE
+                         &lt;numeric&gt;         &lt;numeric&gt;        &lt;numeric&gt;
+ENSG00000196758.3 1.07266575682475 -33.0504026526818 5.44278386573842
+ENSG00000244057.2  3.8664791422837 -29.9124978232476 8.06142794499249
+ENSG00000172154.4 1.09978591470531 -27.9594191562178 8.05577288959801
+ENSG00000132446.5 6.94679531324786 -27.3715053489322 7.24205499200452
+ENSG00000187714.5 2.81206422058059 -26.6697077688643 2.43565294515868
+ENSG00000081800.4 3.61494230545257 -26.3142743221192 3.89049286603071
+                               stat               pvalue
+                          &lt;numeric&gt;            &lt;numeric&gt;
+ENSG00000196758.3   -6.072334207634 1.26064224389568e-09
+ENSG00000244057.2 -3.71057063678506 0.000206792583852525
+ENSG00000172154.4 -3.47073080874962 0.000519044053595334
+ENSG00000132446.5 -3.77952188697149 0.000157129781836489
+ENSG00000187714.5 -10.9497158952286 6.66563523371499e-28
+ENSG00000081800.4 -6.76373797054829 1.34476203066463e-11
+                                  padj            temp      symbol
+                             &lt;numeric&gt;     &lt;character&gt; &lt;character&gt;
+ENSG00000196758.3 4.08306559618518e-08 ENSG00000196758  AC079612.1
+ENSG00000244057.2  0.00180810692505404 ENSG00000244057       LCE3C
+ENSG00000172154.4  0.00389883669766717 ENSG00000172154       OR8I2
+ENSG00000132446.5  0.00258696307879189 ENSG00000132446      FTHL17
+ENSG00000187714.5 1.67490211783945e-25 ENSG00000187714     SLC18A3
+ENSG00000081800.4 6.71232538442775e-10 ENSG00000081800     SLC13A1
+                         biotype         chr  locstart    locend
+                     &lt;character&gt; &lt;character&gt; &lt;integer&gt; &lt;integer&gt;
+ENSG00000196758.3 protein_coding           2 240499995 240507788
+ENSG00000244057.2 protein_coding           1 152573138 152573562
+ENSG00000172154.4 protein_coding          11  55860753  55861762
+ENSG00000132446.5 protein_coding           X  31089360  31090170
+ENSG00000187714.5 protein_coding          10  50818347  50820765
+ENSG00000081800.4 protein_coding           7 122753585 122840040
+                                     analysis
+                                  &lt;character&gt;
+ENSG00000196758.3 Nigerian-TCGAwhite.LuminalB
+ENSG00000244057.2 Nigerian-TCGAwhite.LuminalB
+ENSG00000172154.4 Nigerian-TCGAwhite.LuminalB
+ENSG00000132446.5 Nigerian-TCGAblack.LuminalB
+ENSG00000187714.5 Nigerian-TCGAwhite.LuminalB
+ENSG00000081800.4 Nigerian-TCGAwhite.LuminalA</code></pre>
+<pre class="r"><code>tail(proteincodingsig2)</code></pre>
+<pre><code>log2 fold change (MLE): sampleCondition Nigerian.Basal vs TCGA_white.Basal 
+Wald test p-value: sampleCondition Nigerian.Basal vs TCGA_white.Basal 
+DataFrame with 6 rows and 13 columns
+                          baseMean   log2FoldChange            lfcSE
+                         &lt;numeric&gt;        &lt;numeric&gt;        &lt;numeric&gt;
+ENSG00000203933.2 1.46781544351778 32.6095667377862 9.67044693560393
+ENSG00000111732.6 2.54501192302528  32.765170136005 1.59166201615886
+ENSG00000091482.5  9.4529745707773 32.7849502606895 1.64482664502282
+ENSG00000203933.2 1.46781544351778 33.2047492441598 8.50486089531779
+ENSG00000081051.3 45.1461520068687 35.3425708262877 2.15086517296123
+ENSG00000203933.2 1.46781544351778 40.3339581130024 9.55776587792804
+                              stat               pvalue
+                         &lt;numeric&gt;            &lt;numeric&gt;
+ENSG00000203933.2 3.37208476039786 0.000746014856674372
+ENSG00000111732.6 20.5855073522938 3.70142383123073e-94
+ENSG00000091482.5 19.9321614590179 2.14112337962345e-88
+ENSG00000203933.2 3.90420838775154 9.45343009873791e-05
+ENSG00000081051.3  16.431792783008 1.13260374732445e-60
+ENSG00000203933.2 4.22001947192978 2.44281218318888e-05
+                                  padj            temp      symbol
+                             &lt;numeric&gt;     &lt;character&gt; &lt;character&gt;
+ENSG00000203933.2  0.00883478939728623 ENSG00000203933     CXorf66
+ENSG00000111732.6  1.6475566247641e-90 ENSG00000111732       AICDA
+ENSG00000091482.5 8.33914028278842e-85 ENSG00000091482        SMPX
+ENSG00000203933.2  0.00104174175653441 ENSG00000203933     CXorf66
+ENSG00000081051.3 1.76448337795676e-56 ENSG00000081051         AFP
+ENSG00000203933.2 0.000555976201634763 ENSG00000203933     CXorf66
+                         biotype         chr  locstart    locend
+                     &lt;character&gt; &lt;character&gt; &lt;integer&gt; &lt;integer&gt;
+ENSG00000203933.2 protein_coding           X 139037884 139047679
+ENSG00000111732.6 protein_coding          12   8754762   8765467
+ENSG00000091482.5 protein_coding           X  21724090  21776281
+ENSG00000203933.2 protein_coding           X 139037884 139047679
+ENSG00000081051.3 protein_coding           4  74296855  74321891
+ENSG00000203933.2 protein_coding           X 139037884 139047679
+                                     analysis
+                                  &lt;character&gt;
+ENSG00000203933.2 Nigerian-TCGAblack.LuminalA
+ENSG00000111732.6 Nigerian-TCGAwhite.LuminalB
+ENSG00000091482.5 Nigerian-TCGAwhite.LuminalB
+ENSG00000203933.2     Nigerian-TCGAwhite.Her2
+ENSG00000081051.3 Nigerian-TCGAblack.LuminalB
+ENSG00000203933.2 Nigerian-TCGAblack.LuminalB</code></pre>
+<p>These are the greatest log-fold change differentially expressed protein coding genes across all analyses.</p>
 <div id="session-information" class="section level2">
 <h2>Session information</h2>
 <pre class="r"><code>sessionInfo()</code></pre>
@@ -1151,21 +2034,22 @@ attached base packages:
 [8] methods   base     
 
 other attached packages:
- [1] limma_3.38.3                sva_3.30.1                 
- [3] mgcv_1.8-26                 nlme_3.1-137               
- [5] pheatmap_1.0.12             genefilter_1.64.0          
- [7] apeglm_1.4.2                EnsDb.Hsapiens.v75_2.99.0  
- [9] ensembldb_2.6.3             AnnotationFilter_1.6.0     
-[11] biomaRt_2.38.0              GenomicFeatures_1.34.1     
-[13] org.Hs.eg.db_3.7.0          AnnotationDbi_1.44.0       
-[15] hexbin_1.27.2               ggplot2_3.1.0              
-[17] dplyr_0.7.8                 stringi_1.2.4              
-[19] DESeq2_1.22.2               SummarizedExperiment_1.12.0
-[21] DelayedArray_0.8.0          BiocParallel_1.16.5        
-[23] matrixStats_0.54.0          Biobase_2.42.0             
-[25] GenomicRanges_1.34.0        GenomeInfoDb_1.18.1        
-[27] IRanges_2.16.0              S4Vectors_0.20.1           
-[29] BiocGenerics_0.28.0        
+ [1] gplots_3.0.1.1              calibrate_1.7.2            
+ [3] MASS_7.3-51.1               limma_3.38.3               
+ [5] sva_3.30.1                  mgcv_1.8-26                
+ [7] nlme_3.1-137                pheatmap_1.0.12            
+ [9] genefilter_1.64.0           apeglm_1.4.2               
+[11] EnsDb.Hsapiens.v75_2.99.0   ensembldb_2.6.3            
+[13] AnnotationFilter_1.6.0      GenomicFeatures_1.34.1     
+[15] org.Hs.eg.db_3.7.0          AnnotationDbi_1.44.0       
+[17] hexbin_1.27.2               ggplot2_3.1.0              
+[19] dplyr_0.7.8                 stringi_1.2.4              
+[21] DESeq2_1.22.2               SummarizedExperiment_1.12.0
+[23] DelayedArray_0.8.0          BiocParallel_1.16.5        
+[25] matrixStats_0.54.0          Biobase_2.42.0             
+[27] GenomicRanges_1.34.0        GenomeInfoDb_1.18.1        
+[29] IRanges_2.16.0              S4Vectors_0.20.1           
+[31] BiocGenerics_0.28.0        
 
 loaded via a namespace (and not attached):
  [1] colorspace_1.4-0         rprojroot_1.3-2         
@@ -1186,35 +2070,37 @@ loaded via a namespace (and not attached):
 [31] glue_1.3.0               GenomeInfoDbData_1.2.0  
 [33] reshape2_1.4.3           Rcpp_1.0.0              
 [35] bbmle_1.0.20             Biostrings_2.50.2       
-[37] rtracklayer_1.42.1       xfun_0.4                
-[39] stringr_1.3.1            XML_3.98-1.16           
-[41] zlibbioc_1.28.0          MASS_7.3-51.1           
-[43] scales_1.0.0             hms_0.4.2               
-[45] ProtGenerics_1.14.0      RColorBrewer_1.1-2      
-[47] yaml_2.2.0               curl_3.3                
-[49] memoise_1.1.0            gridExtra_2.3           
-[51] emdbook_1.3.10           rpart_4.1-13            
-[53] latticeExtra_0.6-28      RSQLite_2.1.1           
-[55] checkmate_1.9.1          rlang_0.3.1             
-[57] pkgconfig_2.0.2          bitops_1.0-6            
-[59] evaluate_0.12            lattice_0.20-38         
-[61] purrr_0.2.5              bindr_0.1.1             
-[63] labeling_0.3             GenomicAlignments_1.18.1
-[65] htmlwidgets_1.3          bit_1.1-14              
-[67] tidyselect_0.2.5         plyr_1.8.4              
-[69] magrittr_1.5             R6_2.3.0                
-[71] Hmisc_4.1-1              DBI_1.0.0               
-[73] pillar_1.3.1             whisker_0.3-2           
-[75] foreign_0.8-71           withr_2.1.2             
-[77] survival_2.43-3          RCurl_1.95-4.11         
-[79] nnet_7.3-12              tibble_2.0.1            
-[81] crayon_1.3.4             rmarkdown_1.11          
-[83] progress_1.2.0           locfit_1.5-9.1          
-[85] grid_3.5.0               data.table_1.12.0       
-[87] blob_1.1.1               git2r_0.24.0            
-[89] digest_0.6.18            xtable_1.8-3            
-[91] numDeriv_2016.8-1        R.utils_2.7.0           
-[93] munsell_0.5.0           </code></pre>
+[37] gdata_2.18.0             rtracklayer_1.42.1      
+[39] xfun_0.4                 stringr_1.3.1           
+[41] gtools_3.8.1             XML_3.98-1.16           
+[43] zlibbioc_1.28.0          scales_1.0.0            
+[45] hms_0.4.2                ProtGenerics_1.14.0     
+[47] RColorBrewer_1.1-2       yaml_2.2.0              
+[49] curl_3.3                 memoise_1.1.0           
+[51] gridExtra_2.3            emdbook_1.3.10          
+[53] biomaRt_2.38.0           rpart_4.1-13            
+[55] latticeExtra_0.6-28      RSQLite_2.1.1           
+[57] checkmate_1.9.1          caTools_1.17.1.1        
+[59] rlang_0.3.1              pkgconfig_2.0.2         
+[61] bitops_1.0-6             evaluate_0.12           
+[63] lattice_0.20-38          purrr_0.2.5             
+[65] bindr_0.1.1              labeling_0.3            
+[67] GenomicAlignments_1.18.1 htmlwidgets_1.3         
+[69] bit_1.1-14               tidyselect_0.2.5        
+[71] plyr_1.8.4               magrittr_1.5            
+[73] R6_2.3.0                 Hmisc_4.1-1             
+[75] DBI_1.0.0                pillar_1.3.1            
+[77] whisker_0.3-2            foreign_0.8-71          
+[79] withr_2.1.2              survival_2.43-3         
+[81] RCurl_1.95-4.11          nnet_7.3-12             
+[83] tibble_2.0.1             crayon_1.3.4            
+[85] KernSmooth_2.23-15       rmarkdown_1.11          
+[87] progress_1.2.0           locfit_1.5-9.1          
+[89] grid_3.5.0               data.table_1.12.0       
+[91] blob_1.1.1               git2r_0.24.0            
+[93] digest_0.6.18            xtable_1.8-3            
+[95] numDeriv_2016.8-1        R.utils_2.7.0           
+[97] munsell_0.5.0           </code></pre>
 </div>
 </div>
 
