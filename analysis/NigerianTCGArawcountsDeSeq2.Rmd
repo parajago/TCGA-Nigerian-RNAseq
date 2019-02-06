@@ -589,6 +589,12 @@ write.table(resLumBblacktail,"Nigerian-TCGAblack-LumBDiffExpGenes100-Tail",sep="
 
 head(resLumBblackhead)
 tail(resLumBblacktail)
+
+#This synthesizes all of the significant findings that we have collected
+basalbreast <- rbind(resBasalhead, resBasaltail, resBasalblackhead, resBasalblacktail)
+her2breast <- rbind(resHer2head, resHer2tail)
+lumAbreast <- rbind(resLumAhead, resLumAtail, resLumAblackhead, resLumAblacktail)
+lumBbreast <- rbind(resLumBhead, resLumBtail, resLumBblackhead, resLumBblacktail)
 ```
 
 #Protein-coding assessment
@@ -626,5 +632,7 @@ proteincodingsig <- head(proteincoding[order(proteincoding$log2FoldChange, prote
 proteincodingsig2 <- tail(proteincoding[ order(proteincoding$log2FoldChange, proteincoding$padj), ],100)
 head(proteincodingsig)
 tail(proteincodingsig2)
+write.table(proteincodingsig,"all-analysis-protein-coding-genes-head",sep="\t",row.names=TRUE)
+write.table(proteincodingsig2,"all-analysis-protein-coding-genes-tail",sep="\t",row.names=TRUE)
 ```
 These are the greatest log-fold change differentially expressed protein coding genes across all analyses. 
