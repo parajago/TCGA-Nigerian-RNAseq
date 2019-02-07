@@ -157,6 +157,17 @@ plotPCA(vsd, intgroup=c("condition1", "condition2"))
 ```
 PCA 1-3: Integrated PCA demonstrating combined effect of breast cancer subtype and race. There is likely some contributor of batch effect to this presentation (which would be expected, again, from the different assays in which the Nigerian and TCGA analyses were performed)
 
+```{r Heatmap to assess clusters pre-analysis}
+#Heatmap to assess clusters pre-analysis
+topVarGenes <- head(order(rowVars(assay(vsd)), decreasing = TRUE), 100)
+hm  <- assay(vsd)[ topVarGenes, ]
+hm  <- hm - rowMeans(hm)
+anno <- as.data.frame(colData(vsd)[, c("condition1", "condition2")])
+rownames(anno) <- colnames(vsd)
+pheatmap(hm, annotation_col = anno, cluster_rows=TRUE, cluster_cols=TRUE, clustering_distance_rows = "euclidean", clustering_distance_cols = "euclidean", clustering_method = "complete", show_rownames=FALSE, show_colnames = FALSE, main="Heat map: Relative VST-transformed\ncounts across samples before batch correction")
+```
+Heatmap 1-1: This heatmaps is only using the top 100 genes and is competely heirarchically clustered. These clusters appear consistent with the PCA results.  
+
 ```{r Batch effect assessment-PCAs-4}
 #PCA2: Removing the batch effect created by the separate batch processing of the TCGA and Nigerian samples (although this may overcorrect for the actual difference between these two populations).  
 mat <- assay(vsd) 
@@ -166,27 +177,16 @@ plotPCA(vsd, intgroup=c("condition1", "condition2"))
 ```
 PCA 2-1: We have accounted for batch effect in this PCA only using the limma removeBatchEffect method.This largely accounts for the batch effect noticed in PCA1-Nigerian vs TCGA. There remain some outliers, primarily from the Nigerian patients. 
 
-```{r Heatmap to assess clusters pre-analysis}
-#Heatmap to assess clusters pre-analysis
-topVarGenes <- head(order(rowVars(assay(vsd)), decreasing = TRUE), 2000)
+```{r Heatmap to assess clusters after batch correction}
+#Heatmap to assess clusters post-analysis
+topVarGenes <- head(order(rowVars(assay(vsd)), decreasing = TRUE), 100)
 hm  <- assay(vsd)[ topVarGenes, ]
 hm  <- hm - rowMeans(hm)
 anno <- as.data.frame(colData(vsd)[, c("condition1", "condition2")])
 rownames(anno) <- colnames(vsd)
-pheatmap(hm, annotation_col = anno, cluster_rows=FALSE, show_rownames=FALSE, show_colnames = FALSE,
-cluster_cols=FALSE, main="Heat map: \nRelative VST-transformed counts across samples")
-
-## Perform the hierarchical clustering with A distance based on Pearson-correlation coefficient and average linkage clustering as agglomeration criteria
-heatmap.2(as.matrix(hm), 
-          scale="row", 
-          hclust=function(x) hclust(x,method="average"), 
-          trace="none", 
-          density="none", 
-          labRow="",
-          cexCol=0.7,
-          main="Hierarchical clustering heat map \nwith VST-transformed counts")
+pheatmap(hm, annotation_col = anno, cluster_rows=TRUE, cluster_cols=TRUE, clustering_distance_rows = "euclidean", clustering_distance_cols = "euclidean", clustering_method = "complete", show_rownames=FALSE, show_colnames = FALSE, main="Heat map: Relative VST-transformed\ncounts across samples after batch correction")
 ```
-These heatmaps are only using the top 2000 genes. The heirarchical clustering heat map appears to show more groupings that are consistent with the PCA results. 
+Heatmap 2-1: This heatmap after batch correction with limma's removeBatchEffect method is only using the top 100 genes and is competely heirarchically clustered. These clusters appear consistent with the PCA results as well with clustering enabled between the breast cancer subtypes and finer interspersing of the Nigerian vs. TCGA characteristic based on breast cancer subtype.
 
 ```{r: Boxplots of counts before and after DESeq2 normalization}
 boxplot(log2(counts(dds)), las=2, ylab="log2(Raw Counts)", xlab="Samples", main="Boxplot of raw counts before\n batch correction/transformation")
@@ -240,6 +240,60 @@ res2 <- lfcShrink(ddsMFbe, coef="sampleCondition_TCGA_white.Basal_vs_Nigerian.Ba
 DESeq2::plotMA(res2, ylim=c(-10,10), xlim=c(0.1,200))
 ```
 This is just an MA-plot demonstration of the efficacy of the batch effect correction (using TCGA-white basal breast cancer patients vs Nigerian basal breast cancer patients as an example). The second MA plot with batch-corrected differential expression looks like it is more appropriately assessing significantly differentially expressed genes between these two populations. 
+
+This is a check between the TCGA black and white patients to verify this differential expression analysis based on prior work by Stewart et al (PLOS One 2013) and Huo et al (JAMA Oncology 2017). 
+```{r DE: TCGA black and TCGA white, cache=TRUE}
+diffTCGA<- results(ddsMFbe, contrast=c("sampleCondition", "TCGA_black.Basal", "TCGA_white.Basal"), alpha=0.05)
+diffTCGA2<- results(ddsMFbe, contrast=c("sampleCondition", "TCGA_black.LumA", "TCGA_white.LumA"), alpha=0.05)
+diffTCGA3<- results(ddsMFbe, contrast=c("sampleCondition", "TCGA_black.LumB", "TCGA_white.LumB"), alpha=0.05)
+
+diffTCGA <- subset(diffTCGA, padj < 0.05) #Selecting only the lowest threshold of significant findings
+diffTCGA$temp <- row.names(diffTCGA)
+diffTCGA$temp <- gsub("[.].+", "", diffTCGA$temp)
+
+diffTCGA$symbol <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=diffTCGA$temp,
+                     column="SYMBOL",
+                     keytype="GENEID",           
+                     multiVals="first")
+
+diffTCGA$biotype <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=diffTCGA$temp,
+                     column="GENEBIOTYPE",
+                     keytype="GENEID",           
+                     multiVals="first")
+
+diffTCGA$chr <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=diffTCGA$temp,
+                     column="SEQNAME",
+                     keytype="GENEID",           
+                     multiVals="first")
+
+diffTCGA$locstart <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=diffTCGA$temp,
+                     column="GENESEQSTART",
+                     keytype="GENEID",
+                     multiVals="first")
+
+diffTCGA$locend <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=diffTCGA$temp,
+                     column="GENESEQEND",
+                     keytype="GENEID",
+                     multiVals="first")
+
+with(diffTCGA, plot(log2FoldChange, -log10(padj), pch=20, main="Volcano plot of differential gene expression between basal \nbreast cancers in TCGA black and \nTCGA white breast cancer patients", xlim=c(-50,50), ylim=c(0,70)))
+with(subset(diffTCGA, diffTCGA$biotype=="protein_coding" & padj<0.01 & abs(log2FoldChange)>25), points(log2FoldChange, -log10(pvalue), pch=20, col="blue"))
+with(subset(diffTCGA, padj<0.01 & abs(log2FoldChange)>25), textxy(log2FoldChange, -log10(padj), labs=symbol, cex=.5))
+
+diffTCGAhead <- head(diffTCGA[ order(diffTCGA$log2FoldChange, diffTCGA$padj), ],100)
+diffTCGAtail <- tail(diffTCGA[ order(diffTCGA$log2FoldChange, diffTCGA$padj), ],100)
+write.table(diffTCGAhead,"TCGAblack-TCGAwhite-DiffExpGenes100-Head",sep="\t",row.names=TRUE)
+write.table(diffTCGAtail,"TCGAblack-TCGAwhite-DiffExpGenes100-Tail",sep="\t",row.names=TRUE)
+
+head(diffTCGAhead)
+tail(diffTCGAtail)
+```
+
 
 This is a comparison of 32 Nigerian basal cases and 17 TCGA white basal cases. 
 ```{r DE: Basal breast - Nigerian and TCGA white, cache=TRUE}
@@ -410,7 +464,7 @@ resLumA$biotype <- mapIds(EnsDb.Hsapiens.v75,
                      keytype="GENEID",           
                      multiVals="first")
 
-resLumA$chr <- mapIds(EnsDb.Hsapiens.v75,
+resLumA$chr <- mapIds(xo,
                      keys=resLumA$temp,
                      column="SEQNAME",
                      keytype="GENEID",           
