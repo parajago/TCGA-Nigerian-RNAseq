@@ -1,5 +1,5 @@
 ---
-title: "TCGA-Nigerian-RNASeq Project"
+title: "Padma Rajagopal - PGY5"
 site: workflowr::wflow_site
 output:
   workflowr::wflow_html:
