@@ -1,14 +1,12 @@
-name: "Padma Rajagopal - PGY5"
+name: "TCGA-Nigerian-RNASeq Project"
 output_dir: "../docs"
 navbar:
-  title: "Olopade Lab Projects"
+  title: "Olopade Lab: TCGA-Nigerian-RNAseq Project"
   left:
     - text: "Home"
       href: index.html
     - text: "Differential Expression Analysis"
       href: NigerianTCGArawcountsDeSeq2.html
-    - text: "Tempus Genomic-Clinical Analysis"
-      href: Tempus.html
     - text: "About"
       href: about.html
   right:
