@@ -1,7 +1,7 @@
 ---
 title: "Nigerian-TCGA Differential Expression Analysis Using DeSeq2"
 author: "Padma Sheila Rajagopal, MD MPH"
-date: "1/30/2019"
+date: "2/26/2019"
 
 site: workflowr::wflow_site
 output:
@@ -82,7 +82,7 @@ for (sample in sampleConditionPAM50){
   }
 }
 
-#Condition based on PAM50 subtype 
+#Condition based on batch (relevant to the Nigerian patients only; no difference in batch for the TCGA patients)
 batchval <- sampleFiles
 countVar2=1
 for (sample in batchval){
@@ -126,7 +126,7 @@ I am now performing different visualization approaches to assess the variance of
 ddsHTSeqMF <- ddsHTSeqMF[rowSums(counts(ddsHTSeqMF)) > 1, ] #Pre-filtering the dataset by removing the rows without information about gene expression
 
 dds <- estimateSizeFactors(ddsHTSeqMF) #The size factor is the median ratio of the sample over a "pseudosample": for each gene, the geometric mean of all samples.
-dds$condition1 <- relevel(dds$condition1, ref = "Nigerian") #explicitng making the Nigerian patients the reference population 
+dds$sampleCondition <- relevel(dds$sampleCondition, ref = "Nigerian.Basal") #explicitly making the Nigerian Basal patients the reference population
 
 vsd <- vst(ddsHTSeqMF, blind = TRUE) #Variance-stabilizing transformation
 
@@ -145,7 +145,7 @@ Figure 1: Graphical representation of the variance-stabilizing transformation re
 #PCAs at this point of the analysis are all of the HTSeq-input raw counts
 plotPCA(vsd, intgroup=c("condition1", "batch")) 
 ```
-PCA 1-1:PCA demonstrating batch effect between the Nigerian patients and TCGA patients, which would be expected given that these experiments were done in different settings at different times. The TCGA patients also appear to have internal batch effect that is not completely race-consistent. No clear effect from internal batches of Nigerian samples
+PCA 1-1:PCA demonstrating the raw difference between Nigerian and TCGA patients, which would be expected given that these experiments were done in different settings at different times. Nigerian patients do not appear to have significant differneces based on their batches. (TCGA patients are known not to have significant difference based on batch performed.) However, there does appear to be some clustering mechanism that is separating these TCGA patients into two groups that is not race dependent. 
 
 ```{r Batch effect assessment-PCAs-2}
 plotPCA(vsd, intgroup=c("condition2"))
@@ -155,7 +155,7 @@ PCA 1-2:PCA demonstrating association with breast cancer subtype and gene expres
 ```{r Batch effect assessment-PCAs-3}
 plotPCA(vsd, intgroup=c("condition1", "condition2"))
 ```
-PCA 1-3: Integrated PCA demonstrating combined effect of breast cancer subtype and race. There is likely some contributor of batch effect to this presentation (which would be expected, again, from the different assays in which the Nigerian and TCGA analyses were performed)
+PCA 1-3: Integrated PCA demonstrating combined effect of breast cancer subtype and race. Subtype appears to account for the clustering seen in the TCGA group. 
 
 ```{r Heatmap to assess clusters pre-analysis}
 #Heatmap to assess clusters pre-analysis
@@ -241,11 +241,9 @@ DESeq2::plotMA(res2, ylim=c(-10,10), xlim=c(0.1,200))
 ```
 This is just an MA-plot demonstration of the efficacy of the batch effect correction (using TCGA-white basal breast cancer patients vs Nigerian basal breast cancer patients as an example). The second MA plot with batch-corrected differential expression looks like it is more appropriately assessing significantly differentially expressed genes between these two populations. 
 
-This is a check between the TCGA black and white patients to verify this differential expression analysis based on prior work by Stewart et al (PLOS One 2013) and Huo et al (JAMA Oncology 2017). 
+This is a check between the TCGA black and white patients to verify this differential expression analysis based on prior work by Stewart et al (PLOS One 2013) and Huo et al (JAMA Oncology 2017). This was only performed with the basal patients as this was the largest subsample. 
 ```{r DE: TCGA black and TCGA white, cache=TRUE}
 diffTCGA<- results(ddsMFbe, contrast=c("sampleCondition", "TCGA_black.Basal", "TCGA_white.Basal"), alpha=0.05)
-diffTCGA2<- results(ddsMFbe, contrast=c("sampleCondition", "TCGA_black.LumA", "TCGA_white.LumA"), alpha=0.05)
-diffTCGA3<- results(ddsMFbe, contrast=c("sampleCondition", "TCGA_black.LumB", "TCGA_white.LumB"), alpha=0.05)
 
 diffTCGA <- subset(diffTCGA, padj < 0.05) #Selecting only the lowest threshold of significant findings
 diffTCGA$temp <- row.names(diffTCGA)
@@ -285,13 +283,8 @@ with(diffTCGA, plot(log2FoldChange, -log10(padj), pch=20, main="Volcano plot of 
 with(subset(diffTCGA, diffTCGA$biotype=="protein_coding" & padj<0.01 & abs(log2FoldChange)>25), points(log2FoldChange, -log10(pvalue), pch=20, col="blue"))
 with(subset(diffTCGA, padj<0.01 & abs(log2FoldChange)>25), textxy(log2FoldChange, -log10(padj), labs=symbol, cex=.5))
 
-diffTCGAhead <- head(diffTCGA[ order(diffTCGA$log2FoldChange, diffTCGA$padj), ],100)
-diffTCGAtail <- tail(diffTCGA[ order(diffTCGA$log2FoldChange, diffTCGA$padj), ],100)
-write.table(diffTCGAhead,"TCGAblack-TCGAwhite-DiffExpGenes100-Head",sep="\t",row.names=TRUE)
-write.table(diffTCGAtail,"TCGAblack-TCGAwhite-DiffExpGenes100-Tail",sep="\t",row.names=TRUE)
-
-head(diffTCGAhead)
-tail(diffTCGAtail)
+diffTCGAres <- as.data.frame(diffTCGA)[, ]
+write.csv(diffTCGAres, file = "TCGAblackwhite-basal-test.csv")
 ```
 
 
@@ -336,13 +329,8 @@ with(resBasal, plot(log2FoldChange, -log10(padj), pch=20, main="Volcano plot of 
 with(subset(resBasal, resBasal$biotype=="protein_coding" & padj<0.01 & abs(log2FoldChange)>25), points(log2FoldChange, -log10(pvalue), pch=20, col="blue"))
 with(subset(resBasal, padj<0.01 & abs(log2FoldChange)>25), textxy(log2FoldChange, -log10(padj), labs=symbol, cex=.5))
 
-resBasalhead <- head(resBasal[ order(resBasal$log2FoldChange, resBasal$padj), ],100)
-resBasaltail <- tail(resBasal[ order(resBasal$log2FoldChange, resBasal$padj), ],100)
-write.table(resBasalhead,"Nigerian-TCGAwhite-BasalDiffExpGenes100-Head",sep="\t",row.names=TRUE)
-write.table(resBasaltail,"Nigerian-TCGAwhite-BasalDiffExpGenes100-Tail",sep="\t",row.names=TRUE)
-
-head(resBasalhead)
-tail(resBasaltail)
+diffNigerianwhitebasal <- as.data.frame(resBasal)[, ]
+write.csv(diffNigerianwhitebasal, file = "Nigerian-white-basal.csv")
 ```
 
 This is a comparison of 32 Nigerian basal cases and 25 TCGA black basal cases. 
@@ -386,13 +374,8 @@ with(resBasalblack, plot(log2FoldChange, -log10(padj), pch=20, main="Volcano plo
 with(subset(resBasalblack, resBasalblack$biotype=="protein_coding" & padj<0.01 & abs(log2FoldChange)>25), points(log2FoldChange, -log10(pvalue), pch=20, col="blue"))
 with(subset(resBasalblack, padj<0.01 & abs(log2FoldChange)>25), textxy(log2FoldChange, -log10(padj), labs=symbol, cex=.5))
 
-resBasalblackhead <- head(resBasalblack[ order(resBasalblack$log2FoldChange, resBasalblack$padj), ],100)
-resBasalblacktail <- tail(resBasalblack[ order(resBasalblack$log2FoldChange, resBasalblack$padj), ],100)
-write.table(resBasalblackhead,"Nigerian-TCGAblack-BasalDiffExpGenes100-Head",sep="\t",row.names=TRUE)
-write.table(resBasalblacktail,"Nigerian-TCGAblack-BasalDiffExpGenes100-Tail",sep="\t",row.names=TRUE)
-
-head(resBasalblackhead)
-tail(resBasalblacktail)
+diffNigerianblackbasal <- as.data.frame(resBasalblack)[, ]
+write.csv(diffNigerianblackbasal, file = "Nigerian-black-basal.csv")
 ```
 
 This is a comparison of 26 Nigerian Her2 cases and 5 TCGA white Her2 cases. There are no TCGA black Her2 cases available for this analysis.
@@ -436,13 +419,8 @@ with(resHer2, plot(log2FoldChange, -log10(padj), pch=20, main="Volcano plot of d
 with(subset(resHer2, resHer2$biotype=="protein_coding" & padj<0.01 & abs(log2FoldChange)>25), points(log2FoldChange, -log10(pvalue), pch=20, col="blue"))
 with(subset(resHer2, padj<0.01 & abs(log2FoldChange)>25), textxy(log2FoldChange, -log10(padj), labs=symbol, cex=.5))
 
-resHer2head <- head(resHer2[ order(resHer2$log2FoldChange, resHer2$padj), ],100)
-resHer2tail <- tail(resHer2[ order(resHer2$log2FoldChange, resHer2$padj), ],100)
-write.table(resHer2head,"Nigerian-TCGAwhite-Her2DiffExpGenes100-Head",sep="\t",row.names=TRUE)
-write.table(resHer2tail,"Nigerian-TCGAwhite-Her2DiffExpGenes100-Tail",sep="\t",row.names=TRUE)
-
-head(resHer2head)
-tail(resHer2tail)
+diffNigerianwhiteHER2 <- as.data.frame(resHer2)[, ]
+write.csv(diffNigerianwhiteHER2, file = "Nigerian-white-HER2.csv")
 ```
 
 This is a comparison of 16 Nigerian luminal A cases and 8 TCGA white luminal A cases. 
@@ -464,7 +442,7 @@ resLumA$biotype <- mapIds(EnsDb.Hsapiens.v75,
                      keytype="GENEID",           
                      multiVals="first")
 
-resLumA$chr <- mapIds(xo,
+resLumA$chr <- mapIds(EnsDb.Hsapiens.v75,
                      keys=resLumA$temp,
                      column="SEQNAME",
                      keytype="GENEID",           
@@ -486,13 +464,9 @@ with(resLumA, plot(log2FoldChange, -log10(padj), pch=20, main="Volcano plot of d
 with(subset(resLumA, resLumA$biotype=="protein_coding" & padj<0.01 & abs(log2FoldChange)>25), points(log2FoldChange, -log10(pvalue), pch=20, col="blue"))
 with(subset(resLumA, padj<0.01 & abs(log2FoldChange)>25), textxy(log2FoldChange, -log10(padj), labs=symbol, cex=.5))
 
-resLumAhead <- head(resLumA[ order(resLumA$log2FoldChange, resLumA$padj), ],100)
-resLumAtail <- tail(resLumA[ order(resLumA$log2FoldChange, resLumA$padj), ],100)
-write.table(resLumAhead,"Nigerian-TCGAwhite-LumADiffExpGenes100-Head",sep="\t",row.names=TRUE)
-write.table(resLumAtail,"Nigerian-TCGAwhite-LumADiffExpGenes100-Tail",sep="\t",row.names=TRUE)
+diffNigerianwhiteLumA <- as.data.frame(resLumA)[, ]
+write.csv(diffNigerianwhiteLumA, file = "Nigerian-white-LumA.csv")
 
-head(resLumAhead)
-tail(resLumAtail)
 ```
 
 This is a comparison of 16 Nigerian luminal A cases and 4 TCGA black luminal A cases. 
@@ -536,13 +510,8 @@ with(resLumAblack, plot(log2FoldChange, -log10(padj), pch=20, main="Volcano plot
 with(subset(resLumAblack, resLumAblack$biotype=="protein_coding" & padj<0.01 & abs(log2FoldChange)>25), points(log2FoldChange, -log10(pvalue), pch=20, col="blue"))
 with(subset(resLumAblack, padj<0.01 & abs(log2FoldChange)>25), textxy(log2FoldChange, -log10(padj), labs=symbol, cex=.5))
 
-resLumAblackhead <- head(resLumAblack[ order(resLumAblack$log2FoldChange, resLumAblack$padj), ],100)
-resLumAblacktail <- tail(resLumAblack[ order(resLumAblack$log2FoldChange, resLumAblack$padj), ],100)
-write.table(resLumAblackhead,"Nigerian-TCGAblack-LumADiffExpGenes100-Head",sep="\t",row.names=TRUE)
-write.table(resLumAblacktail,"Nigerian-TCGAblack-LumADiffExpGenes100-Tail",sep="\t",row.names=TRUE)
-
-head(resLumAblackhead)
-tail(resLumAblacktail)
+diffNigerianblackLumA <- as.data.frame(resLumAblack)[, ]
+write.csv(diffNigerianblackLumA, file = "Nigerian-black-LumA.csv")
 ```
 
 This is a comparison of 18 nigerian luminal B cases and 9 TCGA white luminal B cases. 
@@ -586,13 +555,8 @@ with(resLumB, plot(log2FoldChange, -log10(padj), pch=20, main="Volcano plot of d
 with(subset(resLumB, resLumB$biotype=="protein_coding" & padj<0.01 & abs(log2FoldChange)>25), points(log2FoldChange, -log10(pvalue), pch=20, col="blue"))
 with(subset(resLumB, padj<0.01 & abs(log2FoldChange)>25), textxy(log2FoldChange, -log10(padj), labs=symbol, cex=.5))
 
-resLumBhead <- head(resLumB[ order(resLumB$log2FoldChange, resLumB$padj), ],100)
-resLumBtail <- tail(resLumB[ order(resLumB$log2FoldChange, resLumB$padj), ],100)
-write.table(resLumBhead,"Nigerian-TCGAwhite-LumBDiffExpGenes100-Head",sep="\t",row.names=TRUE)
-write.table(resLumBtail,"Nigerian-TCGAwhite-LumBDiffExpGenes100-Tail",sep="\t",row.names=TRUE)
-
-head(resLumBhead)
-tail(resLumBtail)
+diffNigerianwhiteLumB <- as.data.frame(resLumB)[, ]
+write.csv(diffNigerianwhiteLumB, file = "Nigerian-white-LumB.csv")
 ```
 
 This is a comparison of 18 Nigerian luminal B cases and 4 TCGA black luminal B cases. 
@@ -636,22 +600,127 @@ with(resLumBblack, plot(log2FoldChange, -log10(padj), pch=20, main="Volcano plot
 with(subset(resLumBblack, resLumBblack$biotype=="protein_coding" & padj<0.01 & abs(log2FoldChange)>25), points(log2FoldChange, -log10(pvalue), pch=20, col="blue"))
 with(subset(resLumBblack, padj<0.01 & abs(log2FoldChange)>25), textxy(log2FoldChange, -log10(padj), labs=symbol, cex=.5))
 
-resLumBblackhead <- head(resLumBblack[ order(resLumBblack$log2FoldChange, resLumBblack$padj), ],100)
-resLumBblacktail <- tail(resLumBblack[ order(resLumBblack$log2FoldChange, resLumBblack$padj), ],100)
-write.table(resLumBblackhead,"Nigerian-TCGAblack-LumBDiffExpGenes100-Head",sep="\t",row.names=TRUE)
-write.table(resLumBblacktail,"Nigerian-TCGAblack-LumBDiffExpGenes100-Tail",sep="\t",row.names=TRUE)
-
-head(resLumBblackhead)
-tail(resLumBblacktail)
-
-#This synthesizes all of the significant findings that we have collected
-basalbreast <- rbind(resBasalhead, resBasaltail, resBasalblackhead, resBasalblacktail)
-her2breast <- rbind(resHer2head, resHer2tail)
-lumAbreast <- rbind(resLumAhead, resLumAtail, resLumAblackhead, resLumAblacktail)
-lumBbreast <- rbind(resLumBhead, resLumBtail, resLumBblackhead, resLumBblacktail)
+diffNigerianblackLumB <- as.data.frame(resLumBblack)[, ]
+write.csv(diffNigerianblackLumB, file = "Nigerian-black-LumB.csv")
 ```
 
-#Protein-coding assessment
+#Validation of results
+```{r Checking distribution of all results by chromosome}
+chromecheck <- factor(diffNigerianblackbasal$chr)
+plot(table(chromecheck))
+chromecheck2 <- factor(diffNigerianwhitebasal$chr)
+plot(table(chromecheck2))
+chromecheck3 <- factor(diffNigerianwhiteHER2$chr)
+plot(table(chromecheck3))
+chromecheck4 <- factor(diffNigerianwhiteLumA$chr)
+plot(table(chromecheck4))
+chromecheck5 <- factor(diffNigerianblackLumA$chr)
+plot(table(chromecheck5))
+chromecheck6 <- factor(diffNigerianwhiteLumB$chr)
+plot(table(chromecheck6))
+chromecheck7 <- factor(diffNigerianblackLumB$chr)
+plot(table(chromecheck7))
+```
+*****Given that each of the differential expression analyses produce a similar distribution along the chromosomes, this is concerning for a problem with how the differential expression is run.*****
+
+
+#Repeat validation of results without batch effect
+```{r Repeat analysis without batch effect}
+resregBasal<- results(ddsMF, contrast=c("sampleCondition", "Nigerian.Basal", "TCGA_white.Basal"), alpha=0.05)
+resregBasal <- subset(resregBasal, padj < 0.05) #Selecting only the lowest threshold of significant findings
+resregBasal$temp <- row.names(resregBasal)
+resregBasal$temp <- gsub("[.].+", "", resregBasal$temp)
+
+resregBasal$chr <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=resregBasal$temp,
+                     column="SEQNAME",
+                     keytype="GENEID",           
+                     multiVals="first")
+chrome2check <- factor(resregBasal$chr)
+plot(table(chrome2check))
+
+resregBasalblack<- results(ddsMF, contrast=c("sampleCondition", "Nigerian.Basal", "TCGA_black.Basal"), alpha=0.05)
+resregBasalblack <- subset(resregBasalblack, padj < 0.05) #Selecting only the lowest threshold of significant findings
+resregBasalblack$temp <- row.names(resregBasalblack)
+resregBasalblack$temp <- gsub("[.].+", "", resregBasalblack$temp)
+
+resregBasalblack$chr <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=resregBasalblack$temp,
+                     column="SEQNAME",
+                     keytype="GENEID",           
+                     multiVals="first")
+chrome2check2 <- factor(resregBasalblack$chr)
+plot(table(chrome2check2))
+
+resregHer2<- results(ddsMF, contrast=c("sampleCondition", "Nigerian.Her2", "TCGA_white.Her2"), alpha=0.05)
+resregHer2 <- subset(resregHer2, padj < 0.05) #Selecting only the lowest threshold of significant findings
+resregHer2$temp <- row.names(resregHer2)
+resregHer2$temp <- gsub("[.].+", "", resregHer2$temp)
+
+resregHer2$chr <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=resregHer2$temp,
+                     column="SEQNAME",
+                     keytype="GENEID",           
+                     multiVals="first")
+chrome2check3 <- factor(resregHer2$chr)
+plot(table(chrome2check3))
+
+resregLumA<- results(ddsMF, contrast=c("sampleCondition", "Nigerian.LumA", "TCGA_white.LumA"), alpha=0.05)
+resregLumA <- subset(resregLumA, padj < 0.05) #Selecting only the lowest threshold of significant findings
+resregLumA$temp <- row.names(resregLumA)
+resregLumA$temp <- gsub("[.].+", "", resregLumA$temp)
+
+resregLumA$chr <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=resregLumA$temp,
+                     column="SEQNAME",
+                     keytype="GENEID",           
+                     multiVals="first")
+chrome2check4 <- factor(resregLumA$chr)
+plot(table(chrome2check4))
+
+resregLumAblack<- results(ddsMF, contrast=c("sampleCondition", "Nigerian.LumA", "TCGA_black.LumA"), alpha=0.05)
+resregLumAblack <- subset(resregLumAblack, padj < 0.05) #Selecting only the lowest threshold of significant findings
+resregLumAblack$temp <- row.names(resregLumAblack)
+resregLumAblack$temp <- gsub("[.].+", "", resregLumAblack$temp)
+
+resregLumAblack$chr <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=resregLumAblack$temp,
+                     column="SEQNAME",
+                     keytype="GENEID",           
+                     multiVals="first")
+chrome2check5 <- factor(resregLumAblack$chr)
+plot(table(chrome2check5))
+
+resregLumB<- results(ddsMF, contrast=c("sampleCondition", "Nigerian.LumB", "TCGA_white.LumB"), alpha=0.05)
+resregLumB <- subset(resregLumB, padj < 0.05) #Selecting only the lowest threshold of significant findings
+resregLumB$temp <- row.names(resregLumB)
+resregLumB$temp <- gsub("[.].+", "", resregLumB$temp)
+
+resregLumB$chr <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=resregLumB$temp,
+                     column="SEQNAME",
+                     keytype="GENEID",           
+                     multiVals="first")
+chrome2check6 <- factor(resregLumB$chr)
+plot(table(chrome2check6))
+
+resregLumBblack<- results(ddsMF, contrast=c("sampleCondition", "Nigerian.LumB", "TCGA_black.LumB"), alpha=0.05)
+resregLumBblack <- subset(resregLumBblack, padj < 0.05) #Selecting only the lowest threshold of significant findings
+resregLumBblack$temp <- row.names(resregLumBblack)
+resregLumBblack$temp <- gsub("[.].+", "", resregLumBblack$temp)
+
+resregLumBblack$chr <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=resregLumBblack$temp,
+                     column="SEQNAME",
+                     keytype="GENEID",           
+                     multiVals="first")
+chrome2check7 <- factor(resregLumBblack$chr)
+plot(table(chrome2check7))
+```
+*****The concerning, persistent distribution in RNA results across chromosomes is persistent across differential expression results regardless of batch effect correction.*****
+
+
+#Protein-coding assessment -> pending resolution of validation issues
 ```{r Visualizing protein-coding differences specifically}
 proteincoding <- (subset(resBasal, biotype=="protein_coding"))
 proteincoding$analysis <- "Nigerian-TCGAwhite.Basal"
@@ -678,10 +747,7 @@ proteincoding=rbind(proteincoding, proteincoding2, proteincoding3, proteincoding
 
 table(proteincoding$analysis)
 summary(proteincoding)
-```
-This table demonstrates the initial assessment of differentially-expressed protein-coding genes across all analyses. 
 
-```{r Most significant protein-coding genes}
 proteincodingsig <- head(proteincoding[order(proteincoding$log2FoldChange, proteincoding$padj), ],100)
 proteincodingsig2 <- tail(proteincoding[ order(proteincoding$log2FoldChange, proteincoding$padj), ],100)
 head(proteincodingsig)
@@ -689,4 +755,4 @@ tail(proteincodingsig2)
 write.table(proteincodingsig,"all-analysis-protein-coding-genes-head",sep="\t",row.names=TRUE)
 write.table(proteincodingsig2,"all-analysis-protein-coding-genes-tail",sep="\t",row.names=TRUE)
 ```
-These are the greatest log-fold change differentially expressed protein coding genes across all analyses. 
+These are the strongest differentially-expressed protein-coding genes across all analyses.
