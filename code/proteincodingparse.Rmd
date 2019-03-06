@@ -1,0 +1,163 @@
+---
+title: "Formatting protein-coding information about RNA-seq data"
+author: "Padma Sheila Rajagopal, MD MPH"
+date: "3/6/2019"
+
+site: workflowr::wflow_site
+output:
+  workflowr::wflow_html:
+    df_print: paged
+    toc: true
+    theme: spacelab
+    highlight: textmate
+---
+```{r Setup, message=FALSE, warning=FALSE, echo=FALSE, results=FALSE, include=FALSE}
+knitr::opts_chunk$set(message=FALSE, warning=FALSE)
+library("tidyverse")
+library("AnnotationDbi")
+library("org.Hs.eg.db")
+library(EnsDb.Hsapiens.v75)
+
+library("DESeq2")
+library(stringi)
+library("dplyr")
+library("ggplot2")
+library("hexbin")
+library("AnnotationDbi")
+library("org.Hs.eg.db")
+library('GenomicFeatures')
+library(EnsDb.Hsapiens.v75)
+library(apeglm)
+library("genefilter")
+library(pheatmap)
+library("sva")
+library(limma)
+library(calibrate)
+library(gplots)
+
+setwd("~/Research-Local/RNAseq-Local/Inputs/NigerianTCGA_quants-proteincoding-pseudo")
+```
+
+```{r Annotating the tables and isolating protein-coding only before differential expression, warning=FALSE}
+FOLDER <- "/Users/parajago/Research-Local/RNAseq-Local/Inputs/NigerianTCGA_quants-proteincoding-pseudo"
+sampleFiles <- grep("htseq.counts",list.files(FOLDER),value=TRUE)
+
+n=1
+Nigerian <- 0 #counting variable for Nigerian patients
+Nigerian_pseudogene <- 0 # Sum of non-zero genes across all Nigerian patients that fit pseudogene type.
+Nigerian_protein_coding <- 0 # Sum of non-zero genes across all Nigerian patients that fit protein coding type.
+Nigerian_lincRNA <- 0 # Sum of non-zero genes across all Nigerian patients that fit lincRNA type.
+TCGA <- 0 #counting variable for TCGA patients
+TCGA_pseudogene <- 0 # Sum of non-zero genes across all TCGA patients that fit pseudogene type.
+TCGA_protein_coding <- 0 # Sum of non-zero genes across all TCGA patients that fit protein-coding type.
+TCGA_lincRNA <- 0 # Sum of non-zero genes across all TCGA patients that fit lincRNA type.
+
+while (n <= length(sampleFiles)){ #while loop that reads each file, sorts into Nigerian or TCGA and creates biotype classification column based on ensemblID
+  tempname <- sampleFiles[n]
+  if (stri_detect_fixed(tempname,"LIB")==TRUE){
+    Nigerian=Nigerian+1
+    
+    temptable <- read.table(sampleFiles[n], sep="\t")
+    temptable$temp <- temptable$V1
+    temptable$temp <- gsub("[.].+", "", temptable$temp)
+    
+    temptable$biotype <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=temptable$temp,
+                     column="GENEBIOTYPE",
+                     keytype="GENEID",           
+                     multiVals="first")
+    
+    temptable$temp <- NULL
+    
+    Nigerian_pseudogene <- Nigerian_pseudogene + nrow(temptable %>% dplyr::filter (biotype=="pseudogene" & V3 > 0)) #sum of rows that are pseudogenes and non-zero read value
+    Nigerian_protein_coding <- Nigerian_protein_coding + nrow(temptable %>% dplyr::filter (biotype=="protein_coding" & V3 > 0))
+    Nigerian_lincRNA <- Nigerian_lincRNA + nrow(temptable %>% dplyr::filter (biotype=="lincRNA" & V3 > 0))
+    
+#    temptable <- temptable %>% dplyr::filter (biotype=="protein_coding") #This can be used if differential expression needs to be performed as protein-coding only is saved into file
+#    temptable$biotype <- NULL
+    write.table(temptable, file = tempname, sep="\t", col.names=FALSE)
+  }
+  else{
+    TCGA=TCGA+1
+    
+    temptable <- read.table(sampleFiles[n], sep="\t")
+    temptable$temp <- temptable$V1
+    temptable$temp <- gsub("[.].+", "", temptable$temp)
+    
+    temptable$biotype <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=temptable$temp,
+                     column="GENEBIOTYPE",
+                     keytype="GENEID",           
+                     multiVals="first")
+    
+    temptable$temp <- NULL
+    
+    TCGA_pseudogene <- TCGA_pseudogene + nrow(temptable %>% dplyr::filter (biotype=="pseudogene" & V3 > 0))
+    TCGA_protein_coding <- TCGA_protein_coding + nrow(temptable %>% dplyr::filter (biotype=="protein_coding" & V3 > 0))
+    TCGA_lincRNA <- TCGA_lincRNA + nrow(temptable %>% dplyr::filter (biotype=="lincRNA" & V3 > 0))
+    
+#    temptable <- temptable %>% dplyr::filter (biotype=="protein_coding") #This can be used if differential expression needs to be performed as protein-coding only is saved into file
+#    temptable$biotype <- NULL
+    write.table(temptable, file = tempname, sep="\t", col.names=FALSE)
+  }
+  temptable <- NULL 
+  tempname <- NULL
+  print(n)
+  n=n+1
+}
+```
+
+
+```{r Identifying top pseudogenes across Nigerian and TCGA patients}
+n=1
+Nigerian<-0 
+TCGA <-0
+
+temptable <- read.table(sampleFiles[1], sep="\t") #Creates a dummy data frame of the largest possible size that can be used to template both Nigerians and TCGA
+temptable$V1 <- NULL
+temptable$V4 <- 0
+names(temptable) <- c("V2", "geneID", "counts", "biotype")
+
+Nigeriancounts <- temptable
+TCGAcounts <- temptable
+
+while (n <= length(sampleFiles)){ #While loop sums reads across each element
+  tempname <- sampleFiles[n]
+  if (stri_detect_fixed(tempname,"LIB")==TRUE){
+    Nigerian=Nigerian+1
+    temptable2 <- read.table(sampleFiles[n], sep="\t")
+    Nigeriancounts <- merge(Nigeriancounts, temptable2, by="V2") #merge the sum data table and the new data table and delete all merged elements once added 
+    Nigeriancounts$V1 <- NULL
+    Nigeriancounts$V3 <- NULL
+    Nigeriancounts$V5 <- NULL
+    Nigeriancounts$counts=Nigeriancounts$V4+Nigeriancounts$counts
+    Nigeriancounts$V4 <- NULL
+  }
+  else{
+    TCGA=TCGA+1
+    temptable2 <- read.table(sampleFiles[n], sep="\t")
+    TCGAcounts <- merge(TCGAcounts, temptable2, by="V2")
+    TCGAcounts$V1 <- NULL
+    TCGAcounts$V3 <- NULL
+    TCGAcounts$V5 <- NULL
+    TCGAcounts$counts=TCGAcounts$V4+TCGAcounts$counts
+    TCGAcounts$V4 <- NULL
+  }
+  temptable2 <- NULL 
+  tempname <- NULL
+  print(n)
+  n=n+1
+}
+
+Nigerianpseudogenetable <- Nigeriancounts[with(Nigeriancounts,order(-counts)),]
+Nigerianpseudogenetable <- Nigerianpseudogenetable %>% mutate(rank = dense_rank(desc(counts)))
+Nigerianpseudogenetable$rank <- Nigerianpseudogenetable$rank-4 #Excludes summary statistics on top from rankings
+Nigerianpseudogenetable <- Nigerianpseudogenetable %>% dplyr::filter (biotype=="pseudogene")
+head (Nigerianpseudogenetable, 10)
+
+TCGApseudogenetable <- TCGAcounts[with(TCGAcounts,order(-counts)),]
+TCGApseudogenetable <- TCGApseudogenetable %>% mutate(rank = dense_rank(desc(counts)))
+TCGApseudogenetable$rank <- TCGApseudogenetable$rank-4
+TCGApseudogenetable <- TCGApseudogenetable %>% dplyr::filter (biotype=="pseudogene")
+head (TCGApseudogenetable, 10)
+```

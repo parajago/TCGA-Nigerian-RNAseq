@@ -8,11 +8,8 @@ Aim: To identify unique population-specific genomic drivers and subclone express
 Pending analyses: 
 N Comments:
 -Check the 14q gene loss across the groups
--Assess driver candidate genes and protein coding genes
+-Assess driver candidate genes
 -Redo the analysis with whole genome sequencing only
-
-H Comments:
--Isolate differential expression of protein coding genes
 
 A Comments: 
 -Reverse TSNE of the data to understand if any correlative relationships
@@ -29,12 +26,10 @@ Me:
 *Early vs late drivers or signatures (within Nigerian group) -> Temporal evolution of signatures
 *Immunogenomics expression? / HLA LOH
 
-
 Folders:
 -Code: DESeq2
 -Output: Differential expression analysis tables  
 -Plots: Visualization of RNAseq data (batch effect and differential expression)
-
 
 Workflow:
 Phenotype data / inputs saved on UChicago Box and Beagle

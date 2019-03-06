@@ -27,15 +27,14 @@ Workflow and analysis published here:
 
 #Differential expression:
 
-* Differential expression QC and analysis: https://parajago.github.io/TCGA-Nigerian-RNAseq/NigerianTCGArawcountsDeSeq2.html
+* Differential expression QC and analysis (all genes): https://parajago.github.io/TCGA-Nigerian-RNAseq/NigerianTCGArawcountsDeSeq2.html
+* Differential expression QC and analysis (protein coding genes only): https://parajago.github.io/TCGA-Nigerian-RNAseq/NigerianTCGArawcountsDeSeq2-proteincoding.html
 
 #Pending analyses
 * Pre-analysis visual summarization: TSNE, UMAP
 
-* Differential expression of: candidate driver genes, breast cancer subtypes, protein-coding genes -> volcano plots
-
+* Differential expression of: candidate driver genes
 * Verification in whole-genome sequencing samples only
 
-* Improve PCA components
 * Check 14q loss across the groups
 * Plan for pathway analysis/GSEA

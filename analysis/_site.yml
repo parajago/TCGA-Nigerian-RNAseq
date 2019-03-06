@@ -7,6 +7,8 @@ navbar:
       href: index.html
     - text: "Differential Expression Analysis"
       href: NigerianTCGArawcountsDeSeq2.html
+    - text: "Protein-Coding Only DE Analysis"
+      href: NigerianTCGArawcountsDeSeq2-proteincoding.html
     - text: "About"
       href: about.html
   right:
