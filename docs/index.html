@@ -421,16 +421,15 @@ div.section {
 </div>
 
 
-<p><strong>Last updated:</strong> 2019-03-06</p>
+<p><strong>Last updated:</strong> 2019-03-11</p>
 <strong>workflowr checks:</strong> <small>(Click a bullet for more information)</small>
 <ul>
 <li>
-<p><details> <summary> <strong style="color:blue;">✔</strong> <strong>R Markdown file:</strong> up-to-date </summary></p>
-<p>Great! Since the R Markdown file has been committed to the Git repository, you know the exact version of the code that produced these results.</p>
+<p><details> <summary> <strong style="color:red;">✖</strong> <strong>R Markdown file:</strong> uncommitted changes </summary> The R Markdown file has unstaged changes. To know which version of the R Markdown file created these results, you’ll want to first commit it to the Git repo. If you’re still working on the analysis, you can ignore this warning. When you’re finished, you can run <code>wflow_publish</code> to commit the R Markdown file and build the HTML.</p>
 </details>
 </li>
 <li>
-<p><details> <summary> <strong style="color:blue;">✔</strong> <strong>Repository version:</strong> <a href="https://github.com/parajago/TCGA-Nigerian-RNAseq/tree/82f307545063cb58f75b8c1499dd297c497b40b8" target="_blank">82f3075</a> </summary></p>
+<p><details> <summary> <strong style="color:blue;">✔</strong> <strong>Repository version:</strong> <a href="https://github.com/parajago/TCGA-Nigerian-RNAseq/tree/63e74d5b3ea0f2a976996e068d53e095463b0780" target="_blank">63e74d5</a> </summary></p>
 Great! You are using Git for version control. Tracking code development and connecting the code version to the results is critical for reproducibility. The version displayed above was the version of the Git repository at the time these results were generated. <br><br> Note that you need to be careful to ensure that all relevant files for the analysis have been committed to Git prior to generating the results (you can use <code>wflow_publish</code> or <code>wflow_git_commit</code>). workflowr only checks the R Markdown file, but you know if there are other scripts or data files that it depends on. Below is the status of the Git repository when the results were generated:
 <pre><code>
 Ignored files:
@@ -441,6 +440,9 @@ Ignored files:
     Ignored:    docs/.DS_Store
     Ignored:    docs/figure/.DS_Store
     Ignored:    plots/.DS_Store
+
+Unstaged changes:
+    Modified:   analysis/index.Rmd
 
 </code></pre>
 Note that any generated files, e.g. HTML, png, CSS, etc., are not included in this status report because it is ok for generated content to have uncommitted changes. </details>
@@ -469,6 +471,23 @@ Message
 </tr>
 </thead>
 <tbody>
+<tr>
+<td style="text-align:left;">
+html
+</td>
+<td style="text-align:left;">
+<a href="https://cdn.rawgit.com/parajago/TCGA-Nigerian-RNAseq/b1db0c20903161efc5a704a9efbdafba5741fb31/docs/index.html" target="_blank">b1db0c2</a>
+</td>
+<td style="text-align:left;">
+Sheila Rajagopal
+</td>
+<td style="text-align:left;">
+2019-03-06
+</td>
+<td style="text-align:left;">
+updating index and about
+</td>
+</tr>
 <tr>
 <td style="text-align:left;">
 html
@@ -828,6 +847,8 @@ WorkflowR structure added
 </div>
 <div id="differential-expression" class="section level1">
 <h1>Differential expression:</h1>
+<p>Initial processsing results: Nigerian lincRNA: 236737 reads, TCGA: 120498 reads Nigerian protein coding: 1647444 reads, TCGA 1322765 reads Nigerian pseudogene: 302306 reads, TCGA: 184049 reads</p>
+<p>Nigerians: Not aligned: 233461517 TCGA: Not aligned: 1725472254 (this is expected)</p>
 <ul>
 <li>Differential expression QC and analysis (all genes): <a href="https://parajago.github.io/TCGA-Nigerian-RNAseq/NigerianTCGArawcountsDeSeq2.html" class="uri">https://parajago.github.io/TCGA-Nigerian-RNAseq/NigerianTCGArawcountsDeSeq2.html</a></li>
 <li>Differential expression QC and analysis (protein coding genes only): <a href="https://parajago.github.io/TCGA-Nigerian-RNAseq/NigerianTCGArawcountsDeSeq2-proteincoding.html" class="uri">https://parajago.github.io/TCGA-Nigerian-RNAseq/NigerianTCGArawcountsDeSeq2-proteincoding.html</a></li>

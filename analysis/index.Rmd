@@ -27,6 +27,14 @@ Workflow and analysis published here:
 
 #Differential expression:
 
+Initial processsing results:
+Nigerian lincRNA: 236737 reads, TCGA: 120498 reads
+Nigerian protein coding: 1647444 reads, TCGA 1322765 reads
+Nigerian pseudogene: 302306 reads, TCGA: 184049 reads
+
+Nigerians: Not aligned: 233461517
+TCGA: Not aligned: 1725472254 (this is expected) 
+
 * Differential expression QC and analysis (all genes): https://parajago.github.io/TCGA-Nigerian-RNAseq/NigerianTCGArawcountsDeSeq2.html
 * Differential expression QC and analysis (protein coding genes only): https://parajago.github.io/TCGA-Nigerian-RNAseq/NigerianTCGArawcountsDeSeq2-proteincoding.html
 
