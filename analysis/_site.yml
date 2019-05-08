@@ -9,6 +9,8 @@ navbar:
       href: NigerianTCGArawcountsDeSeq2.html
     - text: "Protein-Coding Only DE Analysis"
       href: NigerianTCGArawcountsDeSeq2-proteincoding.html
+	- text: "Batch Effect assessment"
+	  href: NigerianTCGArawcountsDeSeq2-pc2.html
     - text: "About"
       href: about.html
   right:

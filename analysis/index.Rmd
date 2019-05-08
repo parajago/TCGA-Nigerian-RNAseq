@@ -26,7 +26,6 @@ Workflow and analysis published here:
 * *Differential expression*: DESeq2
 
 #Differential expression:
-
 Initial processsing results:
 Nigerian lincRNA: 236737 reads, TCGA: 120498 reads
 Nigerian protein coding: 1647444 reads, TCGA 1322765 reads
@@ -37,6 +36,8 @@ TCGA: Not aligned: 1725472254 (this is expected)
 
 * Differential expression QC and analysis (all genes): https://parajago.github.io/TCGA-Nigerian-RNAseq/NigerianTCGArawcountsDeSeq2.html
 * Differential expression QC and analysis (protein coding genes only): https://parajago.github.io/TCGA-Nigerian-RNAseq/NigerianTCGArawcountsDeSeq2-proteincoding.html
+* Batch effect correction exploration: 
+https://parajago.github.io/TCGA-Nigerian-RNAseq/NigerianTCGArawcountsDeSeq2-pc2.html
 
 #Pending analyses
 * Pre-analysis visual summarization: TSNE, UMAP

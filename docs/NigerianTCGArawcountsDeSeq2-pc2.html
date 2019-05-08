@@ -1,0 +1,1317 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+
+
+<meta name="author" content="Padma Sheila Rajagopal, MD MPH" />
+
+
+<title>Nigerian-TCGA Differential Expression Analysis - Exploration of solutions to batch effect vs signal issue</title>
+
+<script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/spacelab.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<script src="site_libs/jqueryui-1.11.4/jquery-ui.min.js"></script>
+<link href="site_libs/tocify-1.9.1/jquery.tocify.css" rel="stylesheet" />
+<script src="site_libs/tocify-1.9.1/jquery.tocify.js"></script>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+<link href="site_libs/pagedtable-1.1/css/pagedtable.css" rel="stylesheet" />
+<script src="site_libs/pagedtable-1.1/js/pagedtable.js"></script>
+<link href="site_libs/font-awesome-5.1.0/css/all.css" rel="stylesheet" />
+<link href="site_libs/font-awesome-5.1.0/css/v4-shims.css" rel="stylesheet" />
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css">
+  pre:not([class]) {
+    background-color: white;
+  }
+</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+<style type="text/css">
+h1 {
+  font-size: 34px;
+}
+h1.title {
+  font-size: 38px;
+}
+h2 {
+  font-size: 30px;
+}
+h3 {
+  font-size: 24px;
+}
+h4 {
+  font-size: 18px;
+}
+h5 {
+  font-size: 16px;
+}
+h6 {
+  font-size: 12px;
+}
+.table th:not([align]) {
+  text-align: left;
+}
+</style>
+
+
+</head>
+
+<body>
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+code {
+  color: inherit;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+img {
+  max-width:100%;
+  height: auto;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+.html-widget {
+  margin-bottom: 20px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+summary {
+  display: list-item;
+}
+</style>
+
+
+<style type="text/css">
+/* padding for bootstrap navbar */
+body {
+  padding-top: 51px;
+  padding-bottom: 40px;
+}
+/* offset scroll position for anchor links (for fixed navbar)  */
+.section h1 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h2 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h3 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h4 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h5 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h6 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.dropdown-submenu {
+  position: relative;
+}
+.dropdown-submenu>.dropdown-menu {
+  top: 0;
+  left: 100%;
+  margin-top: -6px;
+  margin-left: -1px;
+  border-radius: 0 6px 6px 6px;
+}
+.dropdown-submenu:hover>.dropdown-menu {
+  display: block;
+}
+.dropdown-submenu>a:after {
+  display: block;
+  content: " ";
+  float: right;
+  width: 0;
+  height: 0;
+  border-color: transparent;
+  border-style: solid;
+  border-width: 5px 0 5px 5px;
+  border-left-color: #cccccc;
+  margin-top: 5px;
+  margin-right: -10px;
+}
+.dropdown-submenu:hover>a:after {
+  border-left-color: #ffffff;
+}
+.dropdown-submenu.pull-left {
+  float: none;
+}
+.dropdown-submenu.pull-left>.dropdown-menu {
+  left: -100%;
+  margin-left: 10px;
+  border-radius: 6px 0 6px 6px;
+}
+</style>
+
+<script>
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark it active
+  menuAnchor.parent().addClass('active');
+
+  // if it's got a parent navbar menu mark it active as well
+  menuAnchor.closest('li.dropdown').addClass('active');
+});
+</script>
+
+<div class="container-fluid main-container">
+
+<!-- tabsets -->
+
+<style type="text/css">
+.tabset-dropdown > .nav-tabs {
+  display: inline-table;
+  max-height: 500px;
+  min-height: 44px;
+  overflow-y: auto;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs > li.active:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
+  content: "&#xe258;";
+  border: none;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs > li.active {
+  display: block;
+}
+
+.tabset-dropdown > .nav-tabs > li > a,
+.tabset-dropdown > .nav-tabs > li > a:focus,
+.tabset-dropdown > .nav-tabs > li > a:hover {
+  border: none;
+  display: inline-block;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li {
+  display: block;
+  float: none;
+}
+
+.tabset-dropdown > .nav-tabs > li {
+  display: none;
+}
+</style>
+
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+
+$(document).ready(function () {
+  $('.tabset-dropdown > .nav-tabs > li').click(function () {
+    $(this).parent().toggleClass('nav-tabs-open')
+  });
+});
+</script>
+
+<!-- code folding -->
+
+
+
+<script>
+$(document).ready(function ()  {
+
+    // move toc-ignore selectors from section div to header
+    $('div.section.toc-ignore')
+        .removeClass('toc-ignore')
+        .children('h1,h2,h3,h4,h5').addClass('toc-ignore');
+
+    // establish options
+    var options = {
+      selectors: "h1,h2,h3",
+      theme: "bootstrap3",
+      context: '.toc-content',
+      hashGenerator: function (text) {
+        return text.replace(/[.\\/?&!#<>]/g, '').replace(/\s/g, '_').toLowerCase();
+      },
+      ignoreSelector: ".toc-ignore",
+      scrollTo: 0
+    };
+    options.showAndHide = true;
+    options.smoothScroll = true;
+
+    // tocify
+    var toc = $("#TOC").tocify(options).data("toc-tocify");
+});
+</script>
+
+<style type="text/css">
+
+#TOC {
+  margin: 25px 0px 20px 0px;
+}
+@media (max-width: 768px) {
+#TOC {
+  position: relative;
+  width: 100%;
+}
+}
+
+
+.toc-content {
+  padding-left: 30px;
+  padding-right: 40px;
+}
+
+div.main-container {
+  max-width: 1200px;
+}
+
+div.tocify {
+  width: 20%;
+  max-width: 260px;
+  max-height: 85%;
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+  div.tocify {
+    width: 25%;
+  }
+}
+
+@media (max-width: 767px) {
+  div.tocify {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.tocify ul, .tocify li {
+  line-height: 20px;
+}
+
+.tocify-subheader .tocify-item {
+  font-size: 0.90em;
+  padding-left: 25px;
+  text-indent: 0;
+}
+
+.tocify .list-group-item {
+  border-radius: 0px;
+}
+
+
+</style>
+
+<!-- setup 3col/9col grid for toc_float and main content  -->
+<div class="row-fluid">
+<div class="col-xs-12 col-sm-4 col-md-3">
+<div id="TOC" class="tocify">
+</div>
+</div>
+
+<div class="toc-content col-xs-12 col-sm-8 col-md-9">
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html">Olopade Lab: TCGA-Nigerian-RNAseq Project</a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li>
+  <a href="index.html">Home</a>
+</li>
+<li>
+  <a href="NigerianTCGArawcountsDeSeq2.html">Differential Expression Analysis</a>
+</li>
+<li>
+  <a href="NigerianTCGArawcountsDeSeq2-proteincoding.html">Protein-Coding Only DE Analysis</a>
+</li>
+<li>
+  <a href="about.html">About</a>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        <li>
+  <a href="https://github.com/parajago/TCGA-Nigerian-RNAseq">
+    <span class="fa fa-github"></span>
+     
+  </a>
+</li>
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<!-- Add a small amount of space between sections. -->
+<style type="text/css">
+div.section {
+  padding-top: 12px;
+}
+</style>
+
+<div class="fluid-row" id="header">
+
+
+
+<h1 class="title toc-ignore">Nigerian-TCGA Differential Expression Analysis - Exploration of solutions to batch effect vs signal issue</h1>
+<h4 class="author"><em>Padma Sheila Rajagopal, MD MPH</em></h4>
+<h4 class="date"><em>5/7/2019</em></h4>
+
+</div>
+
+
+<p><strong>Last updated:</strong> 2019-05-08</p>
+<strong>workflowr checks:</strong> <small>(Click a bullet for more information)</small>
+<ul>
+<li>
+<p><details> <summary> <strong style="color:red;">✖</strong> <strong>R Markdown file:</strong> uncommitted changes </summary> The R Markdown is untracked by Git. To know which version of the R Markdown file created these results, you’ll want to first commit it to the Git repo. If you’re still working on the analysis, you can ignore this warning. When you’re finished, you can run <code>wflow_publish</code> to commit the R Markdown file and build the HTML.</p>
+</details>
+</li>
+<li>
+<p><details> <summary> <strong style="color:blue;">✔</strong> <strong>Environment:</strong> empty </summary></p>
+<p>Great job! The global environment was empty. Objects defined in the global environment can affect the analysis in your R Markdown file in unknown ways. For reproduciblity it’s best to always run the code in an empty environment.</p>
+</details>
+</li>
+<li>
+<p><details> <summary> <strong style="color:blue;">✔</strong> <strong>Seed:</strong> <code>set.seed(20190113)</code> </summary></p>
+<p>The command <code>set.seed(20190113)</code> was run prior to running the code in the R Markdown file. Setting a seed ensures that any results that rely on randomness, e.g. subsampling or permutations, are reproducible.</p>
+</details>
+</li>
+<li>
+<p><details> <summary> <strong style="color:blue;">✔</strong> <strong>Session information:</strong> recorded </summary></p>
+<p>Great job! Recording the operating system, R version, and package versions is critical for reproducibility.</p>
+</details>
+</li>
+<li>
+<p><details> <summary> <strong style="color:blue;">✔</strong> <strong>Repository version:</strong> <a href="https://github.com/parajago/TCGA-Nigerian-RNAseq/tree/80f9f32d29f9e5576471c3309d953608f577f341" target="_blank">80f9f32</a> </summary></p>
+Great! You are using Git for version control. Tracking code development and connecting the code version to the results is critical for reproducibility. The version displayed above was the version of the Git repository at the time these results were generated. <br><br> Note that you need to be careful to ensure that all relevant files for the analysis have been committed to Git prior to generating the results (you can use <code>wflow_publish</code> or <code>wflow_git_commit</code>). workflowr only checks the R Markdown file, but you know if there are other scripts or data files that it depends on. Below is the status of the Git repository when the results were generated:
+<pre><code>
+Ignored files:
+    Ignored:    .DS_Store
+    Ignored:    .Rproj.user/
+    Ignored:    analysis/.DS_Store
+    Ignored:    code/.DS_Store
+    Ignored:    docs/.DS_Store
+    Ignored:    docs/figure/.DS_Store
+    Ignored:    plots/.DS_Store
+
+Untracked files:
+    Untracked:  analysis/NigerianTCGArawcountsDeSeq2-pc2.Rmd
+    Untracked:  analysis/NigerianTCGArawcountsDeSeq2-pc2_cache/
+    Untracked:  analysis/figure/
+
+</code></pre>
+Note that any generated files, e.g. HTML, png, CSS, etc., are not included in this status report because it is ok for generated content to have uncommitted changes. </details>
+</li>
+</ul>
+<hr />
+<div id="translation-from-htseq-raw-counts---deseq2-table-of-raw-counts" class="section level1">
+<h1>Translation from HTSeq raw counts -&gt; DESeq2 table of raw counts</h1>
+<p>I have 86 TCGA patients with whole-genome sequencing data and RNAseq data as well as 99 Nigerian patients with RNA-seq data. Raw counts were initially processed using HTSeq, so HTSeq raw counts (with one file per patient) are being formatted for use with DESeq2.</p>
+<pre class="r"><code>FOLDER &lt;- &quot;/Users/parajago/Research-Local/RNAseq-Local/Inputs/NigerianTCGA_quants-proteincoding&quot;
+sampleFiles &lt;- grep(&quot;htseq.counts&quot;,list.files(FOLDER),value=TRUE)
+
+#Differential gene expression setup based on race (b/w/other)
+sampleConditionrace &lt;- sampleFiles
+countVar2=1
+for (sample in sampleConditionrace){
+  if (stri_detect_fixed(sample,&quot;LIB&quot;)==TRUE){
+    sampleConditionrace[countVar2] &lt;- &quot;Nigerian&quot;
+    countVar2=countVar2+1
+  } else if (stri_detect_fixed(sample,&quot;black&quot;)==TRUE){
+    sampleConditionrace[countVar2] &lt;- &quot;TCGA_black&quot;
+    countVar2=countVar2+1
+  } else if (stri_detect_fixed(sample,&quot;white&quot;)==TRUE){
+    sampleConditionrace[countVar2] &lt;- &quot;TCGA_white&quot;
+    countVar2=countVar2+1
+  } else{
+    sampleConditionrace[countVar2] &lt;- &quot;TCGA_other&quot;
+    countVar2=countVar2+1
+  }
+}
+
+#Condition based on PAM50 subtype 
+sampleConditionPAM50 &lt;- sampleFiles
+countVar2=1
+for (sample in sampleConditionPAM50){
+  if (stri_detect_fixed(sample,&quot;Her2&quot;)==TRUE){
+    sampleConditionPAM50[countVar2] &lt;- &quot;Her2&quot;
+    countVar2=countVar2+1
+  } else if (stri_detect_fixed(sample,&quot;Basal&quot;)==TRUE){
+    sampleConditionPAM50[countVar2] &lt;- &quot;Basal&quot;
+    countVar2=countVar2+1
+  } else if (stri_detect_fixed(sample,&quot;LumA&quot;)==TRUE){
+    sampleConditionPAM50[countVar2] &lt;- &quot;LumA&quot;
+    countVar2=countVar2+1
+  } else if (stri_detect_fixed(sample,&quot;LumB&quot;)==TRUE){
+    sampleConditionPAM50[countVar2] &lt;- &quot;LumB&quot;
+    countVar2=countVar2+1
+  } else if (stri_detect_fixed(sample,&quot;PAMNL&quot;)==TRUE){
+    sampleConditionPAM50[countVar2] &lt;- &quot;Normal&quot;
+    countVar2=countVar2+1
+  } else{
+    sampleConditionPAM50[countVar2] &lt;- &quot;PAM_other&quot;
+    countVar2=countVar2+1
+  }
+}
+
+#Condition based on batch (relevant to the Nigerian patients only; no difference in batch for the TCGA patients)
+batchval &lt;- sampleFiles
+countVar2=1
+for (sample in batchval){
+  if (stri_detect_fixed(sample,&quot;batch1&quot;)==TRUE){
+    batchval[countVar2] &lt;- &quot;batch1&quot;
+    countVar2=countVar2+1
+  } else if (stri_detect_fixed(sample,&quot;batch23&quot;)==TRUE){
+    batchval[countVar2] &lt;- &quot;batch23&quot;
+    countVar2=countVar2+1
+  } else if (stri_detect_fixed(sample,&quot;batch4&quot;)==TRUE){
+    batchval[countVar2] &lt;- &quot;batch4&quot;
+    countVar2=countVar2+1
+  } else if (stri_detect_fixed(sample,&quot;batch5&quot;)==TRUE){
+    batchval[countVar2] &lt;- &quot;batch5&quot;
+    countVar2=countVar2+1
+  } else{
+    batchval[countVar2] &lt;- &quot;batchT&quot;
+    countVar2=countVar2+1
+  }
+}
+
+table(sampleConditionrace, sampleConditionPAM50)</code></pre>
+<pre><code>                   sampleConditionPAM50
+sampleConditionrace Basal Her2 LumA LumB Normal PAM_other
+         Nigerian      32   26   16   18      7         0
+         TCGA_black    25    0    4    4      0         0
+         TCGA_other     0    0    0    0      0        14
+         TCGA_white    17    5    8    9      0         0</code></pre>
+<pre class="r"><code>sampleTable2 &lt;- data.frame(sampleName=gsub(&quot;.htseq.counts&quot;,&quot;&quot;,sampleFiles),
+                          fileName=sampleFiles,
+                          condition1=sampleConditionrace,
+                          condition2=sampleConditionPAM50,
+                          batch=batchval)
+
+sampleTable2$sampleCondition &lt;- paste(sampleTable2$condition1, sampleTable2$condition2, sep=&quot;.&quot;)
+
+ddsHTSeqMF &lt;- DESeqDataSetFromHTSeqCount(sampleTable=sampleTable2,
+                                       directory=FOLDER,
+                                       design=~sampleCondition)
+
+ddsHTSeqMF &lt;- ddsHTSeqMF[rowSums(counts(ddsHTSeqMF)) &gt; 1, ] #Pre-filtering the dataset by removing the rows without information about gene expression
+
+ddsHTSeqMF$sampleCondition &lt;- relevel(ddsHTSeqMF$sampleCondition, ref = &quot;Nigerian.Basal&quot;) #explicitly making the Nigerian Basal patients the reference population</code></pre>
+</div>
+<div id="initial-exploratory-analysis-of-the-data" class="section level1">
+<h1>Initial exploratory analysis of the data</h1>
+<p>These are initial visualizations of our data sets to assess for batch effect between the Nigerian and TCGA sample sets.</p>
+<pre class="r"><code>dds &lt;- estimateSizeFactors(ddsHTSeqMF) #The size factor is the median ratio of the sample over a &quot;pseudosample&quot;: for each gene, the geometric mean of all samples. This accounts for sequencing depth. 
+
+vsd &lt;- vst(ddsHTSeqMF, blind = TRUE) #Variance-stabilizing transformation
+
+df &lt;- bind_rows( #Graphical representation of the variance-stabilizing transformation
+          as_data_frame(log2(counts(dds, normalized=TRUE)[, 1:2]+1)) %&gt;%
+          mutate(transformation = &quot;log2(x + 1)&quot;),
+          as_data_frame(assay(vsd)[, 1:2]) %&gt;% mutate(transformation = &quot;vst&quot;))
+          colnames(df)[1:2] &lt;- c(&quot;x&quot;, &quot;y&quot;)
+
+ggplot(df, aes(x = x, y = y)) + geom_hex(bins = 80) + coord_fixed() + facet_grid( . ~ transformation)</code></pre>
+<p><img src="figure/NigerianTCGArawcountsDeSeq2-pc2.Rmd/Variance%20transformation%20and%20batch%20effect%20assessment-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>Figure 1: Graphical representation of the variance-stabilizing transformation relative to the standard transformation of log2(x+1). This reduces variance purely due to low read counts. This transformation will be the input for subsequent PCAs.</p>
+<pre class="r"><code>#PCAs at this point of the analysis are the VST transformed counts, using the top 500 variance genes
+plotPCA(vsd, intgroup=c(&quot;condition1&quot;, &quot;batch&quot;), ntop=500)</code></pre>
+<p><img src="figure/NigerianTCGArawcountsDeSeq2-pc2.Rmd/Batch%20effect%20assessment-PCAs-1-1.png" width="672" style="display: block; margin: auto;" /> PCA 1-1:PCA demonstrating the raw difference between Nigerian and TCGA patients with within-batch demonstration. Nigerian patients do not appear to have significant differneces based on their batches. (TCGA patients are known not to have significant difference based on batch performed.)</p>
+<p>There is a factor separating the TCGA patients into 2 groups that is not wholly ancestry dependent.</p>
+<p>Of note, the PCA as performed by only has 33% variance explained with two variables when transformation is performed.</p>
+<pre class="r"><code>plotPCA(vsd, intgroup=c(&quot;condition2&quot;))</code></pre>
+<p><img src="figure/NigerianTCGArawcountsDeSeq2-pc2.Rmd/Batch%20effect%20assessment-PCAs-2-1.png" width="672" style="display: block; margin: auto;" /> PCA 1-2:PCA demonstrating association with breast cancer subtype and gene expression. This is noted in both groups and consistent with known biology. Again, only 33% variance is explained with 2 principal components.</p>
+<pre class="r"><code>plotPCA(vsd, intgroup=c(&quot;condition1&quot;, &quot;condition2&quot;))</code></pre>
+<p><img src="figure/NigerianTCGArawcountsDeSeq2-pc2.Rmd/Batch%20effect%20assessment-PCAs-3-1.png" width="672" style="display: block; margin: auto;" /> PCA 1-3: Integrated PCA demonstrating combined effect of breast cancer subtype and race. Subtype appears to account for the clustering seen in the TCGA group. Again, only 33% variance is explained with 2 principal components.</p>
+<pre class="r"><code>#Heatmap to assess clusters pre-analysis
+topVarGenes &lt;- head(order(rowVars(assay(vsd)), decreasing = TRUE), 250)
+hm  &lt;- assay(vsd)[ topVarGenes, ]
+hm  &lt;- hm - rowMeans(hm)
+anno &lt;- as.data.frame(colData(vsd)[, c(&quot;condition1&quot;, &quot;condition2&quot;)])
+colnames(anno) &lt;- c(&quot;Ethnicity&quot;, &quot;PAM50-subtype&quot;)
+rownames(anno) &lt;- colnames(vsd)
+pheatmap(hm, annotation_col = anno, cluster_rows=TRUE, cluster_cols=TRUE, clustering_distance_rows = &quot;correlation&quot;, clustering_distance_cols = &quot;correlation&quot;, clustering_method = &quot;complete&quot;, show_rownames=FALSE, show_colnames = FALSE, main=&quot;Heat map: Relative VST-transformed\ncounts across samples without batch correction&quot;)</code></pre>
+<p><img src="figure/NigerianTCGArawcountsDeSeq2-pc2.Rmd/Heatmap%20to%20assess%20clusters%20pre-analysis-1.png" width="672" style="display: block; margin: auto;" /> Heatmap 1-1: This heatmap is only using the top 250 genes and is competely heirarchically clustered. Results from this are consistent with the PCA.</p>
+</div>
+<div id="specific-issues-associated-with-our-batches" class="section level1">
+<h1>Specific issues associated with our batches</h1>
+<p>-We do not know the extent to which general RNA expression varies within the Nigerian population compared to within TCGA populations because of ethnicity / common ancestral variants -Biological differences are potentially confounded by batch effect (as Nigerians are a separate batch from TCGA); although no evidence of within-batch effect</p>
+<p>We will discuss the following methods to manage the batch effect and our reasoning for our chosen approach. -Limma removeBatchEffect: Likely erases any trace of biological effect associated with the Nigerian cohort -sva (1 principal component)</p>
+</div>
+<div id="limma-removebatcheffect" class="section level1">
+<h1>Limma removeBatchEffect</h1>
+<pre class="r"><code>#PCA2: Removing the batch effect created by the separate batch processing of the TCGA and Nigerian samples (although this may overcorrect for the actual difference between these two populations).  
+mat &lt;- assay(vsd) 
+mat &lt;- limma::removeBatchEffect(mat, vsd$condition1)
+assay(vsd) &lt;- mat
+plotPCA(vsd, intgroup=c(&quot;condition1&quot;, &quot;condition2&quot;))</code></pre>
+<p><img src="figure/NigerianTCGArawcountsDeSeq2-pc2.Rmd/Removing%20batch%20effect%20with%20Limma:removeBatchEffect%20(visualization%20only)-1.png" width="672" style="display: block; margin: auto;" /> PCA 2-1: Using the limma removeBatchEffect, we have lost any separation between the Nigerian and TCGA patients with the exception of a few outliers from the Nigerian patients. We primarily see the effect of breast cancer subtype in the distribution of the patients. 30% variance still accounted for from the original data set.</p>
+<pre class="r"><code>#Heatmap to assess clusters post-batch effect removal
+topVarGenes &lt;- head(order(rowVars(assay(vsd)), decreasing = TRUE), 250)
+hm  &lt;- assay(vsd)[ topVarGenes, ]
+hm  &lt;- hm - rowMeans(hm)
+anno &lt;- as.data.frame(colData(vsd)[, c(&quot;condition1&quot;, &quot;condition2&quot;)])
+colnames(anno) &lt;- c(&quot;Ethnicity&quot;, &quot;PAM50-subtype&quot;)
+rownames(anno) &lt;- colnames(vsd)
+pheatmap(hm, annotation_col = anno, cluster_rows=TRUE, cluster_cols=TRUE, clustering_distance_rows = &quot;correlation&quot;, clustering_distance_cols = &quot;correlation&quot;, clustering_method = &quot;complete&quot;, show_rownames=FALSE, show_colnames = FALSE, main=&quot;Heat map: Relative VST-transformed\ncounts across samples after Limma:removeBatchEffect&quot;)</code></pre>
+<p><img src="figure/NigerianTCGArawcountsDeSeq2-pc2.Rmd/Heatmap%20to%20assess%20clusters%20after%20Limma:removeBatchEffect%20(visualization%20only)-1.png" width="672" style="display: block; margin: auto;" /> Heatmap 2-1: This heatmap after batch correction with limma’s removeBatchEffect method is using the top 250 genes and is competely heirarchically clustered. These clusters appear consistent with the PCA results as well with clustering dominated by PAM50 subtype.</p>
+</div>
+<div id="sva-to-account-for-batch-effect-related-to-the-nigeriantcga-samples" class="section level1">
+<h1>sva to account for batch effect related to the Nigerian/TCGA samples</h1>
+<pre class="r"><code>dat  &lt;- counts(dds, normalized = TRUE)
+idx  &lt;- rowMeans(dat) &gt; 1
+dat  &lt;- dat[idx, ]
+mod  &lt;- model.matrix(~condition1, colData(dds))
+mod0 &lt;- model.matrix(~   1, colData(dds))
+svseq &lt;- svaseq(dat, mod, mod0, n.sv = 1)</code></pre>
+<pre><code>Number of significant surrogate variables is:  1 
+Iteration (out of 5 ):1  2  3  4  5  </code></pre>
+<pre class="r"><code>sampleTablebe &lt;- data.frame(sampleName=gsub(&quot;.htseq.counts&quot;,&quot;&quot;,sampleFiles),
+                          fileName=sampleFiles,
+                          condition1=sampleConditionrace,
+                          condition2=sampleConditionPAM50,
+                          be1=svseq$sv[,1],
+                          batch=batchval)
+
+sampleTablebe$sampleCondition &lt;- paste(sampleTablebe$condition1, sampleTablebe$condition2, sep=&quot;.&quot;)
+
+ddsHTSeqMFbe &lt;- DESeqDataSetFromHTSeqCount(sampleTable=sampleTablebe,
+                                       directory=FOLDER,
+                                       design= ~be1+sampleCondition)
+
+ddsHTSeqMFbe &lt;- ddsHTSeqMFbe[rowSums(counts(ddsHTSeqMFbe)) &gt; 1, ]
+
+ddsHTSeqMFbe$sampleCondition &lt;- relevel(ddsHTSeqMFbe$sampleCondition, ref = &quot;Nigerian.Basal&quot;) #explicitly making the Nigerian Basal patients the reference population</code></pre>
+<p>Use of sva to create a “batch effect” variable that effectively has full interaction with the Nigerian vs. TCGA variable does cause issues – performing differential expression analysis under these conditions does lead to not converging in beta.</p>
+</div>
+<div id="differential-expression-analysis" class="section level1">
+<h1>Differential expression analysis</h1>
+<p>This is the actual differential expression analysis with false discovery threshold of 0.05. I am performing this for both the standard and batch-effect-corrected versions of the DESeq2 model to allow comparison.</p>
+<pre class="r"><code>ddsMF &lt;- DESeq(ddsHTSeqMF) #This will refer to a version that does not include batch correction outside of what is accomplished through DESeq2 alone. 
+
+ddsMFbe &lt;-DESeq(ddsHTSeqMFbe) 
+#4 rows did not converge in beta, labelled in mcols(object)$betaConv
+
+resultsNames(ddsMF)</code></pre>
+<pre><code> [1] &quot;Intercept&quot;                                             
+ [2] &quot;sampleCondition_Nigerian.Her2_vs_Nigerian.Basal&quot;       
+ [3] &quot;sampleCondition_Nigerian.LumA_vs_Nigerian.Basal&quot;       
+ [4] &quot;sampleCondition_Nigerian.LumB_vs_Nigerian.Basal&quot;       
+ [5] &quot;sampleCondition_Nigerian.Normal_vs_Nigerian.Basal&quot;     
+ [6] &quot;sampleCondition_TCGA_black.Basal_vs_Nigerian.Basal&quot;    
+ [7] &quot;sampleCondition_TCGA_black.LumA_vs_Nigerian.Basal&quot;     
+ [8] &quot;sampleCondition_TCGA_black.LumB_vs_Nigerian.Basal&quot;     
+ [9] &quot;sampleCondition_TCGA_other.PAM_other_vs_Nigerian.Basal&quot;
+[10] &quot;sampleCondition_TCGA_white.Basal_vs_Nigerian.Basal&quot;    
+[11] &quot;sampleCondition_TCGA_white.Her2_vs_Nigerian.Basal&quot;     
+[12] &quot;sampleCondition_TCGA_white.LumA_vs_Nigerian.Basal&quot;     
+[13] &quot;sampleCondition_TCGA_white.LumB_vs_Nigerian.Basal&quot;     </code></pre>
+<pre class="r"><code>resultsNames(ddsMFbe)</code></pre>
+<pre><code> [1] &quot;Intercept&quot;                                             
+ [2] &quot;be1&quot;                                                   
+ [3] &quot;sampleCondition_Nigerian.Her2_vs_Nigerian.Basal&quot;       
+ [4] &quot;sampleCondition_Nigerian.LumA_vs_Nigerian.Basal&quot;       
+ [5] &quot;sampleCondition_Nigerian.LumB_vs_Nigerian.Basal&quot;       
+ [6] &quot;sampleCondition_Nigerian.Normal_vs_Nigerian.Basal&quot;     
+ [7] &quot;sampleCondition_TCGA_black.Basal_vs_Nigerian.Basal&quot;    
+ [8] &quot;sampleCondition_TCGA_black.LumA_vs_Nigerian.Basal&quot;     
+ [9] &quot;sampleCondition_TCGA_black.LumB_vs_Nigerian.Basal&quot;     
+[10] &quot;sampleCondition_TCGA_other.PAM_other_vs_Nigerian.Basal&quot;
+[11] &quot;sampleCondition_TCGA_white.Basal_vs_Nigerian.Basal&quot;    
+[12] &quot;sampleCondition_TCGA_white.Her2_vs_Nigerian.Basal&quot;     
+[13] &quot;sampleCondition_TCGA_white.LumA_vs_Nigerian.Basal&quot;     
+[14] &quot;sampleCondition_TCGA_white.LumB_vs_Nigerian.Basal&quot;     </code></pre>
+</div>
+<div id="sva-comparison-of-results" class="section level1">
+<h1>sva comparison of results</h1>
+<pre class="r"><code>cat(&quot;MA Plot 1: Original differential expression&quot;)</code></pre>
+<pre><code>MA Plot 1: Original differential expression</code></pre>
+<pre class="r"><code>res &lt;- lfcShrink(ddsMF, coef=&quot;sampleCondition_TCGA_white.Basal_vs_Nigerian.Basal&quot;, type=&quot;ashr&quot;, optmethod = &quot;mixEM&quot;)
+DESeq2::plotMA(res, ylim=c(-10,10), xlim=c(0.1,200))</code></pre>
+<p><img src="figure/NigerianTCGArawcountsDeSeq2-pc2.Rmd/MA%20plot%20of%20TCGA%20white%20Basal%20vs%20Nigerian%20Basal-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>cat(&quot;MA Plot 2: Batch-corrected differential expression&quot;)</code></pre>
+<pre><code>MA Plot 2: Batch-corrected differential expression</code></pre>
+<pre class="r"><code>res2 &lt;- lfcShrink(ddsMFbe, coef=&quot;sampleCondition_TCGA_white.Basal_vs_Nigerian.Basal&quot;, type=&quot;ashr&quot; , optmethod = &quot;mixEM&quot;)
+DESeq2::plotMA(res2, ylim=c(-10,10), xlim=c(0.1,200))</code></pre>
+<p><img src="figure/NigerianTCGArawcountsDeSeq2-pc2.Rmd/MA%20plot%20of%20TCGA%20white%20Basal%20vs%20Nigerian%20Basal-2.png" width="672" style="display: block; margin: auto;" /></p>
+<p>An MAPlot demonstrates log2 fold changes attributable to the condition over the mean of normalized counts for all the samples in the DESeqDataSet. Points will be colored red if the adjusted p value is less than 0.1. Points which fall out of the window are plotted as open triangles pointing either up or down.</p>
+<p>We see an overrepresentation of significant negative log fold changes of expression in the Nigerian patients relative to the TCGA white patients, but this is exacerbated dramatically after the sva correction.</p>
+<pre class="r"><code>#Without batch correction
+diffTCGA&lt;- results(ddsMF, contrast=c(&quot;sampleCondition&quot;, &quot;TCGA_black.Basal&quot;, &quot;TCGA_white.Basal&quot;), alpha=0.05)
+restemp &lt;- lfcShrink(ddsMF, contrast=c(&quot;sampleCondition&quot;, &quot;TCGA_black.Basal&quot;, &quot;TCGA_white.Basal&quot;), res = diffTCGA, type=&quot;ashr&quot;, optmethod = &quot;mixEM&quot;)
+
+diffTCGA &lt;- subset(diffTCGA, padj &lt; 0.05) #Selecting only the lowest threshold of significant findings
+diffTCGA$temp &lt;- row.names(diffTCGA)
+diffTCGA$temp &lt;- gsub(&quot;[.].+&quot;, &quot;&quot;, diffTCGA$temp)
+
+restemp$temp &lt;- row.names(restemp)
+restemp$temp &lt;- gsub(&quot;[.].+&quot;, &quot;&quot;, restemp$temp)
+
+diffTCGA$symbol &lt;- mapIds(EnsDb.Hsapiens.v75,
+                     keys=diffTCGA$temp,
+                     column=&quot;SYMBOL&quot;,
+                     keytype=&quot;GENEID&quot;,           
+                     multiVals=&quot;first&quot;)
+
+restemp$symbol &lt;- mapIds(EnsDb.Hsapiens.v75,
+                     keys=restemp$temp,
+                     column=&quot;SYMBOL&quot;,
+                     keytype=&quot;GENEID&quot;,           
+                     multiVals=&quot;first&quot;)
+
+diffTCGA$chr &lt;- mapIds(EnsDb.Hsapiens.v75,
+                     keys=diffTCGA$temp,
+                     column=&quot;SEQNAME&quot;,
+                     keytype=&quot;GENEID&quot;,           
+                     multiVals=&quot;first&quot;)
+
+diffTCGA$locstart &lt;- mapIds(EnsDb.Hsapiens.v75,
+                     keys=diffTCGA$temp,
+                     column=&quot;GENESEQSTART&quot;,
+                     keytype=&quot;GENEID&quot;,
+                     multiVals=&quot;first&quot;)
+
+diffTCGA$locend &lt;- mapIds(EnsDb.Hsapiens.v75,
+                     keys=diffTCGA$temp,
+                     column=&quot;GENESEQEND&quot;,
+                     keytype=&quot;GENEID&quot;,
+                     multiVals=&quot;first&quot;)
+
+hist(restemp$pvalue, main=&quot;Histogram of unadjusted p-values of differential\n gene expression between basal breast cancers \nin TCGA black and \nTCGA white breast cancer patients&quot;)</code></pre>
+<p><img src="figure/NigerianTCGArawcountsDeSeq2-pc2.Rmd/DE%20test:%20TCGA%20black%20and%20TCGA%20white-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>with(restemp, plot(log2FoldChange, -log10(padj), pch=20, main=&quot;Volcano plot of differential gene expression between basal \nbreast cancers in TCGA black and \nTCGA white breast cancer patients&quot;, xlim=c(-50,50), ylim=c(0,70)))
+with(subset(restemp, padj&lt;0.05 &amp; abs(log2FoldChange)&gt;25), points(log2FoldChange, -log10(pvalue), pch=20, col=&quot;blue&quot;))
+with(subset(restemp, padj&lt;0.05 &amp; abs(log2FoldChange)&gt;25), textxy(log2FoldChange, -log10(padj), labs=symbol, cex=.5))</code></pre>
+<p><img src="figure/NigerianTCGArawcountsDeSeq2-pc2.Rmd/DE%20test:%20TCGA%20black%20and%20TCGA%20white-2.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>#With batch correction
+diffTCGA2&lt;- results(ddsMFbe, contrast=c(&quot;sampleCondition&quot;, &quot;TCGA_black.Basal&quot;, &quot;TCGA_white.Basal&quot;), alpha=0.05)
+restemp2 &lt;- lfcShrink(ddsMFbe, contrast=c(&quot;sampleCondition&quot;, &quot;TCGA_black.Basal&quot;, &quot;TCGA_white.Basal&quot;), res = diffTCGA2, type=&quot;ashr&quot;, optmethod = &quot;mixEM&quot;)
+
+diffTCGA2 &lt;- subset(diffTCGA2, padj &lt; 0.05) #Selecting only the lowest threshold of significant findings
+diffTCGA2$temp &lt;- row.names(diffTCGA2)
+diffTCGA2$temp &lt;- gsub(&quot;[.].+&quot;, &quot;&quot;, diffTCGA2$temp)
+
+restemp2$temp &lt;- row.names(restemp2)
+restemp2$temp &lt;- gsub(&quot;[.].+&quot;, &quot;&quot;, restemp2$temp)
+
+diffTCGA2$symbol &lt;- mapIds(EnsDb.Hsapiens.v75,
+                     keys=diffTCGA2$temp,
+                     column=&quot;SYMBOL&quot;,
+                     keytype=&quot;GENEID&quot;,           
+                     multiVals=&quot;first&quot;)
+
+restemp2$symbol &lt;- mapIds(EnsDb.Hsapiens.v75,
+                     keys=restemp2$temp,
+                     column=&quot;SYMBOL&quot;,
+                     keytype=&quot;GENEID&quot;,           
+                     multiVals=&quot;first&quot;)
+
+diffTCGA2$chr &lt;- mapIds(EnsDb.Hsapiens.v75,
+                     keys=diffTCGA2$temp,
+                     column=&quot;SEQNAME&quot;,
+                     keytype=&quot;GENEID&quot;,           
+                     multiVals=&quot;first&quot;)
+
+diffTCGA2$locstart &lt;- mapIds(EnsDb.Hsapiens.v75,
+                     keys=diffTCGA2$temp,
+                     column=&quot;GENESEQSTART&quot;,
+                     keytype=&quot;GENEID&quot;,
+                     multiVals=&quot;first&quot;)
+
+diffTCGA2$locend &lt;- mapIds(EnsDb.Hsapiens.v75,
+                     keys=diffTCGA2$temp,
+                     column=&quot;GENESEQEND&quot;,
+                     keytype=&quot;GENEID&quot;,
+                     multiVals=&quot;first&quot;)
+
+hist(restemp2$pvalue, main=&quot;Histogram of unadjusted p-values of differential\n gene expression between basal breast cancers \nin TCGA black and white \n breast cancer patients\nBatch corrected&quot;)</code></pre>
+<p><img src="figure/NigerianTCGArawcountsDeSeq2-pc2.Rmd/DE%20test:%20TCGA%20black%20and%20TCGA%20white-3.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>with(restemp2, plot(log2FoldChange, -log10(padj), pch=20, main=&quot;Volcano plot of differential gene expression between basal \nbreast cancers in TCGA black and \nTCGA white breast cancer patients\nBatch corrected&quot;, xlim=c(-50,50), ylim=c(0,70)))
+with(subset(restemp2, padj&lt;0.05 &amp; abs(log2FoldChange)&gt;25), points(log2FoldChange, -log10(pvalue), pch=20, col=&quot;blue&quot;))</code></pre>
+<p><img src="figure/NigerianTCGArawcountsDeSeq2-pc2.Rmd/DE%20test:%20TCGA%20black%20and%20TCGA%20white-4.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>with(subset(restemp2, padj&lt;0.05 &amp; abs(log2FoldChange)&gt;25), textxy(log2FoldChange, -log10(padj), labs=symbol, cex=.5))</code></pre>
+<p>The histogram of unadjusted p-values looks slightly bimodal but close to anti-conservative when batch correction is not applied. The histogram of unadjusted p-values with batch correction is clearly bimodal. Both volcano plots demonstrate a tendency for increased log fold change in TCGA white relative to TCGA black, but the batch corrected volcano plot looks more dispersed and abnormal.</p>
+<p>The abnormalities in the batch corrected RNA continue. The following is a demonstration example of comparing 32 Nigerian basal cases and 17 TCGA white basal cases.</p>
+<pre class="r"><code>#Without batch correction
+resBasal&lt;- results(ddsMF, contrast=c(&quot;sampleCondition&quot;, &quot;Nigerian.Basal&quot;, &quot;TCGA_white.Basal&quot;), alpha=0.05)
+resBasal &lt;- subset(resBasal, padj &lt; 0.05) #Selecting only the lowest threshold of significant findings
+resBasal$temp &lt;- row.names(resBasal)
+resBasal$temp &lt;- gsub(&quot;[.].+&quot;, &quot;&quot;, resBasal$temp)
+
+restemp &lt;- NULL
+restemp &lt;- results(ddsMF, contrast=c(&quot;sampleCondition&quot;, &quot;Nigerian.Basal&quot;, &quot;TCGA_white.Basal&quot;), alpha=0.05)
+restemp &lt;- lfcShrink(ddsMF, contrast=c(&quot;sampleCondition&quot;, &quot;Nigerian.Basal&quot;, &quot;TCGA_white.Basal&quot;), res = restemp, type=&quot;ashr&quot;, optmethod = &quot;mixEM&quot;)
+
+restemp$temp &lt;- row.names(restemp)
+restemp$temp &lt;- gsub(&quot;[.].+&quot;, &quot;&quot;, restemp$temp)
+
+restemp$symbol &lt;- mapIds(EnsDb.Hsapiens.v75,
+                     keys=restemp$temp,
+                     column=&quot;SYMBOL&quot;,
+                     keytype=&quot;GENEID&quot;,           
+                     multiVals=&quot;first&quot;)
+
+restemp$chr &lt;- mapIds(EnsDb.Hsapiens.v75,
+                     keys=restemp$temp,
+                     column=&quot;SEQNAME&quot;,
+                     keytype=&quot;GENEID&quot;,           
+                     multiVals=&quot;first&quot;)
+
+restemp$locstart &lt;- mapIds(EnsDb.Hsapiens.v75,
+                     keys=restemp$temp,
+                     column=&quot;GENESEQSTART&quot;,
+                     keytype=&quot;GENEID&quot;,
+                     multiVals=&quot;first&quot;)
+
+restemp$locend &lt;- mapIds(EnsDb.Hsapiens.v75,
+                     keys=restemp$temp,
+                     column=&quot;GENESEQEND&quot;,
+                     keytype=&quot;GENEID&quot;,
+                     multiVals=&quot;first&quot;)
+
+hist(restemp$pvalue, main=&quot;Histogram of unadjusted p-values of differential\n gene expression between basal breast cancers \nin Nigerian and \nTCGA white breast cancer patients&quot;)</code></pre>
+<p><img src="figure/NigerianTCGArawcountsDeSeq2-pc2.Rmd/DE%20test:%20Nigerian%20basal%20vs%20TCGA%20white%20basal-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>with(restemp, plot(log2FoldChange, -log10(padj), pch=20, main=&quot;Volcano plot of differential gene expression between basal \nbreast cancers in Nigerian and \nTCGA white breast cancer patients&quot;, xlim=c(-50,50), ylim=c(0,70)))
+with(subset(restemp, padj&lt;0.05 &amp; abs(log2FoldChange)&gt;25), points(log2FoldChange, -log10(pvalue), pch=20, col=&quot;blue&quot;))
+with(subset(restemp, padj&lt;0.05 &amp; abs(log2FoldChange)&gt;25), textxy(log2FoldChange, -log10(padj), labs=symbol, cex=.5))</code></pre>
+<p><img src="figure/NigerianTCGArawcountsDeSeq2-pc2.Rmd/DE%20test:%20Nigerian%20basal%20vs%20TCGA%20white%20basal-2.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>#With batch correction
+resBasal2&lt;- results(ddsMFbe, contrast=c(&quot;sampleCondition&quot;, &quot;Nigerian.Basal&quot;, &quot;TCGA_white.Basal&quot;), alpha=0.05)
+resBasal2 &lt;- subset(resBasal2, padj &lt; 0.05) #Selecting only the lowest threshold of significant findings
+resBasal2$temp &lt;- row.names(resBasal2)
+resBasal2$temp &lt;- gsub(&quot;[.].+&quot;, &quot;&quot;, resBasal2$temp)
+
+restemp2 &lt;- NULL
+restemp2 &lt;- results(ddsMFbe, contrast=c(&quot;sampleCondition&quot;, &quot;Nigerian.Basal&quot;, &quot;TCGA_white.Basal&quot;), alpha=0.05)
+restemp2 &lt;- lfcShrink(ddsMFbe, contrast=c(&quot;sampleCondition&quot;, &quot;Nigerian.Basal&quot;, &quot;TCGA_white.Basal&quot;), res = restemp2, type=&quot;ashr&quot;, optmethod = &quot;mixEM&quot;)
+
+restemp2$temp &lt;- row.names(restemp2)
+restemp2$temp &lt;- gsub(&quot;[.].+&quot;, &quot;&quot;, restemp2$temp)
+
+restemp2$symbol &lt;- mapIds(EnsDb.Hsapiens.v75,
+                     keys=restemp2$temp,
+                     column=&quot;SYMBOL&quot;,
+                     keytype=&quot;GENEID&quot;,           
+                     multiVals=&quot;first&quot;)
+
+restemp2$chr &lt;- mapIds(EnsDb.Hsapiens.v75,
+                     keys=restemp2$temp,
+                     column=&quot;SEQNAME&quot;,
+                     keytype=&quot;GENEID&quot;,           
+                     multiVals=&quot;first&quot;)
+
+restemp2$locstart &lt;- mapIds(EnsDb.Hsapiens.v75,
+                     keys=restemp2$temp,
+                     column=&quot;GENESEQSTART&quot;,
+                     keytype=&quot;GENEID&quot;,
+                     multiVals=&quot;first&quot;)
+
+restemp2$locend &lt;- mapIds(EnsDb.Hsapiens.v75,
+                     keys=restemp2$temp,
+                     column=&quot;GENESEQEND&quot;,
+                     keytype=&quot;GENEID&quot;,
+                     multiVals=&quot;first&quot;)
+
+hist(restemp2$pvalue, main=&quot;Histogram of unadjusted p-values of differential\n gene expression between basal breast cancers \nin Nigerian and \nTCGA white breast cancer patients\n batch corrected&quot;)</code></pre>
+<p><img src="figure/NigerianTCGArawcountsDeSeq2-pc2.Rmd/DE%20test:%20Nigerian%20basal%20vs%20TCGA%20white%20basal-3.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>with(restemp2, plot(log2FoldChange, -log10(padj), pch=20, main=&quot;Volcano plot of differential gene expression between basal \nbreast cancers in Nigerian and \nTCGA white breast cancer patients\n batch corrected&quot;, xlim=c(-50,50), ylim=c(0,70)))
+with(subset(restemp2, padj&lt;0.05 &amp; abs(log2FoldChange)&gt;25), points(log2FoldChange, -log10(pvalue), pch=20, col=&quot;blue&quot;))
+with(subset(restemp2, padj&lt;0.05 &amp; abs(log2FoldChange)&gt;25), textxy(log2FoldChange, -log10(padj), labs=symbol, cex=.5))</code></pre>
+<p><img src="figure/NigerianTCGArawcountsDeSeq2-pc2.Rmd/DE%20test:%20Nigerian%20basal%20vs%20TCGA%20white%20basal-4.png" width="672" style="display: block; margin: auto;" /></p>
+<p>Although unadjusted p-value histogram appears anti-conservative, volcano plot with batch correction appears to have an additonal wing with numerous points demonstrating &gt;20x log2foldchange. The volcano plot without batch correction is more consistent with expected findings.</p>
+<p>Next, we will assess the efficacy of DESeq2 across breast cancer subtypes within the Nigerian cohort. #Cross-subtype comparison</p>
+<pre class="r"><code>#Without batch correction
+rescrosstype&lt;- results(ddsMF, contrast=c(&quot;sampleCondition&quot;, &quot;Nigerian.Basal&quot;, &quot;Nigerian.Her2&quot;), alpha=0.05)
+rescrosstype &lt;- subset(rescrosstype, padj &lt; 0.05) #Selecting only the lowest threshold of significant findings
+rescrosstype$temp &lt;- row.names(rescrosstype)
+rescrosstype$temp &lt;- gsub(&quot;[.].+&quot;, &quot;&quot;, rescrosstype$temp)
+
+restemp &lt;- NULL
+restemp &lt;- results(ddsMF, contrast=c(&quot;sampleCondition&quot;, &quot;Nigerian.Basal&quot;, &quot;Nigerian.Her2&quot;), alpha=0.05)
+restemp &lt;- lfcShrink(ddsMF, contrast=c(&quot;sampleCondition&quot;, &quot;Nigerian.Basal&quot;, &quot;Nigerian.Her2&quot;), res = restemp, type=&quot;ashr&quot;, optmethod = &quot;mixEM&quot;)
+
+restemp$temp &lt;- row.names(restemp)
+restemp$temp &lt;- gsub(&quot;[.].+&quot;, &quot;&quot;, restemp$temp)
+
+restemp$symbol &lt;- mapIds(EnsDb.Hsapiens.v75,
+                     keys=restemp$temp,
+                     column=&quot;SYMBOL&quot;,
+                     keytype=&quot;GENEID&quot;,           
+                     multiVals=&quot;first&quot;)
+
+restemp$chr &lt;- mapIds(EnsDb.Hsapiens.v75,
+                     keys=restemp$temp,
+                     column=&quot;SEQNAME&quot;,
+                     keytype=&quot;GENEID&quot;,           
+                     multiVals=&quot;first&quot;)
+
+restemp$locstart &lt;- mapIds(EnsDb.Hsapiens.v75,
+                     keys=restemp$temp,
+                     column=&quot;GENESEQSTART&quot;,
+                     keytype=&quot;GENEID&quot;,
+                     multiVals=&quot;first&quot;)
+
+restemp$locend &lt;- mapIds(EnsDb.Hsapiens.v75,
+                     keys=restemp$temp,
+                     column=&quot;GENESEQEND&quot;,
+                     keytype=&quot;GENEID&quot;,
+                     multiVals=&quot;first&quot;)
+
+hist(restemp$pvalue, main=&quot;Histogram of unadjusted p-values of differential\n gene expression between \n Nigerian basal and Nigerian Her2 breast cancer patients&quot;)</code></pre>
+<p><img src="figure/NigerianTCGArawcountsDeSeq2-pc2.Rmd/DE%20test:%20Nigerian%20basal%20vs%20Nigerian%20Her2-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>with(restemp, plot(log2FoldChange, -log10(padj), pch=20, main=&quot;Volcano plot of differential\n gene expression between \n Nigerian basal and Nigerian Her2 breast cancer patients&quot;, xlim=c(-50,50), ylim=c(0,70)))
+with(subset(restemp, padj&lt;0.01 &amp; abs(log2FoldChange)&gt;25), points(log2FoldChange, -log10(pvalue), pch=20, col=&quot;blue&quot;))</code></pre>
+<p><img src="figure/NigerianTCGArawcountsDeSeq2-pc2.Rmd/DE%20test:%20Nigerian%20basal%20vs%20Nigerian%20Her2-2.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>with(subset(restemp, padj&lt;0.01 &amp; abs(log2FoldChange)&gt;25), textxy(log2FoldChange, -log10(padj), labs=symbol, cex=.5))
+
+#With batch correction
+rescrosstype2&lt;- results(ddsMFbe, contrast=c(&quot;sampleCondition&quot;, &quot;Nigerian.Basal&quot;, &quot;Nigerian.Her2&quot;), alpha=0.05)
+rescrosstype2 &lt;- subset(rescrosstype2, padj &lt; 0.05) #Selecting only the lowest threshold of significant findings
+rescrosstype2$temp &lt;- row.names(rescrosstype2)
+rescrosstype2$temp &lt;- gsub(&quot;[.].+&quot;, &quot;&quot;, rescrosstype2$temp)
+
+restemp2 &lt;- NULL
+restemp2 &lt;- results(ddsMFbe, contrast=c(&quot;sampleCondition&quot;, &quot;Nigerian.Basal&quot;, &quot;Nigerian.Her2&quot;), alpha=0.05)
+restemp2 &lt;- lfcShrink(ddsMFbe, contrast=c(&quot;sampleCondition&quot;, &quot;Nigerian.Basal&quot;, &quot;Nigerian.Her2&quot;), res = restemp2, type=&quot;ashr&quot;, optmethod = &quot;mixEM&quot;)
+
+restemp2$temp &lt;- row.names(restemp2)
+restemp2$temp &lt;- gsub(&quot;[.].+&quot;, &quot;&quot;, restemp2$temp)
+
+restemp2$symbol &lt;- mapIds(EnsDb.Hsapiens.v75,
+                     keys=restemp2$temp,
+                     column=&quot;SYMBOL&quot;,
+                     keytype=&quot;GENEID&quot;,           
+                     multiVals=&quot;first&quot;)
+
+restemp2$chr &lt;- mapIds(EnsDb.Hsapiens.v75,
+                     keys=restemp2$temp,
+                     column=&quot;SEQNAME&quot;,
+                     keytype=&quot;GENEID&quot;,           
+                     multiVals=&quot;first&quot;)
+
+restemp2$locstart &lt;- mapIds(EnsDb.Hsapiens.v75,
+                     keys=restemp2$temp,
+                     column=&quot;GENESEQSTART&quot;,
+                     keytype=&quot;GENEID&quot;,
+                     multiVals=&quot;first&quot;)
+
+restemp2$locend &lt;- mapIds(EnsDb.Hsapiens.v75,
+                     keys=restemp2$temp,
+                     column=&quot;GENESEQEND&quot;,
+                     keytype=&quot;GENEID&quot;,
+                     multiVals=&quot;first&quot;)
+
+hist(restemp2$pvalue, main=&quot;Histogram of unadjusted p-values of differential\n gene expression between \n Nigerian basal and Nigerian Her2 breast cancer patients\n batch corrected&quot;)</code></pre>
+<p><img src="figure/NigerianTCGArawcountsDeSeq2-pc2.Rmd/DE%20test:%20Nigerian%20basal%20vs%20Nigerian%20Her2-3.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>with(restemp2, plot(log2FoldChange, -log10(padj), pch=20, main=&quot;Volcano plot of differential\n gene expression between \n Nigerian basal and Nigerian Her2 breast cancer patients\n batch corrected&quot;, xlim=c(-50,50), ylim=c(0,70)))
+with(subset(restemp2, padj&lt;0.01 &amp; abs(log2FoldChange)&gt;25), points(log2FoldChange, -log10(pvalue), pch=20, col=&quot;blue&quot;))
+with(subset(restemp2, padj&lt;0.01 &amp; abs(log2FoldChange)&gt;25), textxy(log2FoldChange, -log10(padj), labs=symbol, cex=.5))</code></pre>
+<p><img src="figure/NigerianTCGArawcountsDeSeq2-pc2.Rmd/DE%20test:%20Nigerian%20basal%20vs%20Nigerian%20Her2-4.png" width="672" style="display: block; margin: auto;" /></p>
+<p>The unadjusted p-value histogram and volcano plot appear appropriate without batch correction in the cross-subtype test. There is, however, a bimodal distribution and some lack of symmetry on the volcano plot with batch correction with sva, continuing to suggest that the batch correction may be “overcorrecting.” It is reassuring that we are seeing more normal volcano plots on the within-assay comparison.</p>
+<pre class="r"><code>genename &lt;- &quot;ENSG00000141736.9&quot;
+her2comparematrix &lt;- plotCounts(ddsMF, gene = genename, intgroup=c(&quot;condition1&quot;, &quot;condition2&quot;), main=&quot;Distribution of HER2 expression across groups&quot;, returnData = TRUE)
+
+her2comparematrix &lt;- her2comparematrix %&gt;% subset(condition1==&quot;Nigerian&quot; &amp; (condition2==&quot;Her2&quot; | condition2==&quot;Basal&quot;))
+ggplot(her2comparematrix, aes (x=condition2, y=count)) + geom_point() + labs(title=&quot;Comparison of normalized RNAseq counts of HER2 expression between\nNigerian basal tumors and Nigerian HER2 tumors&quot;) + xlab(&quot;Breast cancer Subtype&quot;) + ylab(&quot;Normalized RNAseq count (pre DE)&quot;) + scale_y_log10()</code></pre>
+<p><img src="figure/NigerianTCGArawcountsDeSeq2-pc2.Rmd/Hand%20code%20value%20check%20of%20Her2-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>her2tempassay &lt;- subset(rescrosstype, rownames(rescrosstype)==&quot;ENSG00000141736.9&quot;)
+her2tempassay[,1:6]</code></pre>
+<pre><code>log2 fold change (MLE): sampleCondition Nigerian.Basal vs Nigerian.Her2 
+Wald test p-value: sampleCondition Nigerian.Basal vs Nigerian.Her2 
+DataFrame with 1 row and 6 columns
+                          baseMean    log2FoldChange            lfcSE
+                         &lt;numeric&gt;         &lt;numeric&gt;        &lt;numeric&gt;
+ENSG00000141736.9 23219.1675125931 -4.79084247687933 0.33950353247135
+                               stat               pvalue
+                          &lt;numeric&gt;            &lt;numeric&gt;
+ENSG00000141736.9 -14.1113184949957 3.23473002470692e-45
+                                  padj
+                             &lt;numeric&gt;
+ENSG00000141736.9 2.86386822737427e-41</code></pre>
+<pre class="r"><code>her2tempassay2 &lt;- subset(rescrosstype2, rownames(rescrosstype2)==&quot;ENSG00000141736.9&quot;)
+her2tempassay2[,1:6]</code></pre>
+<pre><code>log2 fold change (MLE): sampleCondition Nigerian.Basal vs Nigerian.Her2 
+Wald test p-value: sampleCondition Nigerian.Basal vs Nigerian.Her2 
+DataFrame with 1 row and 6 columns
+                          baseMean    log2FoldChange             lfcSE
+                         &lt;numeric&gt;         &lt;numeric&gt;         &lt;numeric&gt;
+ENSG00000141736.9 23219.1675125931 -4.79596132500931 0.339155174761433
+                              stat               pvalue
+                         &lt;numeric&gt;            &lt;numeric&gt;
+ENSG00000141736.9 -14.140905644099 2.12531509173447e-45
+                                  padj
+                             &lt;numeric&gt;
+ENSG00000141736.9 1.28347778389844e-41</code></pre>
+<pre class="r"><code>tempassay &lt;- as.data.frame(assay(ddsHTSeqMF))
+tempassay &lt;- dplyr::select(tempassay, contains(&quot;LIB&quot;))
+tempassay &lt;- dplyr::select(tempassay, matches(&#39;Basal|Her2&#39;))
+tempassay &lt;- subset(tempassay, rownames(tempassay)==&quot;ENSG00000141736.9&quot;)
+tempassaybasal &lt;- dplyr::select(tempassay, matches(&#39;Basal&#39;))
+tempassayher2 &lt;- dplyr::select(tempassay, matches(&#39;Her2&#39;))
+
+tempassaybasal &lt;-as.numeric(tempassaybasal)
+tempassayher2 &lt;-as.numeric(tempassayher2)
+t.test (tempassaybasal, tempassayher2)</code></pre>
+<pre><code>
+    Welch Two Sample t-test
+
+data:  tempassaybasal and tempassayher2
+t = -4.5324, df = 25.048, p-value = 0.0001247
+alternative hypothesis: true difference in means is not equal to 0
+95 percent confidence interval:
+ -316152.6 -118614.2
+sample estimates:
+ mean of x  mean of y 
+  8025.375 225408.769 </code></pre>
+<p>The cross subtype comparison did find a statistically significant difference between HER2 expression between the Nigerian basal and Her tumors, which is appropriate when the data is visualized as well. That being said, for the individual gene value for HER2, for example, there was not a very large difference in absolute values between batch correction and not batch correction.</p>
+<p>We will now assess arbitrary within-Nigerian samples to identify any other within sample sources of bias.</p>
+</div>
+<div id="nigerian-nigerian-comparison" class="section level1">
+<h1>Nigerian-Nigerian comparison</h1>
+<pre class="r"><code>table(batchval, sampleConditionPAM50)</code></pre>
+<pre><code>         sampleConditionPAM50
+batchval  Basal Her2 LumA LumB Normal PAM_other
+  batch1      8    7    1    3      2         0
+  batch23     9   12    5    8      2         0
+  batch4      6    2    5    1      1         0
+  batch5      9    5    5    6      2         0
+  batchT     42    5   12   13      0        14</code></pre>
+<pre class="r"><code>sampletableNigerian &lt;- sampleTable2
+sampletableNigerian &lt;- subset(sampletableNigerian, batch==&quot;batch1&quot; | batch==&quot;batch5&quot;)
+sampletableNigerian$condition1 &lt;- NULL
+
+dsHTSeqMFNigerian &lt;- DESeqDataSetFromHTSeqCount(sampleTable=sampletableNigerian,
+                                       directory=FOLDER,
+                                       design=~batch)
+dsHTSeqMFNigerian &lt;- dsHTSeqMFNigerian[rowSums(counts(dsHTSeqMFNigerian)) &gt; 1, ] #Pre-filtering the dataset by removing the rows without information about gene expression
+ddsMFNigerianexample &lt;- DESeq(dsHTSeqMFNigerian)
+
+#Without batch correction
+resNigerianNigerian&lt;- results(ddsMFNigerianexample, contrast=c(&quot;batch&quot;, &quot;batch1&quot;, &quot;batch5&quot;), alpha=0.05)
+resNigerianNigerian &lt;- subset(resNigerianNigerian, padj &lt; 0.05) #Selecting only the lowest threshold of significant findings
+resNigerianNigerian$temp &lt;- row.names(resNigerianNigerian)
+resNigerianNigerian$temp &lt;- gsub(&quot;[.].+&quot;, &quot;&quot;, resNigerianNigerian$temp)
+
+restempN &lt;- lfcShrink(ddsMFNigerianexample, contrast=c(&quot;batch&quot;, &quot;batch1&quot;, &quot;batch5&quot;), res = resNigerianNigerian, type=&quot;ashr&quot;, optmethod = &quot;mixEM&quot;)
+
+restempN$temp &lt;- row.names(restempN)
+restempN$temp &lt;- gsub(&quot;[.].+&quot;, &quot;&quot;, restempN$temp)
+
+restempN$symbol &lt;- mapIds(EnsDb.Hsapiens.v75,
+                     keys=restempN$temp,
+                     column=&quot;SYMBOL&quot;,
+                     keytype=&quot;GENEID&quot;,           
+                     multiVals=&quot;first&quot;)
+
+restempN$chr &lt;- mapIds(EnsDb.Hsapiens.v75,
+                     keys=restempN$temp,
+                     column=&quot;SEQNAME&quot;,
+                     keytype=&quot;GENEID&quot;,           
+                     multiVals=&quot;first&quot;)
+
+restempN$locstart &lt;- mapIds(EnsDb.Hsapiens.v75,
+                     keys=restempN$temp,
+                     column=&quot;GENESEQSTART&quot;,
+                     keytype=&quot;GENEID&quot;,
+                     multiVals=&quot;first&quot;)
+
+restempN$locend &lt;- mapIds(EnsDb.Hsapiens.v75,
+                     keys=restempN$temp,
+                     column=&quot;GENESEQEND&quot;,
+                     keytype=&quot;GENEID&quot;,
+                     multiVals=&quot;first&quot;)
+
+hist(restempN$pvalue, main=&quot;Histogram of unadjusted p-values of differential\n gene expression between \n Nigerian breast cancer patients&quot;)</code></pre>
+<p><img src="figure/NigerianTCGArawcountsDeSeq2-pc2.Rmd/Comparing%20Nigerian-batch1%20to%20Nigerian-batch5%20patients-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>with(restempN, plot(log2FoldChange, -log10(padj), pch=20, main=&quot;Volcano plot of differential\n gene expression between \n Nigerian breast cancer patients&quot;, xlim=c(-50,50), ylim=c(0,70)))
+with(subset(restempN, padj&lt;0.05 &amp; abs(log2FoldChange)&gt;25), points(log2FoldChange, -log10(pvalue), pch=20, col=&quot;blue&quot;))</code></pre>
+<p><img src="figure/NigerianTCGArawcountsDeSeq2-pc2.Rmd/Comparing%20Nigerian-batch1%20to%20Nigerian-batch5%20patients-2.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>with(subset(restempN, padj&lt;0.05 &amp; abs(log2FoldChange)&gt;25), textxy(log2FoldChange, -log10(padj), labs=symbol, cex=.5))</code></pre>
+<p>While 4205 genes are noted as significantly differentially expressed with regard to p-value, the results show that effectively none have significant logfoldchange, also confirming the efficacy of this approach within the Nigerian patient sample.</p>
+</div>
+<div id="quantile-normalization-as-additional-checkappraoch" class="section level1">
+<h1>Quantile normalization as additional check/appraoch</h1>
+<p>Quantile normalization is a technique that can be used to make distributions comparable. To quantile normalize two or more distributions to each other, without a reference distribution, one must sort the values within the distribution, then set to the average (usually, arithmetic mean) of the distributions. So the highest value in all cases becomes the mean of the highest values, the second highest value becomes the mean of the second highest values, and so on.</p>
+<pre class="r"><code>countmatrix &lt;- assay(ddsHTSeqMF)
+countmatrix2 &lt;- log2(countmatrix + 1)
+countmatrix2 = countmatrix2 [rowMeans(countmatrix2) &gt; 3, ]
+
+plot(density(countmatrix2[,1]),lwd=3,ylim=c(0,.30))
+for(i in 1:20){lines(density(countmatrix2[,i]),lwd=3)}</code></pre>
+<p><img src="figure/NigerianTCGArawcountsDeSeq2-pc2.Rmd/Quantile%20normalization-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>norm_countmatrix &lt;- as.matrix(countmatrix2)
+norm_countmatrix = normalize.quantiles(norm_countmatrix)
+plot(density(norm_countmatrix[,1]),lwd=3,ylim=c(0,.30))
+for(i in 1:20){lines(density(norm_countmatrix[,i]),lwd=3)}</code></pre>
+<p><img src="figure/NigerianTCGArawcountsDeSeq2-pc2.Rmd/Quantile%20normalization-2.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>colnames (norm_countmatrix) &lt;- colnames (countmatrix2)
+rownames (norm_countmatrix) &lt;- rownames (countmatrix2)
+
+norm_countmatrix &lt;- as.data.frame(norm_countmatrix)
+countmatrixNigerian &lt;- dplyr::select(norm_countmatrix, contains(&quot;LIB&quot;))
+
+tcgacolnames &lt;- colnames(countmatrix)
+tcgacolnames &lt;- setdiff(tcgacolnames, colnames(countmatrixNigerian))
+countmatrixTCGA &lt;- norm_countmatrix[ , tcgacolnames]
+
+t.test(countmatrixNigerian, countmatrixTCGA)</code></pre>
+<pre><code>
+    Welch Two Sample t-test
+
+data:  countmatrixNigerian and countmatrixTCGA
+t = -2.0267, df = 2644100, p-value = 0.04269
+alternative hypothesis: true difference in means is not equal to 0
+95 percent confidence interval:
+ -0.0124138963 -0.0002078838
+sample estimates:
+mean of x mean of y 
+ 7.951994  7.958305 </code></pre>
+<pre class="r"><code>#autoplot(prcomp(t(norm_countmatrix)), main=&quot;PCA with quantile normalization approach&quot;)</code></pre>
+<p>We have nearly equal means of expression; obviously, the PCA is not as well explained by this rapid normalization approach, but this demonstrates similar to reduced efficacy compared to DESeq2.</p>
+</div>
+<div id="housekeeping-gene-expression-results" class="section level1">
+<h1>Housekeeping gene expression results</h1>
+<p>Based on the paper by Krasnov et al. (<a href="https://www.frontiersin.org/articles/10.3389/fgene.2019.00097/full" class="uri">https://www.frontiersin.org/articles/10.3389/fgene.2019.00097/full</a>), we examined the housekeeping genes UBC and PUM1 across the Nigerian and TCGA samples to assess their differential expression.</p>
+<p>UBC: ENSG00000150991.10 PUM1: ENSG00000134644.11</p>
+<pre class="r"><code>genename &lt;- &quot;ENSG00000150991.10&quot;
+plotCounts(ddsMF, gene = genename, intgroup=c(&quot;condition1&quot;), main=&quot;Distribution of UBC expression across groups (before DE analysis)&quot;)</code></pre>
+<p><img src="figure/NigerianTCGArawcountsDeSeq2-pc2.Rmd/UBC%20and%20PUM1%20cross-ethnic%20comparisons-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>genename &lt;- &quot;ENSG00000134644.11&quot;
+plotCounts(ddsMF, gene = genename, intgroup=c(&quot;condition1&quot;), main=&quot;Distribution of PUM1 expression across groups (before DE analysis)&quot;)</code></pre>
+<p><img src="figure/NigerianTCGArawcountsDeSeq2-pc2.Rmd/UBC%20and%20PUM1%20cross-ethnic%20comparisons-2.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>ubctempassay &lt;- subset(resBasal, rownames(resBasal)==&quot;ENSG00000150991.10&quot;)
+ubctempassay[,1:6]</code></pre>
+<pre><code>log2 fold change (MLE): sampleCondition Nigerian.Basal vs TCGA_white.Basal 
+Wald test p-value: sampleCondition Nigerian.Basal vs TCGA_white.Basal 
+DataFrame with 1 row and 6 columns
+                           baseMean   log2FoldChange             lfcSE
+                          &lt;numeric&gt;        &lt;numeric&gt;         &lt;numeric&gt;
+ENSG00000150991.10 6468.18351937685 1.15934912106775 0.156293305665523
+                               stat               pvalue
+                          &lt;numeric&gt;            &lt;numeric&gt;
+ENSG00000150991.10 7.41777849109431 1.19101070558879e-13
+                                   padj
+                              &lt;numeric&gt;
+ENSG00000150991.10 3.14037924820554e-12</code></pre>
+<pre class="r"><code>pum1tempassay &lt;- subset(resBasal, rownames(resBasal)==&quot;ENSG00000134644.11&quot;)
+pum1tempassay[,1:6]</code></pre>
+<pre><code>log2 fold change (MLE): sampleCondition Nigerian.Basal vs TCGA_white.Basal 
+Wald test p-value: sampleCondition Nigerian.Basal vs TCGA_white.Basal 
+DataFrame with 1 row and 6 columns
+                           baseMean     log2FoldChange             lfcSE
+                          &lt;numeric&gt;          &lt;numeric&gt;         &lt;numeric&gt;
+ENSG00000134644.11 1636.80154138544 -0.510595810026249 0.118660987999935
+                                stat               pvalue
+                           &lt;numeric&gt;            &lt;numeric&gt;
+ENSG00000134644.11 -4.30297959449428 1.68516375896111e-05
+                                   padj
+                              &lt;numeric&gt;
+ENSG00000134644.11 8.78421961731661e-05</code></pre>
+<p>UBC and PUM1 were not found to have a meaningful log fold change between the Nigerian and TCGA white basal breast cancers, even though they were both found to be statistically significant. This suggests that a comparison can be drawn between both groups using the data with normalization by size factor as is already applied by DESeq2.</p>
+<div id="session-information" class="section level2">
+<h2>Session information</h2>
+<pre class="r"><code>sessionInfo()</code></pre>
+<pre><code>R version 3.5.0 (2018-04-23)
+Platform: x86_64-apple-darwin15.6.0 (64-bit)
+Running under: macOS Sierra 10.12.5
+
+Matrix products: default
+BLAS: /Library/Frameworks/R.framework/Versions/3.5/Resources/lib/libRblas.0.dylib
+LAPACK: /Library/Frameworks/R.framework/Versions/3.5/Resources/lib/libRlapack.dylib
+
+locale:
+[1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
+
+attached base packages:
+[1] parallel  stats4    stats     graphics  grDevices utils     datasets 
+[8] methods   base     
+
+other attached packages:
+ [1] preprocessCore_1.44.0       ashr_2.2-7                 
+ [3] gplots_3.0.1.1              calibrate_1.7.2            
+ [5] MASS_7.3-51.1               limma_3.38.3               
+ [7] sva_3.30.1                  mgcv_1.8-26                
+ [9] nlme_3.1-137                pheatmap_1.0.12            
+[11] genefilter_1.64.0           EnsDb.Hsapiens.v75_2.99.0  
+[13] ensembldb_2.6.3             AnnotationFilter_1.6.0     
+[15] GenomicFeatures_1.34.1      org.Hs.eg.db_3.7.0         
+[17] AnnotationDbi_1.44.0        hexbin_1.27.2              
+[19] ggplot2_3.1.0               dplyr_0.7.8                
+[21] stringi_1.2.4               DESeq2_1.22.2              
+[23] SummarizedExperiment_1.12.0 DelayedArray_0.8.0         
+[25] BiocParallel_1.16.5         matrixStats_0.54.0         
+[27] Biobase_2.42.0              GenomicRanges_1.34.0       
+[29] GenomeInfoDb_1.18.1         IRanges_2.16.0             
+[31] S4Vectors_0.20.1            BiocGenerics_0.28.0        
+
+loaded via a namespace (and not attached):
+  [1] colorspace_1.4-0         rprojroot_1.3-2         
+  [3] htmlTable_1.13.1         XVector_0.22.0          
+  [5] base64enc_0.1-3          rstudioapi_0.9.0        
+  [7] bit64_0.9-7              codetools_0.2-16        
+  [9] splines_3.5.0            R.methodsS3_1.7.1       
+ [11] pscl_1.5.2               doParallel_1.0.14       
+ [13] geneplotter_1.60.0       knitr_1.21              
+ [15] Formula_1.2-3            workflowr_1.1.1         
+ [17] Rsamtools_1.34.0         annotate_1.60.0         
+ [19] cluster_2.0.7-1          R.oo_1.22.0             
+ [21] compiler_3.5.0           httr_1.4.0              
+ [23] backports_1.1.3          assertthat_0.2.0        
+ [25] Matrix_1.2-15            lazyeval_0.2.1          
+ [27] acepack_1.4.1            htmltools_0.3.6         
+ [29] prettyunits_1.0.2        tools_3.5.0             
+ [31] bindrcpp_0.2.2           gtable_0.2.0            
+ [33] glue_1.3.0               GenomeInfoDbData_1.2.0  
+ [35] reshape2_1.4.3           Rcpp_1.0.0              
+ [37] Biostrings_2.50.2        gdata_2.18.0            
+ [39] rtracklayer_1.42.1       iterators_1.0.10        
+ [41] xfun_0.4                 stringr_1.3.1           
+ [43] gtools_3.8.1             XML_3.98-1.16           
+ [45] zlibbioc_1.28.0          scales_1.0.0            
+ [47] hms_0.4.2                ProtGenerics_1.14.0     
+ [49] RColorBrewer_1.1-2       yaml_2.2.0              
+ [51] curl_3.3                 memoise_1.1.0           
+ [53] gridExtra_2.3            biomaRt_2.38.0          
+ [55] rpart_4.1-13             SQUAREM_2017.10-1       
+ [57] latticeExtra_0.6-28      RSQLite_2.1.1           
+ [59] foreach_1.4.4            checkmate_1.9.1         
+ [61] caTools_1.17.1.1         truncnorm_1.0-8         
+ [63] rlang_0.3.1              pkgconfig_2.0.2         
+ [65] bitops_1.0-6             evaluate_0.12           
+ [67] lattice_0.20-38          purrr_0.2.5             
+ [69] bindr_0.1.1              labeling_0.3            
+ [71] GenomicAlignments_1.18.1 htmlwidgets_1.3         
+ [73] bit_1.1-14               tidyselect_0.2.5        
+ [75] plyr_1.8.4               magrittr_1.5            
+ [77] R6_2.3.0                 Hmisc_4.1-1             
+ [79] DBI_1.0.0                pillar_1.3.1            
+ [81] whisker_0.3-2            foreign_0.8-71          
+ [83] withr_2.1.2              survival_2.43-3         
+ [85] RCurl_1.95-4.11          nnet_7.3-12             
+ [87] tibble_2.0.1             crayon_1.3.4            
+ [89] KernSmooth_2.23-15       rmarkdown_1.11          
+ [91] progress_1.2.0           locfit_1.5-9.1          
+ [93] grid_3.5.0               data.table_1.12.0       
+ [95] blob_1.1.1               git2r_0.24.0            
+ [97] digest_0.6.18            xtable_1.8-3            
+ [99] R.utils_2.7.0            munsell_0.5.0           </code></pre>
+</div>
+</div>
+
+<!-- Adjust MathJax settings so that all math formulae are shown using
+TeX fonts only; see
+http://docs.mathjax.org/en/latest/configuration.html.  This will make
+the presentation more consistent at the cost of the webpage sometimes
+taking slightly longer to load. Note that this only works because the
+footer is added to webpages before the MathJax javascript. -->
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    "HTML-CSS": { availableFonts: ["TeX"] }
+  });
+</script>
+
+<hr>
+<p>
+  This reproducible <a href="http://rmarkdown.rstudio.com">R Markdown</a>
+  analysis was created with
+  <a href="https://github.com/jdblischak/workflowr">workflowr</a> 1.1.1
+</p>
+<hr>
+
+
+</div>
+</div>
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.header').parent('thead').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

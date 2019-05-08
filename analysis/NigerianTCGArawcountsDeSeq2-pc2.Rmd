@@ -1,0 +1,684 @@
+---
+title: "Nigerian-TCGA Differential Expression Analysis - Exploration of solutions to batch effect vs signal issue"
+author: "Padma Sheila Rajagopal, MD MPH"
+date: "5/7/2019"
+
+site: workflowr::wflow_site
+output:
+  workflowr::wflow_html:
+    df_print: paged
+    toc: true
+    theme: spacelab
+    highlight: textmate
+---
+```{r Setup, message=FALSE, warning=FALSE, echo=FALSE, results=FALSE, include=FALSE}
+knitr::opts_chunk$set(message=FALSE, warning=FALSE)
+library("DESeq2")
+library(stringi)
+library("dplyr")
+library("ggplot2")
+library("hexbin")
+library("AnnotationDbi")
+library("org.Hs.eg.db")
+library('GenomicFeatures')
+library(EnsDb.Hsapiens.v75)
+library("genefilter")
+library(pheatmap)
+library("sva")
+library(limma)
+library(calibrate)
+library(gplots)
+library("ashr")
+library(preprocessCore)
+library("BiocParallel")
+register(MulticoreParam(4))
+setwd("~/Research-Local/RNAseq-Local/Inputs/NigerianTCGA_quants-proteincoding")
+```
+
+#Translation from HTSeq raw counts -> DESeq2 table of raw counts
+I have 86 TCGA patients with whole-genome sequencing data and RNAseq data as well as 99 Nigerian patients with RNA-seq data. Raw counts were initially processed using HTSeq, so HTSeq raw counts (with one file per patient) are being formatted for use with DESeq2.
+```{r Preparing the sampleTable using HTSeq raw counts}
+FOLDER <- "/Users/parajago/Research-Local/RNAseq-Local/Inputs/NigerianTCGA_quants-proteincoding"
+sampleFiles <- grep("htseq.counts",list.files(FOLDER),value=TRUE)
+
+#Differential gene expression setup based on race (b/w/other)
+sampleConditionrace <- sampleFiles
+countVar2=1
+for (sample in sampleConditionrace){
+  if (stri_detect_fixed(sample,"LIB")==TRUE){
+    sampleConditionrace[countVar2] <- "Nigerian"
+    countVar2=countVar2+1
+  } else if (stri_detect_fixed(sample,"black")==TRUE){
+    sampleConditionrace[countVar2] <- "TCGA_black"
+    countVar2=countVar2+1
+  } else if (stri_detect_fixed(sample,"white")==TRUE){
+    sampleConditionrace[countVar2] <- "TCGA_white"
+    countVar2=countVar2+1
+  } else{
+    sampleConditionrace[countVar2] <- "TCGA_other"
+    countVar2=countVar2+1
+  }
+}
+
+#Condition based on PAM50 subtype 
+sampleConditionPAM50 <- sampleFiles
+countVar2=1
+for (sample in sampleConditionPAM50){
+  if (stri_detect_fixed(sample,"Her2")==TRUE){
+    sampleConditionPAM50[countVar2] <- "Her2"
+    countVar2=countVar2+1
+  } else if (stri_detect_fixed(sample,"Basal")==TRUE){
+    sampleConditionPAM50[countVar2] <- "Basal"
+    countVar2=countVar2+1
+  } else if (stri_detect_fixed(sample,"LumA")==TRUE){
+    sampleConditionPAM50[countVar2] <- "LumA"
+    countVar2=countVar2+1
+  } else if (stri_detect_fixed(sample,"LumB")==TRUE){
+    sampleConditionPAM50[countVar2] <- "LumB"
+    countVar2=countVar2+1
+  } else if (stri_detect_fixed(sample,"PAMNL")==TRUE){
+    sampleConditionPAM50[countVar2] <- "Normal"
+    countVar2=countVar2+1
+  } else{
+    sampleConditionPAM50[countVar2] <- "PAM_other"
+    countVar2=countVar2+1
+  }
+}
+
+#Condition based on batch (relevant to the Nigerian patients only; no difference in batch for the TCGA patients)
+batchval <- sampleFiles
+countVar2=1
+for (sample in batchval){
+  if (stri_detect_fixed(sample,"batch1")==TRUE){
+    batchval[countVar2] <- "batch1"
+    countVar2=countVar2+1
+  } else if (stri_detect_fixed(sample,"batch23")==TRUE){
+    batchval[countVar2] <- "batch23"
+    countVar2=countVar2+1
+  } else if (stri_detect_fixed(sample,"batch4")==TRUE){
+    batchval[countVar2] <- "batch4"
+    countVar2=countVar2+1
+  } else if (stri_detect_fixed(sample,"batch5")==TRUE){
+    batchval[countVar2] <- "batch5"
+    countVar2=countVar2+1
+  } else{
+    batchval[countVar2] <- "batchT"
+    countVar2=countVar2+1
+  }
+}
+
+table(sampleConditionrace, sampleConditionPAM50)
+
+sampleTable2 <- data.frame(sampleName=gsub(".htseq.counts","",sampleFiles),
+                          fileName=sampleFiles,
+                          condition1=sampleConditionrace,
+                          condition2=sampleConditionPAM50,
+                          batch=batchval)
+
+sampleTable2$sampleCondition <- paste(sampleTable2$condition1, sampleTable2$condition2, sep=".")
+
+ddsHTSeqMF <- DESeqDataSetFromHTSeqCount(sampleTable=sampleTable2,
+                                       directory=FOLDER,
+                                       design=~sampleCondition)
+
+ddsHTSeqMF <- ddsHTSeqMF[rowSums(counts(ddsHTSeqMF)) > 1, ] #Pre-filtering the dataset by removing the rows without information about gene expression
+
+ddsHTSeqMF$sampleCondition <- relevel(ddsHTSeqMF$sampleCondition, ref = "Nigerian.Basal") #explicitly making the Nigerian Basal patients the reference population
+
+```
+
+#Initial exploratory analysis of the data
+These are initial visualizations of our data sets to assess for batch effect between the Nigerian and TCGA sample sets. 
+```{r Variance transformation and batch effect assessment}
+dds <- estimateSizeFactors(ddsHTSeqMF) #The size factor is the median ratio of the sample over a "pseudosample": for each gene, the geometric mean of all samples. This accounts for sequencing depth. 
+
+vsd <- vst(ddsHTSeqMF, blind = TRUE) #Variance-stabilizing transformation
+
+df <- bind_rows( #Graphical representation of the variance-stabilizing transformation
+          as_data_frame(log2(counts(dds, normalized=TRUE)[, 1:2]+1)) %>%
+          mutate(transformation = "log2(x + 1)"),
+          as_data_frame(assay(vsd)[, 1:2]) %>% mutate(transformation = "vst"))
+          colnames(df)[1:2] <- c("x", "y")
+
+ggplot(df, aes(x = x, y = y)) + geom_hex(bins = 80) + coord_fixed() + facet_grid( . ~ transformation)
+```
+
+Figure 1: Graphical representation of the variance-stabilizing transformation relative to the standard transformation of log2(x+1). This reduces variance purely due to low read counts. This transformation will be the input for subsequent PCAs.
+
+```{r Batch effect assessment-PCAs-1}
+#PCAs at this point of the analysis are the VST transformed counts, using the top 500 variance genes
+plotPCA(vsd, intgroup=c("condition1", "batch"), ntop=500)
+```
+PCA 1-1:PCA demonstrating the raw difference between Nigerian and TCGA patients with within-batch demonstration. Nigerian patients do not appear to have significant differneces based on their batches. (TCGA patients are known not to have significant difference based on batch performed.) 
+
+There is a factor separating the TCGA patients into 2 groups that is not wholly ancestry dependent. 
+
+Of note, the PCA as performed by only has 33% variance explained with two variables when transformation is performed. 
+
+```{r Batch effect assessment-PCAs-2}
+plotPCA(vsd, intgroup=c("condition2"))
+```
+PCA 1-2:PCA demonstrating association with breast cancer subtype and gene expression. This is noted in both groups and consistent with known biology. Again, only 33% variance is explained with 2 principal components. 
+
+```{r Batch effect assessment-PCAs-3}
+plotPCA(vsd, intgroup=c("condition1", "condition2"))
+```
+PCA 1-3: Integrated PCA demonstrating combined effect of breast cancer subtype and race. Subtype appears to account for the clustering seen in the TCGA group. Again, only 33% variance is explained with 2 principal components. 
+
+```{r Heatmap to assess clusters pre-analysis}
+#Heatmap to assess clusters pre-analysis
+topVarGenes <- head(order(rowVars(assay(vsd)), decreasing = TRUE), 250)
+hm  <- assay(vsd)[ topVarGenes, ]
+hm  <- hm - rowMeans(hm)
+anno <- as.data.frame(colData(vsd)[, c("condition1", "condition2")])
+colnames(anno) <- c("Ethnicity", "PAM50-subtype")
+rownames(anno) <- colnames(vsd)
+pheatmap(hm, annotation_col = anno, cluster_rows=TRUE, cluster_cols=TRUE, clustering_distance_rows = "correlation", clustering_distance_cols = "correlation", clustering_method = "complete", show_rownames=FALSE, show_colnames = FALSE, main="Heat map: Relative VST-transformed\ncounts across samples without batch correction")
+```
+Heatmap 1-1: This heatmap is only using the top 250 genes and is competely heirarchically clustered. Results from this are consistent with the PCA. 
+
+#Specific issues associated with our batches
+-We do not know the extent to which general RNA expression varies within the Nigerian population compared to within TCGA populations because of ethnicity / common ancestral variants
+-Biological differences are potentially confounded by batch effect (as Nigerians are a separate batch from TCGA); although no evidence of within-batch effect
+
+We will discuss the following methods to manage the batch effect and our reasoning for our chosen approach.
+-Limma removeBatchEffect: Likely erases any trace of biological effect associated with the Nigerian cohort 
+-sva (1 principal component)
+
+#Limma removeBatchEffect
+```{r Removing batch effect with Limma:removeBatchEffect (visualization only)}
+#PCA2: Removing the batch effect created by the separate batch processing of the TCGA and Nigerian samples (although this may overcorrect for the actual difference between these two populations).  
+mat <- assay(vsd) 
+mat <- limma::removeBatchEffect(mat, vsd$condition1)
+assay(vsd) <- mat
+plotPCA(vsd, intgroup=c("condition1", "condition2"))
+```
+PCA 2-1: Using the limma removeBatchEffect, we have lost any separation between the Nigerian and TCGA patients with the exception of a few outliers from the Nigerian patients. We primarily see the effect of breast cancer subtype in the distribution of the patients. 30% variance still accounted for from the original data set. 
+
+```{r Heatmap to assess clusters after Limma:removeBatchEffect (visualization only)}
+#Heatmap to assess clusters post-batch effect removal
+topVarGenes <- head(order(rowVars(assay(vsd)), decreasing = TRUE), 250)
+hm  <- assay(vsd)[ topVarGenes, ]
+hm  <- hm - rowMeans(hm)
+anno <- as.data.frame(colData(vsd)[, c("condition1", "condition2")])
+colnames(anno) <- c("Ethnicity", "PAM50-subtype")
+rownames(anno) <- colnames(vsd)
+pheatmap(hm, annotation_col = anno, cluster_rows=TRUE, cluster_cols=TRUE, clustering_distance_rows = "correlation", clustering_distance_cols = "correlation", clustering_method = "complete", show_rownames=FALSE, show_colnames = FALSE, main="Heat map: Relative VST-transformed\ncounts across samples after Limma:removeBatchEffect")
+```
+Heatmap 2-1: This heatmap after batch correction with limma's removeBatchEffect method is using the top 250 genes and is competely heirarchically clustered. These clusters appear consistent with the PCA results as well with clustering dominated by PAM50 subtype. 
+
+
+#sva to account for batch effect related to the Nigerian/TCGA samples
+```{r Batch effect assessment, message=FALSE}
+dat  <- counts(dds, normalized = TRUE)
+idx  <- rowMeans(dat) > 1
+dat  <- dat[idx, ]
+mod  <- model.matrix(~condition1, colData(dds))
+mod0 <- model.matrix(~   1, colData(dds))
+svseq <- svaseq(dat, mod, mod0, n.sv = 1)
+
+sampleTablebe <- data.frame(sampleName=gsub(".htseq.counts","",sampleFiles),
+                          fileName=sampleFiles,
+                          condition1=sampleConditionrace,
+                          condition2=sampleConditionPAM50,
+                          be1=svseq$sv[,1],
+                          batch=batchval)
+
+sampleTablebe$sampleCondition <- paste(sampleTablebe$condition1, sampleTablebe$condition2, sep=".")
+
+ddsHTSeqMFbe <- DESeqDataSetFromHTSeqCount(sampleTable=sampleTablebe,
+                                       directory=FOLDER,
+                                       design= ~be1+sampleCondition)
+
+ddsHTSeqMFbe <- ddsHTSeqMFbe[rowSums(counts(ddsHTSeqMFbe)) > 1, ]
+
+ddsHTSeqMFbe$sampleCondition <- relevel(ddsHTSeqMFbe$sampleCondition, ref = "Nigerian.Basal") #explicitly making the Nigerian Basal patients the reference population
+```
+
+Use of sva to create a "batch effect" variable that effectively has full interaction with the Nigerian vs. TCGA variable does cause issues -- performing differential expression analysis under these conditions does lead to not converging in beta. 
+
+#Differential expression analysis
+This is the actual differential expression analysis with false discovery threshold of 0.05. I am performing this for both the standard and batch-effect-corrected versions of the DESeq2 model to allow comparison. 
+```{r Differential expression analysis and visualization, cache=TRUE}
+ddsMF <- DESeq(ddsHTSeqMF) #This will refer to a version that does not include batch correction outside of what is accomplished through DESeq2 alone. 
+
+ddsMFbe <-DESeq(ddsHTSeqMFbe) 
+#4 rows did not converge in beta, labelled in mcols(object)$betaConv
+
+resultsNames(ddsMF)
+resultsNames(ddsMFbe)
+```
+
+#sva comparison of results
+```{r MA plot of TCGA white Basal vs Nigerian Basal}
+cat("MA Plot 1: Original differential expression")
+res <- lfcShrink(ddsMF, coef="sampleCondition_TCGA_white.Basal_vs_Nigerian.Basal", type="ashr", optmethod = "mixEM")
+DESeq2::plotMA(res, ylim=c(-10,10), xlim=c(0.1,200))
+
+cat("MA Plot 2: Batch-corrected differential expression")
+res2 <- lfcShrink(ddsMFbe, coef="sampleCondition_TCGA_white.Basal_vs_Nigerian.Basal", type="ashr" , optmethod = "mixEM")
+DESeq2::plotMA(res2, ylim=c(-10,10), xlim=c(0.1,200))
+```
+
+An MAPlot demonstrates log2 fold changes attributable to the condition over the mean of normalized counts for all the samples in the DESeqDataSet. Points will be colored red if the adjusted p value is less than 0.1. Points which fall out of the window are plotted as open triangles pointing either up or down.
+
+We see an overrepresentation of significant negative log fold changes of expression in the Nigerian patients relative to the TCGA white patients, but this is exacerbated dramatically after the sva correction. 
+
+```{r DE test: TCGA black and TCGA white, cache=TRUE}
+#Without batch correction
+diffTCGA<- results(ddsMF, contrast=c("sampleCondition", "TCGA_black.Basal", "TCGA_white.Basal"), alpha=0.05)
+restemp <- lfcShrink(ddsMF, contrast=c("sampleCondition", "TCGA_black.Basal", "TCGA_white.Basal"), res = diffTCGA, type="ashr", optmethod = "mixEM")
+
+diffTCGA <- subset(diffTCGA, padj < 0.05) #Selecting only the lowest threshold of significant findings
+diffTCGA$temp <- row.names(diffTCGA)
+diffTCGA$temp <- gsub("[.].+", "", diffTCGA$temp)
+
+restemp$temp <- row.names(restemp)
+restemp$temp <- gsub("[.].+", "", restemp$temp)
+
+diffTCGA$symbol <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=diffTCGA$temp,
+                     column="SYMBOL",
+                     keytype="GENEID",           
+                     multiVals="first")
+
+restemp$symbol <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=restemp$temp,
+                     column="SYMBOL",
+                     keytype="GENEID",           
+                     multiVals="first")
+
+diffTCGA$chr <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=diffTCGA$temp,
+                     column="SEQNAME",
+                     keytype="GENEID",           
+                     multiVals="first")
+
+diffTCGA$locstart <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=diffTCGA$temp,
+                     column="GENESEQSTART",
+                     keytype="GENEID",
+                     multiVals="first")
+
+diffTCGA$locend <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=diffTCGA$temp,
+                     column="GENESEQEND",
+                     keytype="GENEID",
+                     multiVals="first")
+
+hist(restemp$pvalue, main="Histogram of unadjusted p-values of differential\n gene expression between basal breast cancers \nin TCGA black and \nTCGA white breast cancer patients")
+
+with(restemp, plot(log2FoldChange, -log10(padj), pch=20, main="Volcano plot of differential gene expression between basal \nbreast cancers in TCGA black and \nTCGA white breast cancer patients", xlim=c(-50,50), ylim=c(0,70)))
+with(subset(restemp, padj<0.05 & abs(log2FoldChange)>25), points(log2FoldChange, -log10(pvalue), pch=20, col="blue"))
+with(subset(restemp, padj<0.05 & abs(log2FoldChange)>25), textxy(log2FoldChange, -log10(padj), labs=symbol, cex=.5))
+
+#With batch correction
+diffTCGA2<- results(ddsMFbe, contrast=c("sampleCondition", "TCGA_black.Basal", "TCGA_white.Basal"), alpha=0.05)
+restemp2 <- lfcShrink(ddsMFbe, contrast=c("sampleCondition", "TCGA_black.Basal", "TCGA_white.Basal"), res = diffTCGA2, type="ashr", optmethod = "mixEM")
+
+diffTCGA2 <- subset(diffTCGA2, padj < 0.05) #Selecting only the lowest threshold of significant findings
+diffTCGA2$temp <- row.names(diffTCGA2)
+diffTCGA2$temp <- gsub("[.].+", "", diffTCGA2$temp)
+
+restemp2$temp <- row.names(restemp2)
+restemp2$temp <- gsub("[.].+", "", restemp2$temp)
+
+diffTCGA2$symbol <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=diffTCGA2$temp,
+                     column="SYMBOL",
+                     keytype="GENEID",           
+                     multiVals="first")
+
+restemp2$symbol <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=restemp2$temp,
+                     column="SYMBOL",
+                     keytype="GENEID",           
+                     multiVals="first")
+
+diffTCGA2$chr <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=diffTCGA2$temp,
+                     column="SEQNAME",
+                     keytype="GENEID",           
+                     multiVals="first")
+
+diffTCGA2$locstart <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=diffTCGA2$temp,
+                     column="GENESEQSTART",
+                     keytype="GENEID",
+                     multiVals="first")
+
+diffTCGA2$locend <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=diffTCGA2$temp,
+                     column="GENESEQEND",
+                     keytype="GENEID",
+                     multiVals="first")
+
+hist(restemp2$pvalue, main="Histogram of unadjusted p-values of differential\n gene expression between basal breast cancers \nin TCGA black and white \n breast cancer patients\nBatch corrected")
+
+with(restemp2, plot(log2FoldChange, -log10(padj), pch=20, main="Volcano plot of differential gene expression between basal \nbreast cancers in TCGA black and \nTCGA white breast cancer patients\nBatch corrected", xlim=c(-50,50), ylim=c(0,70)))
+with(subset(restemp2, padj<0.05 & abs(log2FoldChange)>25), points(log2FoldChange, -log10(pvalue), pch=20, col="blue"))
+with(subset(restemp2, padj<0.05 & abs(log2FoldChange)>25), textxy(log2FoldChange, -log10(padj), labs=symbol, cex=.5))
+```
+
+The histogram of unadjusted p-values looks slightly bimodal but close to anti-conservative when batch correction is not applied. The histogram of unadjusted p-values with batch correction is clearly bimodal. Both volcano plots demonstrate a tendency for increased log fold change in TCGA white relative to TCGA black, but the batch corrected volcano plot looks more dispersed and abnormal. 
+
+The abnormalities in the batch corrected RNA continue. The following is a demonstration example of comparing 32 Nigerian basal cases and 17 TCGA white basal cases. 
+
+```{r DE test: Nigerian basal vs TCGA white basal, cache=TRUE}
+#Without batch correction
+resBasal<- results(ddsMF, contrast=c("sampleCondition", "Nigerian.Basal", "TCGA_white.Basal"), alpha=0.05)
+resBasal <- subset(resBasal, padj < 0.05) #Selecting only the lowest threshold of significant findings
+resBasal$temp <- row.names(resBasal)
+resBasal$temp <- gsub("[.].+", "", resBasal$temp)
+
+restemp <- NULL
+restemp <- results(ddsMF, contrast=c("sampleCondition", "Nigerian.Basal", "TCGA_white.Basal"), alpha=0.05)
+restemp <- lfcShrink(ddsMF, contrast=c("sampleCondition", "Nigerian.Basal", "TCGA_white.Basal"), res = restemp, type="ashr", optmethod = "mixEM")
+
+restemp$temp <- row.names(restemp)
+restemp$temp <- gsub("[.].+", "", restemp$temp)
+
+restemp$symbol <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=restemp$temp,
+                     column="SYMBOL",
+                     keytype="GENEID",           
+                     multiVals="first")
+
+restemp$chr <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=restemp$temp,
+                     column="SEQNAME",
+                     keytype="GENEID",           
+                     multiVals="first")
+
+restemp$locstart <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=restemp$temp,
+                     column="GENESEQSTART",
+                     keytype="GENEID",
+                     multiVals="first")
+
+restemp$locend <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=restemp$temp,
+                     column="GENESEQEND",
+                     keytype="GENEID",
+                     multiVals="first")
+
+hist(restemp$pvalue, main="Histogram of unadjusted p-values of differential\n gene expression between basal breast cancers \nin Nigerian and \nTCGA white breast cancer patients")
+
+with(restemp, plot(log2FoldChange, -log10(padj), pch=20, main="Volcano plot of differential gene expression between basal \nbreast cancers in Nigerian and \nTCGA white breast cancer patients", xlim=c(-50,50), ylim=c(0,70)))
+with(subset(restemp, padj<0.05 & abs(log2FoldChange)>25), points(log2FoldChange, -log10(pvalue), pch=20, col="blue"))
+with(subset(restemp, padj<0.05 & abs(log2FoldChange)>25), textxy(log2FoldChange, -log10(padj), labs=symbol, cex=.5))
+
+#With batch correction
+resBasal2<- results(ddsMFbe, contrast=c("sampleCondition", "Nigerian.Basal", "TCGA_white.Basal"), alpha=0.05)
+resBasal2 <- subset(resBasal2, padj < 0.05) #Selecting only the lowest threshold of significant findings
+resBasal2$temp <- row.names(resBasal2)
+resBasal2$temp <- gsub("[.].+", "", resBasal2$temp)
+
+restemp2 <- NULL
+restemp2 <- results(ddsMFbe, contrast=c("sampleCondition", "Nigerian.Basal", "TCGA_white.Basal"), alpha=0.05)
+restemp2 <- lfcShrink(ddsMFbe, contrast=c("sampleCondition", "Nigerian.Basal", "TCGA_white.Basal"), res = restemp2, type="ashr", optmethod = "mixEM")
+
+restemp2$temp <- row.names(restemp2)
+restemp2$temp <- gsub("[.].+", "", restemp2$temp)
+
+restemp2$symbol <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=restemp2$temp,
+                     column="SYMBOL",
+                     keytype="GENEID",           
+                     multiVals="first")
+
+restemp2$chr <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=restemp2$temp,
+                     column="SEQNAME",
+                     keytype="GENEID",           
+                     multiVals="first")
+
+restemp2$locstart <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=restemp2$temp,
+                     column="GENESEQSTART",
+                     keytype="GENEID",
+                     multiVals="first")
+
+restemp2$locend <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=restemp2$temp,
+                     column="GENESEQEND",
+                     keytype="GENEID",
+                     multiVals="first")
+
+hist(restemp2$pvalue, main="Histogram of unadjusted p-values of differential\n gene expression between basal breast cancers \nin Nigerian and \nTCGA white breast cancer patients\n batch corrected")
+
+with(restemp2, plot(log2FoldChange, -log10(padj), pch=20, main="Volcano plot of differential gene expression between basal \nbreast cancers in Nigerian and \nTCGA white breast cancer patients\n batch corrected", xlim=c(-50,50), ylim=c(0,70)))
+with(subset(restemp2, padj<0.05 & abs(log2FoldChange)>25), points(log2FoldChange, -log10(pvalue), pch=20, col="blue"))
+with(subset(restemp2, padj<0.05 & abs(log2FoldChange)>25), textxy(log2FoldChange, -log10(padj), labs=symbol, cex=.5))
+```
+
+Although unadjusted p-value histogram appears anti-conservative, volcano plot with batch correction appears to have an additonal wing with numerous points demonstrating >20x log2foldchange. The volcano plot without batch correction is more consistent with expected findings. 
+
+Next, we will assess the efficacy of DESeq2 across breast cancer subtypes within the Nigerian cohort.
+#Cross-subtype comparison
+```{r DE test: Nigerian basal vs Nigerian Her2, cache=TRUE}
+#Without batch correction
+rescrosstype<- results(ddsMF, contrast=c("sampleCondition", "Nigerian.Basal", "Nigerian.Her2"), alpha=0.05)
+rescrosstype <- subset(rescrosstype, padj < 0.05) #Selecting only the lowest threshold of significant findings
+rescrosstype$temp <- row.names(rescrosstype)
+rescrosstype$temp <- gsub("[.].+", "", rescrosstype$temp)
+
+restemp <- NULL
+restemp <- results(ddsMF, contrast=c("sampleCondition", "Nigerian.Basal", "Nigerian.Her2"), alpha=0.05)
+restemp <- lfcShrink(ddsMF, contrast=c("sampleCondition", "Nigerian.Basal", "Nigerian.Her2"), res = restemp, type="ashr", optmethod = "mixEM")
+
+restemp$temp <- row.names(restemp)
+restemp$temp <- gsub("[.].+", "", restemp$temp)
+
+restemp$symbol <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=restemp$temp,
+                     column="SYMBOL",
+                     keytype="GENEID",           
+                     multiVals="first")
+
+restemp$chr <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=restemp$temp,
+                     column="SEQNAME",
+                     keytype="GENEID",           
+                     multiVals="first")
+
+restemp$locstart <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=restemp$temp,
+                     column="GENESEQSTART",
+                     keytype="GENEID",
+                     multiVals="first")
+
+restemp$locend <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=restemp$temp,
+                     column="GENESEQEND",
+                     keytype="GENEID",
+                     multiVals="first")
+
+hist(restemp$pvalue, main="Histogram of unadjusted p-values of differential\n gene expression between \n Nigerian basal and Nigerian Her2 breast cancer patients")
+
+with(restemp, plot(log2FoldChange, -log10(padj), pch=20, main="Volcano plot of differential\n gene expression between \n Nigerian basal and Nigerian Her2 breast cancer patients", xlim=c(-50,50), ylim=c(0,70)))
+with(subset(restemp, padj<0.01 & abs(log2FoldChange)>25), points(log2FoldChange, -log10(pvalue), pch=20, col="blue"))
+with(subset(restemp, padj<0.01 & abs(log2FoldChange)>25), textxy(log2FoldChange, -log10(padj), labs=symbol, cex=.5))
+
+#With batch correction
+rescrosstype2<- results(ddsMFbe, contrast=c("sampleCondition", "Nigerian.Basal", "Nigerian.Her2"), alpha=0.05)
+rescrosstype2 <- subset(rescrosstype2, padj < 0.05) #Selecting only the lowest threshold of significant findings
+rescrosstype2$temp <- row.names(rescrosstype2)
+rescrosstype2$temp <- gsub("[.].+", "", rescrosstype2$temp)
+
+restemp2 <- NULL
+restemp2 <- results(ddsMFbe, contrast=c("sampleCondition", "Nigerian.Basal", "Nigerian.Her2"), alpha=0.05)
+restemp2 <- lfcShrink(ddsMFbe, contrast=c("sampleCondition", "Nigerian.Basal", "Nigerian.Her2"), res = restemp2, type="ashr", optmethod = "mixEM")
+
+restemp2$temp <- row.names(restemp2)
+restemp2$temp <- gsub("[.].+", "", restemp2$temp)
+
+restemp2$symbol <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=restemp2$temp,
+                     column="SYMBOL",
+                     keytype="GENEID",           
+                     multiVals="first")
+
+restemp2$chr <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=restemp2$temp,
+                     column="SEQNAME",
+                     keytype="GENEID",           
+                     multiVals="first")
+
+restemp2$locstart <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=restemp2$temp,
+                     column="GENESEQSTART",
+                     keytype="GENEID",
+                     multiVals="first")
+
+restemp2$locend <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=restemp2$temp,
+                     column="GENESEQEND",
+                     keytype="GENEID",
+                     multiVals="first")
+
+hist(restemp2$pvalue, main="Histogram of unadjusted p-values of differential\n gene expression between \n Nigerian basal and Nigerian Her2 breast cancer patients\n batch corrected")
+
+with(restemp2, plot(log2FoldChange, -log10(padj), pch=20, main="Volcano plot of differential\n gene expression between \n Nigerian basal and Nigerian Her2 breast cancer patients\n batch corrected", xlim=c(-50,50), ylim=c(0,70)))
+with(subset(restemp2, padj<0.01 & abs(log2FoldChange)>25), points(log2FoldChange, -log10(pvalue), pch=20, col="blue"))
+with(subset(restemp2, padj<0.01 & abs(log2FoldChange)>25), textxy(log2FoldChange, -log10(padj), labs=symbol, cex=.5))
+```
+
+The unadjusted p-value histogram and volcano plot appear appropriate without batch correction in the cross-subtype test. There is, however, a bimodal distribution and some lack of symmetry on the volcano plot with batch correction with sva, continuing to suggest that the batch correction may be "overcorrecting." It is reassuring that we are seeing more normal volcano plots on the within-assay comparison. 
+
+```{r Hand code value check of Her2}
+genename <- "ENSG00000141736.9"
+her2comparematrix <- plotCounts(ddsMF, gene = genename, intgroup=c("condition1", "condition2"), main="Distribution of HER2 expression across groups", returnData = TRUE)
+
+her2comparematrix <- her2comparematrix %>% subset(condition1=="Nigerian" & (condition2=="Her2" | condition2=="Basal"))
+ggplot(her2comparematrix, aes (x=condition2, y=count)) + geom_point() + labs(title="Comparison of normalized RNAseq counts of HER2 expression between\nNigerian basal tumors and Nigerian HER2 tumors") + xlab("Breast cancer Subtype") + ylab("Normalized RNAseq count (pre DE)") + scale_y_log10()
+
+her2tempassay <- subset(rescrosstype, rownames(rescrosstype)=="ENSG00000141736.9")
+her2tempassay[,1:6]
+her2tempassay2 <- subset(rescrosstype2, rownames(rescrosstype2)=="ENSG00000141736.9")
+her2tempassay2[,1:6]
+
+tempassay <- as.data.frame(assay(ddsHTSeqMF))
+tempassay <- dplyr::select(tempassay, contains("LIB"))
+tempassay <- dplyr::select(tempassay, matches('Basal|Her2'))
+tempassay <- subset(tempassay, rownames(tempassay)=="ENSG00000141736.9")
+tempassaybasal <- dplyr::select(tempassay, matches('Basal'))
+tempassayher2 <- dplyr::select(tempassay, matches('Her2'))
+
+tempassaybasal <-as.numeric(tempassaybasal)
+tempassayher2 <-as.numeric(tempassayher2)
+t.test (tempassaybasal, tempassayher2)
+```
+The cross subtype comparison did find a statistically significant difference between HER2 expression between the Nigerian basal and Her tumors, which is appropriate when the data is visualized as well. That being said, for the individual gene value for HER2, for example, there was not a very large difference in absolute values between batch correction and not batch correction. 
+
+We will now assess arbitrary within-Nigerian samples to identify any other within sample sources of bias. 
+
+#Nigerian-Nigerian comparison
+```{r Comparing Nigerian-batch1 to Nigerian-batch5 patients}
+table(batchval, sampleConditionPAM50)
+
+sampletableNigerian <- sampleTable2
+sampletableNigerian <- subset(sampletableNigerian, batch=="batch1" | batch=="batch5")
+sampletableNigerian$condition1 <- NULL
+
+dsHTSeqMFNigerian <- DESeqDataSetFromHTSeqCount(sampleTable=sampletableNigerian,
+                                       directory=FOLDER,
+                                       design=~batch)
+dsHTSeqMFNigerian <- dsHTSeqMFNigerian[rowSums(counts(dsHTSeqMFNigerian)) > 1, ] #Pre-filtering the dataset by removing the rows without information about gene expression
+ddsMFNigerianexample <- DESeq(dsHTSeqMFNigerian)
+
+#Without batch correction
+resNigerianNigerian<- results(ddsMFNigerianexample, contrast=c("batch", "batch1", "batch5"), alpha=0.05)
+resNigerianNigerian <- subset(resNigerianNigerian, padj < 0.05) #Selecting only the lowest threshold of significant findings
+resNigerianNigerian$temp <- row.names(resNigerianNigerian)
+resNigerianNigerian$temp <- gsub("[.].+", "", resNigerianNigerian$temp)
+
+restempN <- lfcShrink(ddsMFNigerianexample, contrast=c("batch", "batch1", "batch5"), res = resNigerianNigerian, type="ashr", optmethod = "mixEM")
+
+restempN$temp <- row.names(restempN)
+restempN$temp <- gsub("[.].+", "", restempN$temp)
+
+restempN$symbol <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=restempN$temp,
+                     column="SYMBOL",
+                     keytype="GENEID",           
+                     multiVals="first")
+
+restempN$chr <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=restempN$temp,
+                     column="SEQNAME",
+                     keytype="GENEID",           
+                     multiVals="first")
+
+restempN$locstart <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=restempN$temp,
+                     column="GENESEQSTART",
+                     keytype="GENEID",
+                     multiVals="first")
+
+restempN$locend <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=restempN$temp,
+                     column="GENESEQEND",
+                     keytype="GENEID",
+                     multiVals="first")
+
+hist(restempN$pvalue, main="Histogram of unadjusted p-values of differential\n gene expression between \n Nigerian breast cancer patients")
+
+with(restempN, plot(log2FoldChange, -log10(padj), pch=20, main="Volcano plot of differential\n gene expression between \n Nigerian breast cancer patients", xlim=c(-50,50), ylim=c(0,70)))
+with(subset(restempN, padj<0.05 & abs(log2FoldChange)>25), points(log2FoldChange, -log10(pvalue), pch=20, col="blue"))
+with(subset(restempN, padj<0.05 & abs(log2FoldChange)>25), textxy(log2FoldChange, -log10(padj), labs=symbol, cex=.5))
+```
+While 4205 genes are noted as significantly differentially expressed with regard to p-value, the results show that effectively none have significant logfoldchange, also confirming the efficacy of this approach within the Nigerian patient sample. 
+
+#Quantile normalization as additional check/appraoch
+Quantile normalization is a technique that can be used to make distributions comparable. To quantile normalize two or more distributions to each other, without a reference distribution, one must sort the values within the distribution, then set to the average (usually, arithmetic mean) of the distributions. So the highest value in all cases becomes the mean of the highest values, the second highest value becomes the mean of the second highest values, and so on.
+
+```{r Quantile normalization}
+countmatrix <- assay(ddsHTSeqMF)
+countmatrix2 <- log2(countmatrix + 1)
+countmatrix2 = countmatrix2 [rowMeans(countmatrix2) > 3, ]
+
+plot(density(countmatrix2[,1]),lwd=3,ylim=c(0,.30))
+for(i in 1:20){lines(density(countmatrix2[,i]),lwd=3)}
+
+norm_countmatrix <- as.matrix(countmatrix2)
+norm_countmatrix = normalize.quantiles(norm_countmatrix)
+plot(density(norm_countmatrix[,1]),lwd=3,ylim=c(0,.30))
+for(i in 1:20){lines(density(norm_countmatrix[,i]),lwd=3)}
+
+colnames (norm_countmatrix) <- colnames (countmatrix2)
+rownames (norm_countmatrix) <- rownames (countmatrix2)
+
+norm_countmatrix <- as.data.frame(norm_countmatrix)
+countmatrixNigerian <- dplyr::select(norm_countmatrix, contains("LIB"))
+
+tcgacolnames <- colnames(countmatrix)
+tcgacolnames <- setdiff(tcgacolnames, colnames(countmatrixNigerian))
+countmatrixTCGA <- norm_countmatrix[ , tcgacolnames]
+
+t.test(countmatrixNigerian, countmatrixTCGA)
+
+#autoplot(prcomp(t(norm_countmatrix)), main="PCA with quantile normalization approach")
+```
+We have nearly equal means of expression; obviously, the PCA is not as well explained by this rapid normalization approach, but this demonstrates similar to reduced efficacy compared to DESeq2.  
+
+#Housekeeping gene expression results
+Based on the paper by Krasnov et al. (https://www.frontiersin.org/articles/10.3389/fgene.2019.00097/full), we examined the housekeeping genes UBC and PUM1 across the Nigerian and TCGA samples to assess their differential expression. 
+
+UBC: ENSG00000150991.10
+PUM1: ENSG00000134644.11
+
+```{r UBC and PUM1 cross-ethnic comparisons}
+genename <- "ENSG00000150991.10"
+plotCounts(ddsMF, gene = genename, intgroup=c("condition1"), main="Distribution of UBC expression across groups (before DE analysis)")
+
+genename <- "ENSG00000134644.11"
+plotCounts(ddsMF, gene = genename, intgroup=c("condition1"), main="Distribution of PUM1 expression across groups (before DE analysis)")
+
+ubctempassay <- subset(resBasal, rownames(resBasal)=="ENSG00000150991.10")
+ubctempassay[,1:6]
+pum1tempassay <- subset(resBasal, rownames(resBasal)=="ENSG00000134644.11")
+pum1tempassay[,1:6]
+```
+
+UBC and PUM1 were not found to have a meaningful log fold change between the Nigerian and TCGA white basal breast cancers, even though they were both found to be statistically significant. This suggests that a comparison can be drawn between both groups using the data with normalization by size factor as is already applied by DESeq2.
