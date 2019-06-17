@@ -1,5 +1,5 @@
 name: "TCGA-Nigerian-RNASeq Project"
-output_dir: "../docs"
+output_dir: "../analysis"
 navbar:
   title: "Olopade Lab: TCGA-Nigerian-RNAseq Project"
   left:
@@ -16,6 +16,7 @@ navbar:
   right:
     - icon: fa-github
       href: https://github.com/parajago/TCGA-Nigerian-RNAseq
+site: workflowr::wflow_site
 output:
   workflowr::wflow_html:
     toc: true
