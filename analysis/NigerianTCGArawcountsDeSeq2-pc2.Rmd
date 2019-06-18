@@ -490,14 +490,9 @@ set1 <- RUVg(counts(ddsHTSeqMF), genenames, k=1)
 plotRLE(counts(ddsHTSeqMF), outline=FALSE, ylim=c(-4, 4))
 plotRLE(set1$normalizedCounts, outline=FALSE, ylim=c(-4, 4))
 
-set1pca <- as.data.frame(set1$normalizedCounts)
-t_set1pca <- t(set1pca)
-t_set1pca <- as.data.frame(t_set1pca)
-
-t_set1pca <- cbind (t_set1pca, sampleTable2) #This binds the characteristics of the original patients to the quantile normalized counts. CBinding was checked to make sure that patients were correctly aligned to characteristics. 
-
-ruv.pca <- prcomp(t_set1pca[,1:19745])
-autoplot(ruv.pca, data=t_set1pca, colour='sampleCondition', main="PCA of RUV normalization results prior to DE analysis", ylim=c(-0.05, 0.05))
+set1pca <- set1$normalizedCounts
+colnames(set1pca) <- sampleTable2$sampleCondition
+plotPCA(set1pca, main="PCA of RUV normalization results prior to DE analysis")
 
 sampleTableRUV <- data.frame(sampleName=gsub(".htseq.counts","",sampleFiles),
                           fileName=sampleFiles,
