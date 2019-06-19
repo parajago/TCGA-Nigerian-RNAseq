@@ -1,7 +1,7 @@
 ---
 title: "Nigerian-TCGA Differential Expression Analysis - Exploration of solutions to batch effect normalization"
 author: "Padma Sheila Rajagopal, MD MPH"
-date: "6/17/2019"
+date: "6/19/2019"
 
 site: workflowr::wflow_site
 output:
@@ -422,6 +422,15 @@ resBasal2 <- resBasal2[(resBasal2$log2FoldChange >= fc | resBasal2$log2FoldChang
 resBasal2 <- subset(resBasal2, padj < fdr)
 nrow(resBasal2) #More genes are considered significant with the batch correction method
 
+resBasal2$temp <- row.names(resBasal2)
+resBasal2$temp <- gsub("[.].+", "", resBasal2$temp)
+
+resBasal2$symbol <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=resBasal2$temp,
+                     column="SYMBOL",
+                     keytype="GENEID",           
+                     multiVals="first")
+
 restemp2 <- NULL
 restemp2 <- lfcShrink(ddsMFbe, contrast=c("sampleCondition", "Nigerian.Basal", "TCGA_white.Basal"), res = resBasal2, type="ashr", optmethod = "mixEM")
 
@@ -439,6 +448,11 @@ hist(restemp2$pvalue, main="Histogram of unadjusted p-values of differential\n g
 with(restemp2, plot(log2FoldChange, -log10(padj), pch=20, main="Volcano plot of differential gene expression between basal \nbreast cancers in Nigerian and \nTCGA white breast cancer patients\n batch corrected", xlim=c(-50,50), ylim=c(0,70)))
 with(subset(restemp2, padj<0.05 & (2^(abs(log2FoldChange))>50)), points(log2FoldChange, -log10(padj), pch=20, col="blue"))
 with(subset(restemp2, padj<0.05 & (2^(abs(log2FoldChange))>50)), textxy(log2FoldChange, -log10(padj), labs=symbol, cex=.5))
+
+resBasal2print <- as.data.frame(resBasal2)
+resBasal2print <- resBasal2print %>% arrange(log2FoldChange)
+top_n(resBasal2print, 10, log2FoldChange)
+top_n(resBasal2print, -10, log2FoldChange)
 ```
 
 Although unadjusted p-value histogram appears anti-conservative again for both non batch corrected and sva corrected, volcano plot with batch correction appears to have an exaggered effect with numerous genes demonstrating >50x log fold change with significance. The volcano plot without batch correction is more consistent with expected findings, making the sva method concerning for use. 
@@ -456,19 +470,19 @@ ANKRD17: ENSG00000132466.13 -> Given the broad distribution of expression of thi
 resBasal<- results(ddsMF, contrast=c("sampleCondition", "Nigerian.Basal", "TCGA_white.Basal"), alpha=0.05)
 
 genename <- "ENSG00000150991.10"
-plotCounts(ddsMF, gene = genename, intgroup=c("condition1"), main="Distribution of UBC expression across groups (before DE analysis)")
+plotCounts(dds, gene = genename, intgroup=c("condition1"), main="Distribution of UBC expression across groups (before DE analysis)")
 
 genename <- "ENSG00000134644.11"
-plotCounts(ddsMF, gene = genename, intgroup=c("condition1"), main="Distribution of PUM1 expression across groups (before DE analysis)")
+plotCounts(dds, gene = genename, intgroup=c("condition1"), main="Distribution of PUM1 expression across groups (before DE analysis)")
 
 genename <- "ENSG00000107771.11"
-plotCounts(ddsMF, gene = genename, intgroup=c("condition1"), main="Distribution of CCSER2 expression across groups (before DE analysis)")
+plotCounts(dds, gene = genename, intgroup=c("condition1"), main="Distribution of CCSER2 expression across groups (before DE analysis)")
 
 genename <- "ENSG00000125755.14"
-plotCounts(ddsMF, gene = genename, intgroup=c("condition1"), main="Distribution of SYMPK expression across groups (before DE analysis)")
+plotCounts(dds, gene = genename, intgroup=c("condition1"), main="Distribution of SYMPK expression across groups (before DE analysis)")
 
 genename <- "ENSG00000132466.13"
-plotCounts(ddsMF, gene = genename, intgroup=c("condition1"), main="Distribution of ANKRD17 expression across groups (before DE analysis)")
+plotCounts(dds, gene = genename, intgroup=c("condition1"), main="Distribution of ANKRD17 expression across groups (before DE analysis)")
 
 ubctempassay <- subset(resBasal, rownames(resBasal)=="ENSG00000150991.10")
 ubctempassay[,1:6]
@@ -562,6 +576,16 @@ resBasal3 <- resBasal3[(resBasal3$log2FoldChange >= fc | resBasal3$log2FoldChang
 resBasal3 <- subset(resBasal3, padj < fdr)
 nrow(resBasal3)
 
+resBasal3$temp <- row.names(resBasal3)
+resBasal3$temp <- gsub("[.].+", "", resBasal3$temp)
+
+resBasal3$symbol <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=resBasal3$temp,
+                     column="SYMBOL",
+                     keytype="GENEID",           
+                     multiVals="first")
+resBasal3$foldchange <- (2^abs(resBasal3$log2FoldChange))
+
 restemp3 <- NULL
 restemp3 <- lfcShrink(ddsMFRUV, contrast=c("sampleCondition", "Nigerian.Basal", "TCGA_white.Basal"), res = resBasal3, type="ashr", optmethod = "mixEM")
 
@@ -580,6 +604,8 @@ with(restemp3, plot(log2FoldChange, -log10(padj), pch=20, main="Volcano plot of 
 with(subset(restemp3, padj<0.05 & (2^(abs(log2FoldChange))>50)), points(log2FoldChange, -log10(padj), pch=20, col="blue"))
 with(subset(restemp3, padj<0.05 & (2^(abs(log2FoldChange))>50)), textxy(log2FoldChange, -log10(padj), labs=symbol, cex=.5))
 
+resBasal3print <- as.data.frame(resBasal3)
+resBasal3print <- resBasal3print %>% arrange(log2FoldChange)
 
 resBasal4<- results(ddsMFRUV, contrast=c("sampleCondition", "Nigerian.Basal", "TCGA_black.Basal"), alpha=0.05)
 nrow(resBasal4)
@@ -773,6 +799,11 @@ df_limma$symbol <- mapIds(EnsDb.Hsapiens.v75,
                      keytype="GENEID",        
                      multiVals="first")
 
+df_limmaprint <- as.data.frame(df_limma)
+df_limmaprint <- df_limmaprint %>% arrange(log2FoldChange)
+top_n(df_limmaprint, 10, log2FoldChange)
+top_n(df_limmaprint, -10, log2FoldChange)
+
 with(df_limma, plot(log2FoldChange, -log10(padj), pch=20, main="Volcano plot of differential gene expression between basal \nbreast cancers in Nigerian and \nTCGA white breast cancer patients\nquantile corrected", xlim=c(-50,50), ylim=c(0,70)))
 with(subset(df_limma, padj<0.05 & (2^(abs(log2FoldChange))>50)), points(log2FoldChange, -log10(padj), pch=20, col="blue"))
 with(subset(df_limma, padj<0.05 & (2^(abs(log2FoldChange))>50)), textxy(log2FoldChange, -log10(padj), labs=symbol, cex=.5))
@@ -914,3 +945,36 @@ with(restempcheck, plot(log2FoldChange, -log10(padj), pch=20, main="Volcano plot
 with(subset(restempcheck, padj<0.05 & (2^(abs(log2FoldChange))>50)), points(log2FoldChange, -log10(padj), pch=20, col="blue"))
 with(subset(restempcheck, padj<0.05 & (2^(abs(log2FoldChange))>50)), textxy(log2FoldChange, -log10(padj), labs=symbol, cex=.5))
 ```
+
+#Methods cross check
+To compare results between methods to identify the best approach to normalization, we noted the top and bottom log2foldchange genes per method. 
+```{r Methods cross check}
+print("SVA Batch effect correction")
+top_n(resBasal2print, 10, log2FoldChange)
+top_n(resBasal2print, -10, log2FoldChange)
+
+print("RUV housekeeping gene Batch effect correction")
+top_n(resBasal3print, 10, log2FoldChange)
+top_n(resBasal3print, -10, log2FoldChange)
+
+print("Limma-voom with quantile normalization batch effect correction")
+top_n(df_limmaprint, 10, log2FoldChange)
+top_n(df_limmaprint, -10, log2FoldChange)
+
+testgenename="ENSG00000126549.5"
+plotCounts(dds, gene = testgenename, intgroup=c("condition1"), main="Distribution of STATH expression across groups (before DE analysis)")
+
+testgenename="ENSG00000171560.10"
+plotCounts(dds, gene = testgenename, intgroup=c("condition1"), main="Distribution of FGA expression across groups (before DE analysis)")
+
+testgenename="ENSG00000102891.3"
+plotCounts(dds, gene = testgenename, intgroup=c("condition1"), main="Distribution of MT4 expression across groups (before DE analysis)")
+
+testgenename="ENSG00000257594.2"
+plotCounts(dds, gene = testgenename, intgroup=c("condition1"), main="Distribution of GALNT4 expression across groups (before DE analysis)")
+
+testgenename="ENSG00000183426.11"
+plotCounts(dds, gene = testgenename, intgroup=c("condition1"), main="Distribution of NPIPA1 expression across groups (before DE analysis)")
+
+```
+
