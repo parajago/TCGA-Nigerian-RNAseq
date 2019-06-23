@@ -24,7 +24,7 @@ Workflow and analysis published here:
 
 * *Raw read counts*: HTSeq (completed prior to analysis by Dominic Fitzgerald)
 
-* *Differential expression*: DESeq2
+* *Differential expression*: Limma-voom w/ quantile normalization
 
 #Differential expression:
 Initial processsing results:
@@ -35,16 +35,6 @@ Nigerian pseudogene: 302306 reads, TCGA: 184049 reads
 Nigerians: Not aligned: 233461517
 TCGA: Not aligned: 1725472254 (this is expected) 
 
-* Differential expression QC and analysis (all genes): https://parajago.github.io/TCGA-Nigerian-RNAseq/NigerianTCGArawcountsDeSeq2.html
-* Differential expression QC and analysis (protein coding genes only): https://parajago.github.io/TCGA-Nigerian-RNAseq/NigerianTCGArawcountsDeSeq2-proteincoding.html
+* Differential expression analysis (protein coding genes only): https://parajago.github.io/TCGA-Nigerian-RNAseq/NigerianTCGArawcountsDeSeq2-proteincoding.html
 * Batch effect correction exploration: 
 https://parajago.github.io/TCGA-Nigerian-RNAseq/NigerianTCGArawcountsDeSeq2-pc2.html
-
-#Pending analyses
-* Pre-analysis visual summarization: TSNE, UMAP
-
-* Differential expression of: candidate driver genes
-* Verification in whole-genome sequencing samples only
-
-* Check 14q loss across the groups
-* Plan for pathway analysis/GSEA

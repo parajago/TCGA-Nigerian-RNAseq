@@ -9,4 +9,4 @@ output:
     highlight: textmate
 ---
 
-I am a second-year postdoctoral oncology fellow at the University of Chicago. I work in the Olopade and Im labs studying the interaction between germline and somatic mutations in tumors and am interested in tumor evolution and heterogeneity.
+I am a third-year postdoctoral oncology fellow at the University of Chicago. I work in the Olopade and Im labs studying the interaction between germline and somatic mutations in tumors and am interested in how the interaction between these two genetic / transcriptomic states affects tumor heterogeneity and evolution. 
