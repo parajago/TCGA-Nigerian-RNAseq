@@ -12,7 +12,7 @@ output:
 
 Padma Sheila Rajagopal, MD MPH
 
-Olopade Lab Postdoctoral Fellow
+Olopade Lab / Im Lab Postdoctoral Fellow
 
 This is the site I will use for a project in which I am assessing differential expression between a population of Nigerian breast cancer patients and breast cancer patients from the TCGA. 
 
@@ -35,6 +35,7 @@ Nigerian pseudogene: 302306 reads, TCGA: 184049 reads
 Nigerians: Not aligned: 233461517
 TCGA: Not aligned: 1725472254 (this is expected) 
 
-* Differential expression analysis (protein coding genes only): https://parajago.github.io/TCGA-Nigerian-RNAseq/NigerianTCGArawcountsDeSeq2-proteincoding.html
 * Batch effect correction exploration: 
 https://parajago.github.io/TCGA-Nigerian-RNAseq/NigerianTCGArawcountsDeSeq2-pc2.html
+
+* Differential expression analysis (protein coding genes only) using samples with whole genome sequencing available: https://parajago.github.io/TCGA-Nigerian-RNAseq/NigerianTCGArawcountsDeSeq2-proteincoding-IHC.html

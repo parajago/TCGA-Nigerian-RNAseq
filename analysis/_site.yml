@@ -5,10 +5,8 @@ navbar:
   left:
     - text: "Home"
       href: index.html
-    - text: "Differential Expression Analysis"
-      href: NigerianTCGArawcountsDeSeq2.html
     - text: "Protein-Coding Only DE Analysis"
-      href: NigerianTCGArawcountsDeSeq2-proteincoding.html
+      href: NigerianTCGArawcountsDeSeq2-proteincoding-IHC.html
 	- text: "Batch Effect assessment"
 	  href: NigerianTCGArawcountsDeSeq2-pc2.html
     - text: "About"
