@@ -47,7 +47,7 @@ setwd("~/Research-Local/RNAseq-Local/Inputs/NigerianTCGA_quants-proteincoding-IH
 ```
 
 #Translation from HTSeq raw counts -> Count Matrix
-I have 68 TCGA patients with whole-genome sequencing data and RNAseq data as well as 50 Nigerian patients with RNA-seq data. Raw counts were initially processed using HTSeq, so HTSeq data is being formatted for use with DESeq2 and limma-voom. 
+I have 68 TCGA patients with whole-genome sequencing data and RNAseq data as well as 48 Nigerian patients with RNA-seq data. Raw counts were initially processed using HTSeq, so HTSeq data is being formatted for use with DESeq2 and limma-voom. 
 ```{r Preparing the sampleTable using HTSeq raw counts}
 FOLDER <- "/Users/parajago/Research-Local/RNAseq-Local/Inputs/NigerianTCGA_quants-proteincoding-IHC"
 sampleFiles <- grep("htseq.counts",list.files(FOLDER),value=TRUE)
@@ -145,7 +145,7 @@ ddsHTSeqMF <- DESeqDataSetFromHTSeqCount(sampleTable=sampleTable,
                                        directory=FOLDER,
                                        design=~sampleCondition)
 
-ddsHTSeqMF <- ddsHTSeqMF[rowSums(counts(ddsHTSeqMF)) > 0, ] #Pre-filtering the dataset by removing the rows without any  information about gene expression -> this removes 675 genes
+ddsHTSeqMF <- ddsHTSeqMF[rowSums(counts(ddsHTSeqMF)) > 0, ] #Pre-filtering the dataset by removing the rows without any  information about gene expression -> this removes 677 genes
 ```
 
 #Quantile normalization
@@ -159,12 +159,12 @@ countmatrix <- assay(ddsHTSeqMF) #Raw counts organized into matrix format from i
 countmatrix2 <- log2(countmatrix + 1) #Basic transformation of the count data 
 
 plot(density(countmatrix2[,1]),lwd=3,ylim=c(0,.30), main="Density of counts with log2[count]+1 transformation ONLY") 
-for(i in 1:118){lines(density(countmatrix2[,i]),lwd=3)} #This demonstrates that there is a difference in distributions between the Nigerian and TCGA data with basic log transformation normalization 
+for(i in 1:116){lines(density(countmatrix2[,i]),lwd=3)} #This demonstrates that there is a difference in distributions between the Nigerian and TCGA data with basic log transformation normalization 
 
 norm_countmatrix <- as.matrix(countmatrix2) 
 norm_countmatrix = normalize.quantiles(norm_countmatrix)
 plot(density(norm_countmatrix[,1]),lwd=3,ylim=c(0,.3), main="Density of counts with quantile normalization")
-for(i in 1:118){lines(density(norm_countmatrix[,i]),lwd=3)} #This demonstrates the effect of comparative quantile normalization
+for(i in 1:116){lines(density(norm_countmatrix[,i]),lwd=3)} #This demonstrates the effect of comparative quantile normalization
 
 colnames (norm_countmatrix) <- colnames (countmatrix2)
 rownames (norm_countmatrix) <- rownames (countmatrix2)
@@ -172,7 +172,7 @@ rownames (norm_countmatrix) <- rownames (countmatrix2)
 norm_countmatrix <- as.data.frame(norm_countmatrix)
 countmatrixNigerian <- dplyr::select(norm_countmatrix, contains("LIB"))
 plot(density(countmatrixNigerian[,1]),lwd=3,ylim=c(0,.3), main="Density of counts with quantile normalization - Nigerian")
-for(i in 1:50){lines(density(countmatrixNigerian[,i]),lwd=3)} #This demonstrates the result of the normalized Nigerian counts separately
+for(i in 1:48){lines(density(countmatrixNigerian[,i]),lwd=3)} #This demonstrates the result of the normalized Nigerian counts separately
 
 tcgacolnames <- colnames(countmatrix)
 tcgacolnames <- setdiff(tcgacolnames, colnames(countmatrixNigerian))
@@ -185,7 +185,7 @@ t_norm_countmatrix <- t(norm_countmatrix)
 
 t_norm_countmatrix <- cbind (t_norm_countmatrix, sampleTable) #This binds the characteristics of the original patients to the quantile normalized counts. CBinding was checked to make sure that patients were correctly aligned to characteristics. 
 
-quant.pca <- prcomp(t_norm_countmatrix[,1:19652])
+quant.pca <- prcomp(t_norm_countmatrix[,1:19650])
 autoplot(quant.pca, data=t_norm_countmatrix, colour='sampleCondition', main="PCA of quantile normalization results prior to DE analysis")
 ```
 In the raw data with log transformation only, we are able to see that there are two peaks corresponding to the two datasets (Nigerian and TCGA). The quantile normalization demonstrates a PCA that has similar clustering. Only ~20% of the distribution of the data set is explained by the PCA1, 2 of the variables.
