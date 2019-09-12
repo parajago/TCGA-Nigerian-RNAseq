@@ -1,7 +1,7 @@
 ---
 title: "Nigerian-TCGA Differential Expression Analysis Using DeSeq2 - Protein Coding Genes Only for whole-genome samples"
 author: "Padma Sheila Rajagopal, MD MPH"
-date: "8/17/2019"
+date: "9/11/2019"
 
 site: workflowr::wflow_site
 output:
@@ -42,12 +42,16 @@ library(preprocessCore)
 library("BiocParallel")
 library(RColorBrewer)
 library(Glimma)
+library(clusterProfiler)
+library(pathview)
+library(AnnotationHub)
+
 register(MulticoreParam(4))
 setwd("~/Research-Local/RNAseq-Local/Inputs/NigerianTCGA_quants-proteincoding-IHC")
 ```
 
 #Translation from HTSeq raw counts -> Count Matrix
-I have 68 TCGA patients with whole-genome sequencing data and RNAseq data as well as 48 Nigerian patients with RNA-seq data. Raw counts were initially processed using HTSeq, so HTSeq data is being formatted for use with DESeq2 and limma-voom. 
+I have 66 TCGA patients with whole-genome sequencing data and RNAseq data as well as 48 Nigerian patients with RNA-seq data. Raw counts were initially processed using HTSeq, so HTSeq data is being formatted for use with DESeq2 and limma-voom. 
 ```{r Preparing the sampleTable using HTSeq raw counts}
 FOLDER <- "/Users/parajago/Research-Local/RNAseq-Local/Inputs/NigerianTCGA_quants-proteincoding-IHC"
 sampleFiles <- grep("htseq.counts",list.files(FOLDER),value=TRUE)
@@ -145,7 +149,7 @@ ddsHTSeqMF <- DESeqDataSetFromHTSeqCount(sampleTable=sampleTable,
                                        directory=FOLDER,
                                        design=~sampleCondition)
 
-ddsHTSeqMF <- ddsHTSeqMF[rowSums(counts(ddsHTSeqMF)) > 0, ] #Pre-filtering the dataset by removing the rows without any  information about gene expression -> this removes 677 genes
+ddsHTSeqMF <- ddsHTSeqMF[rowSums(counts(ddsHTSeqMF)) > 0, ] #Pre-filtering the dataset by removing the rows without any information about gene expression -> this removes 677 genes
 ```
 
 #Quantile normalization
@@ -159,12 +163,12 @@ countmatrix <- assay(ddsHTSeqMF) #Raw counts organized into matrix format from i
 countmatrix2 <- log2(countmatrix + 1) #Basic transformation of the count data 
 
 plot(density(countmatrix2[,1]),lwd=3,ylim=c(0,.30), main="Density of counts with log2[count]+1 transformation ONLY") 
-for(i in 1:116){lines(density(countmatrix2[,i]),lwd=3)} #This demonstrates that there is a difference in distributions between the Nigerian and TCGA data with basic log transformation normalization 
+for(i in 1:114){lines(density(countmatrix2[,i]),lwd=3)} #This demonstrates that there is a difference in distributions between the Nigerian and TCGA data with basic log transformation normalization 
 
 norm_countmatrix <- as.matrix(countmatrix2) 
 norm_countmatrix = normalize.quantiles(norm_countmatrix)
 plot(density(norm_countmatrix[,1]),lwd=3,ylim=c(0,.3), main="Density of counts with quantile normalization")
-for(i in 1:116){lines(density(norm_countmatrix[,i]),lwd=3)} #This demonstrates the effect of comparative quantile normalization
+for(i in 1:114){lines(density(norm_countmatrix[,i]),lwd=3)} #This demonstrates the effect of comparative quantile normalization
 
 colnames (norm_countmatrix) <- colnames (countmatrix2)
 rownames (norm_countmatrix) <- rownames (countmatrix2)
@@ -178,14 +182,18 @@ tcgacolnames <- colnames(countmatrix)
 tcgacolnames <- setdiff(tcgacolnames, colnames(countmatrixNigerian))
 countmatrixTCGA <- norm_countmatrix[ , tcgacolnames]
 plot(density(countmatrixTCGA[,1]),lwd=3,ylim=c(0,.3), main="Density of counts with quantile normalization - TCGA")
-for(i in 1:68){lines(density(countmatrixTCGA[,i]),lwd=3)} #This demonstrates the result of the normalized TCGA counts separately
+for(i in 1:66){
+  lines(density(countmatrixTCGA[,i]),lwd=3);
+#  print(colnames(countmatrix)[i])
+#  invisible(readline(prompt=i))
+  } #This demonstrates the result of the normalized TCGA counts separately
 
 norm_countmatrix <- as.data.frame(norm_countmatrix)
 t_norm_countmatrix <- t(norm_countmatrix)
 
 t_norm_countmatrix <- cbind (t_norm_countmatrix, sampleTable) #This binds the characteristics of the original patients to the quantile normalized counts. CBinding was checked to make sure that patients were correctly aligned to characteristics. 
 
-quant.pca <- prcomp(t_norm_countmatrix[,1:19650])
+quant.pca <- prcomp(t_norm_countmatrix[,1:19596])
 autoplot(quant.pca, data=t_norm_countmatrix, colour='sampleCondition', main="PCA of quantile normalization results prior to DE analysis")
 ```
 In the raw data with log transformation only, we are able to see that there are two peaks corresponding to the two datasets (Nigerian and TCGA). The quantile normalization demonstrates a PCA that has similar clustering. Only ~20% of the distribution of the data set is explained by the PCA1, 2 of the variables.
@@ -233,7 +241,6 @@ design <- design %>% dplyr::select(sampleCondition)
 
 ##DE: Nigerian vs. TCGA regardless of subtype
 ```{r Limma-voom differential expression results for Nigerian/TCGA patients regardless of subtype, cache=TRUE}
-
 designNvsT <- t_norm_countmatrix
 designNvsT <- designNvsT %>% dplyr::select(condition1)
 
@@ -654,7 +661,6 @@ write.csv(df_limmaprint, file = "TCGAwhite-Nigerian-Her2.csv", row.names = FALSE
 
 ##DE: Nigerian/TCGA - HER2 14q LOH
 ```{r Limma-voom differential expression results for Nigerian/TCGA HER2+ 14q LOH, cache=TRUE}
-
 design <- t_norm_countmatrix
 designNvsTLOH <- design %>% dplyr::select(condition3)
 
@@ -730,7 +736,8 @@ cat("MA Plot: Differential expression based on 14q LOH presence")
 res <- lfcShrink(ddsMF, coef="sampleCondition_noLOH_vs_LOH", type="ashr", optmethod = "mixEM")
 DESeq2::plotMA(res, ylim=c(-10,10), xlim=c(0.1,200))
 
-diffLOH<- results(ddsMF, contrast=c("sampleCondition", "noLOH", "LOH"), alpha=0.05)
+diffLOH<- results(ddsMF, contrast=c("sampleCondition", "noLOH", "LOH"), pAdjustMethod ="fdr", alpha=fdr)
+
 nrow(diffLOH)
 diffLOH <- diffLOH[(diffLOH$log2FoldChange >= fc | diffLOH$log2FoldChange <= -fc),] 
 diffLOH <- subset(diffLOH, padj < fdr)
@@ -750,7 +757,6 @@ restemp$symbol <- mapIds(EnsDb.Hsapiens.v75,
 with(restemp, plot(log2FoldChange, -log10(padj), pch=20, main="Volcano plot of differential gene expression between \nbreast cancers in Nigerian patients with and without 14q LOH", xlim=c(-60,60), ylim=c(0,60)))
 with(subset(restemp, padj<0.05 & (2^(abs(log2FoldChange))>50)), points(log2FoldChange, -log10(padj), pch=20, col="blue"))
 with(subset(restemp, padj<0.05 & (2^(abs(log2FoldChange))>50)), textxy(log2FoldChange, -log10(padj), labs=symbol, cex=.5))
-
 
 diffLOHtable <- as.data.frame(diffLOH)
 diffLOHtable$temp <- row.names(diffLOH)
@@ -795,3 +801,93 @@ top_n(diffLOHtable, -10, log2FoldChange)
 write.csv(diffLOHtable, file = "DE-LOH.csv")
 ```
 
+```{r Pathway analysis for LOH, cache=TRUE}
+diffLOHpath <- results(ddsMF, contrast=c("sampleCondition", "noLOH", "LOH"), pAdjustMethod ="fdr", alpha=fdr)
+diffLOHpath <- as.data.frame(diffLOHpath)
+
+diffLOHpath$foldChange <- NA
+row.pos <- which(! is.na(diffLOHpath$log2FoldChange) & 
+                diffLOHpath$log2FoldChange >= 0)
+row.neg <- which(! is.na(diffLOHpath$log2FoldChange) & 
+                diffLOHpath$log2FoldChange < 0)
+diffLOHpath$foldChange[row.pos] <- 2^diffLOHpath$log2FoldChange[row.pos]
+diffLOHpath$foldChange[row.neg] <- -2^((-1) * diffLOHpath$log2FoldChange[row.neg])
+
+diffLOHpath$ENSEMBL <- row.names(diffLOHpath)
+diffLOHpath$temp <- row.names(diffLOHpath)
+diffLOHpath$temp <- gsub("[.].+", "", diffLOHpath$temp)
+
+diffLOHpath$SYMBOL <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=diffLOHpath$temp,
+                     column="SYMBOL",
+                     keytype="GENEID",           
+                     multiVals="first")
+
+diffLOHpath$baseMean <- NULL
+diffLOHpath$temp <- NULL
+
+diffLOHpath.flt <- diffLOHpath[(diffLOHpath$foldChange >= 1.5 | diffLOHpath$foldChange <= -1.5) & diffLOHpath$padj < 0.05,]
+
+genes.all <- diffLOHpath
+genes.sig <- diffLOHpath.flt
+genes.all$ENSEMBL <- gsub('[.]\\d+', '', genes.all$ENSEMBL, perl = TRUE)
+genes.sig$ENSEMBL <- gsub('[.]\\d+', '', genes.sig$ENSEMBL, perl = TRUE)
+
+genes.all.anno <- bitr(geneID   =  genes.all$ENSEMBL, 
+                      fromType = 'GENEID', 
+                      toType   = c('ENTREZID', 'SYMBOL'), 
+                      OrgDb    = 'EnsDb.Hsapiens.v75', 
+                      drop     = TRUE)
+
+genes.all.anno <- genes.all.anno[
+    which(! duplicated(genes.all.anno$ENTREZID)), ]
+row.names(genes.all.anno) <- genes.all.anno$ENTREZID
+
+genes.all.anno$ENSEMBL <- genes.all.anno$GENEID
+genes.all.anno$GENEID <- NULL
+
+genes.all.anno <- merge(genes.all.anno, genes.all, by = 'ENSEMBL')
+row.names(genes.all.anno) <- genes.all.anno$ENTREZID
+
+genes.sig.anno <- genes.all.anno[genes.all.anno$ENSEMBL %in% 
+                                genes.sig$ENSEMBL,]
+
+gene.list <- genes.all.anno$foldChange
+names(gene.list) <- genes.all.anno$ENTREZID
+gene.list <- sort(gene.list, decreasing = TRUE)
+
+ego <- enrichGO(gene          = genes.sig.anno$ENTREZID,
+                universe      = as.character(genes.all.anno$ENTREZID),
+                OrgDb         = 'org.Hs.eg.db',
+                ont           = "BP",
+                pAdjustMethod = "fdr",
+                pvalueCutoff  = 0.05,
+                readable      = TRUE)
+
+as.data.frame(ego)
+save(ego, file="GO-LOH.significantgenes.fdr0.05.fc1.5.enrichGO.RData")
+write.csv(ego, file="GO-LOH.significantgenes.fdr0.05.fc1.5.enrichGO.csv")
+
+options(jupyter.plot_mimetypes = "image/svg+xml") 
+options(repr.plot.width = 10, repr.plot.height = 5)
+
+egokegg <- ego
+for(i in 1:5) { 
+  egokegg <- dropGO(egokegg, level = i)
+}
+
+p1 <- barplot(egokegg)
+p2 <- dotplot(egokegg)
+
+kk <- enrichKEGG(gene          = genes.sig.anno$ENTREZID,
+                 universe      = as.character(genes.all.anno$ENTREZID),
+                 organism      = "hsa",
+                 pAdjustMethod = "fdr",
+                 pvalueCutoff  = 0.05)
+
+plot(p1)
+plot(p2)
+
+save(kk, file="GO-LOH.significantgenes.fdr0.05.fc1.5.enrichKEGG.RData")
+write.csv(kk@result, file="GO-LOH.significantgenes.fdr0.05.fc1.5.enrichKEGG.csv")
+```
