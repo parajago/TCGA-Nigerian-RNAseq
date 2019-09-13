@@ -1,7 +1,7 @@
 ---
 title: "Nigerian-TCGA Differential Expression Analysis Using DeSeq2 - Protein Coding Genes Only for whole-genome samples"
 author: "Padma Sheila Rajagopal, MD MPH"
-date: "9/11/2019"
+date: "9/12/2019"
 
 site: workflowr::wflow_site
 output:
@@ -300,13 +300,21 @@ with(subset(df_limma, padj<0.05 & (2^(abs(log2FoldChange))>50)), points(log2Fold
 with(subset(df_limma, padj<0.05 & (2^(abs(log2FoldChange))>50)), textxy(log2FoldChange, -log10(padj), labs=anno$symbol, cex=.5))
 
 df_limmaprint <- as.data.frame(df_limma)
-df_limmaprint <- df_limmaprint %>% arrange(log2FoldChange) %>% dplyr::filter(padj < 0.05) %>% dplyr::filter(abs(log2FoldChange)>0.58)
 
-top_n(df_limmaprint, 10, log2FoldChange)
-top_n(df_limmaprint, -10, log2FoldChange)
+df_limmaprint$foldChange <- NA
+row.pos <- which(! is.na(df_limmaprint$log2FoldChange) & 
+                df_limmaprint$log2FoldChange >= 0)
+row.neg <- which(! is.na(df_limmaprint$log2FoldChange) & 
+                df_limmaprint$log2FoldChange < 0)
+df_limmaprint$foldChange[row.pos] <- 2^df_limmaprint$log2FoldChange[row.pos]
+df_limmaprint$foldChange[row.neg] <- -2^((-1) * df_limmaprint$log2FoldChange[row.neg])
+
+df_limmaprint <- df_limmaprint %>% arrange(foldChange) %>% dplyr::filter(padj < 0.05) %>% dplyr::filter(abs(foldChange)>1.5)
+
+top_n(df_limmaprint, 10)
+top_n(df_limmaprint, -10)
 
 write.csv(df_limmaprint, file = "TCGAwhite-Nigerian-all-DE.csv", row.names = FALSE)
-
 
 contr.matrix <- makeContrasts(TCGA_black-Nigerian,levels=colnames(designNvsT))
 
@@ -330,10 +338,19 @@ with(subset(df_limma, padj<0.05 & (2^(abs(log2FoldChange))>50)), points(log2Fold
 with(subset(df_limma, padj<0.05 & (2^(abs(log2FoldChange))>50)), textxy(log2FoldChange, -log10(padj), labs=anno$symbol, cex=.5))
 
 df_limmaprint <- as.data.frame(df_limma)
-df_limmaprint <- df_limmaprint %>% arrange(log2FoldChange) %>% dplyr::filter(padj < 0.05) %>% dplyr::filter(abs(log2FoldChange)>0.58)
 
-top_n(df_limmaprint, 10, log2FoldChange)
-top_n(df_limmaprint, -10, log2FoldChange)
+df_limmaprint$foldChange <- NA
+row.pos <- which(! is.na(df_limmaprint$log2FoldChange) & 
+                df_limmaprint$log2FoldChange >= 0)
+row.neg <- which(! is.na(df_limmaprint$log2FoldChange) & 
+                df_limmaprint$log2FoldChange < 0)
+df_limmaprint$foldChange[row.pos] <- 2^df_limmaprint$log2FoldChange[row.pos]
+df_limmaprint$foldChange[row.neg] <- -2^((-1) * df_limmaprint$log2FoldChange[row.neg])
+
+df_limmaprint <- df_limmaprint %>% arrange(foldChange) %>% dplyr::filter(padj < 0.05) %>% dplyr::filter(abs(foldChange)>1.5)
+
+top_n(df_limmaprint, 10)
+top_n(df_limmaprint, -10)
 
 write.csv(df_limmaprint, file = "TCGAblack-Nigerian-all-DE.csv", row.names = FALSE)
 ```
@@ -394,10 +411,19 @@ with(subset(df_limma, padj<0.05 & (2^(abs(log2FoldChange))>50)), points(log2Fold
 with(subset(df_limma, padj<0.05 & (2^(abs(log2FoldChange))>50)), textxy(log2FoldChange, -log10(padj), labs=anno$symbol, cex=.5))
 
 df_limmaprint <- as.data.frame(df_limma)
-df_limmaprint <- df_limmaprint %>% arrange(log2FoldChange) %>% dplyr::filter(padj < 0.05) %>% dplyr::filter(abs(log2FoldChange)>0.58)
 
-top_n(df_limmaprint, 10, log2FoldChange)
-top_n(df_limmaprint, -10, log2FoldChange)
+df_limmaprint$foldChange <- NA
+row.pos <- which(! is.na(df_limmaprint$log2FoldChange) & 
+                df_limmaprint$log2FoldChange >= 0)
+row.neg <- which(! is.na(df_limmaprint$log2FoldChange) & 
+                df_limmaprint$log2FoldChange < 0)
+df_limmaprint$foldChange[row.pos] <- 2^df_limmaprint$log2FoldChange[row.pos]
+df_limmaprint$foldChange[row.neg] <- -2^((-1) * df_limmaprint$log2FoldChange[row.neg])
+
+df_limmaprint <- df_limmaprint %>% arrange(foldChange) %>% dplyr::filter(padj < 0.05) %>% dplyr::filter(abs(foldChange)>1.5)
+
+top_n(df_limmaprint, 10, foldChange)
+top_n(df_limmaprint, -10, foldChange)
 
 write.csv(df_limmaprint, file = "Nigerian-TCGAwhite-TNBC.csv", row.names = FALSE)
 ```
@@ -458,10 +484,19 @@ with(subset(df_limma, padj<0.05 & (2^(abs(log2FoldChange))>50)), points(log2Fold
 with(subset(df_limma, padj<0.05 & (2^(abs(log2FoldChange))>50)), textxy(log2FoldChange, -log10(padj), labs=anno$symbol, cex=.5))
 
 df_limmaprint <- as.data.frame(df_limma)
-df_limmaprint <- df_limmaprint %>% arrange(log2FoldChange) %>% dplyr::filter(padj < 0.05) %>% dplyr::filter(abs(log2FoldChange)>0.58)
 
-top_n(df_limmaprint, 10, log2FoldChange)
-top_n(df_limmaprint, -10, log2FoldChange)
+df_limmaprint$foldChange <- NA
+row.pos <- which(! is.na(df_limmaprint$log2FoldChange) & 
+                df_limmaprint$log2FoldChange >= 0)
+row.neg <- which(! is.na(df_limmaprint$log2FoldChange) & 
+                df_limmaprint$log2FoldChange < 0)
+df_limmaprint$foldChange[row.pos] <- 2^df_limmaprint$log2FoldChange[row.pos]
+df_limmaprint$foldChange[row.neg] <- -2^((-1) * df_limmaprint$log2FoldChange[row.neg])
+
+df_limmaprint <- df_limmaprint %>% arrange(foldChange) %>% dplyr::filter(padj < 0.05) %>% dplyr::filter(abs(foldChange)>1.5)
+
+top_n(df_limmaprint, 10, foldChange)
+top_n(df_limmaprint, -10, foldChange)
 
 write.csv(df_limmaprint, file = "Nigerian-TCGAblack-TNBC.csv", row.names = FALSE)
 ```
@@ -522,11 +557,19 @@ with(subset(df_limma, padj<0.05 & (2^(abs(log2FoldChange))>50)), points(log2Fold
 with(subset(df_limma, padj<0.05 & (2^(abs(log2FoldChange))>50)), textxy(log2FoldChange, -log10(padj), labs=anno$symbol, cex=.5))
 
 df_limmaprint <- as.data.frame(df_limma)
-df_limmaprint <- df_limmaprint %>% arrange(log2FoldChange) %>% dplyr::filter(padj < 0.05) %>% dplyr::filter(abs(log2FoldChange)>0.58)
 
-top_n(df_limmaprint, 10, log2FoldChange)
-top_n(df_limmaprint, -10, log2FoldChange)
+df_limmaprint$foldChange <- NA
+row.pos <- which(! is.na(df_limmaprint$log2FoldChange) & 
+                df_limmaprint$log2FoldChange >= 0)
+row.neg <- which(! is.na(df_limmaprint$log2FoldChange) & 
+                df_limmaprint$log2FoldChange < 0)
+df_limmaprint$foldChange[row.pos] <- 2^df_limmaprint$log2FoldChange[row.pos]
+df_limmaprint$foldChange[row.neg] <- -2^((-1) * df_limmaprint$log2FoldChange[row.neg])
 
+df_limmaprint <- df_limmaprint %>% arrange(foldChange) %>% dplyr::filter(padj < 0.05) %>% dplyr::filter(abs(foldChange)>1.5)
+
+top_n(df_limmaprint, 10, foldChange)
+top_n(df_limmaprint, -10, foldChange)
 write.csv(df_limmaprint, file = "TCGA_white-Nigerian-HRpos.csv", row.names = FALSE)
 ```
 
@@ -586,10 +629,19 @@ with(subset(df_limma, padj<0.05 & (2^(abs(log2FoldChange))>50)), points(log2Fold
 with(subset(df_limma, padj<0.05 & (2^(abs(log2FoldChange))>50)), textxy(log2FoldChange, -log10(padj), labs=anno$symbol, cex=.5))
 
 df_limmaprint <- as.data.frame(df_limma)
-df_limmaprint <- df_limmaprint %>% arrange(log2FoldChange) %>% dplyr::filter(padj < 0.05) %>% dplyr::filter(abs(log2FoldChange)>0.58)
 
-top_n(df_limmaprint, 10, log2FoldChange)
-top_n(df_limmaprint, -10, log2FoldChange)
+df_limmaprint$foldChange <- NA
+row.pos <- which(! is.na(df_limmaprint$log2FoldChange) & 
+                df_limmaprint$log2FoldChange >= 0)
+row.neg <- which(! is.na(df_limmaprint$log2FoldChange) & 
+                df_limmaprint$log2FoldChange < 0)
+df_limmaprint$foldChange[row.pos] <- 2^df_limmaprint$log2FoldChange[row.pos]
+df_limmaprint$foldChange[row.neg] <- -2^((-1) * df_limmaprint$log2FoldChange[row.neg])
+
+df_limmaprint <- df_limmaprint %>% arrange(foldChange) %>% dplyr::filter(padj < 0.05) %>% dplyr::filter(abs(foldChange)>1.5)
+
+top_n(df_limmaprint, 10, foldChange)
+top_n(df_limmaprint, -10, foldChange)
 
 write.csv(df_limmaprint, file = "TCGAblack-Nigerian-HRpos.csv", row.names = FALSE)
 ```
@@ -651,11 +703,19 @@ with(subset(df_limma, padj<0.05 & (2^(abs(log2FoldChange))>50)), points(log2Fold
 with(subset(df_limma, padj<0.05 & (2^(abs(log2FoldChange))>50)), textxy(log2FoldChange, -log10(padj), labs=anno$symbol, cex=.5))
 
 df_limmaprint <- as.data.frame(df_limma)
-df_limmaprint <- df_limmaprint %>% arrange(log2FoldChange) %>% dplyr::filter(padj < 0.05) %>% dplyr::filter(abs(log2FoldChange)>0.58)
 
-top_n(df_limmaprint, 10, log2FoldChange)
-top_n(df_limmaprint, -10, log2FoldChange)
+df_limmaprint$foldChange <- NA
+row.pos <- which(! is.na(df_limmaprint$log2FoldChange) & 
+                df_limmaprint$log2FoldChange >= 0)
+row.neg <- which(! is.na(df_limmaprint$log2FoldChange) & 
+                df_limmaprint$log2FoldChange < 0)
+df_limmaprint$foldChange[row.pos] <- 2^df_limmaprint$log2FoldChange[row.pos]
+df_limmaprint$foldChange[row.neg] <- -2^((-1) * df_limmaprint$log2FoldChange[row.neg])
 
+df_limmaprint <- df_limmaprint %>% arrange(foldChange) %>% dplyr::filter(padj < 0.05) %>% dplyr::filter(abs(foldChange)>1.5)
+
+top_n(df_limmaprint, 10, foldChange)
+top_n(df_limmaprint, -10, foldChange)
 write.csv(df_limmaprint, file = "TCGAwhite-Nigerian-Her2.csv", row.names = FALSE)
 ```
 
@@ -729,7 +789,7 @@ plotPCA(vsd, intgroup=c("sampleCondition"))
 ddsMF <- DESeq(ddsHTSeqMF2)
 resultsNames(ddsMF)
 
-fc = 0.58 #Subsequent threshold of signifcance for log2 fold change -> 0.58 = log2(1.5)
+fc = 1.5 #Subsequent threshold of signifcance for log2 fold change -> 0.58 = log2(1.5)
 fdr = 0.05 #Subsequent threshold of significance for p-value (adjusted by FDR)
 
 cat("MA Plot: Differential expression based on 14q LOH presence")
@@ -738,8 +798,16 @@ DESeq2::plotMA(res, ylim=c(-10,10), xlim=c(0.1,200))
 
 diffLOH<- results(ddsMF, contrast=c("sampleCondition", "noLOH", "LOH"), pAdjustMethod ="fdr", alpha=fdr)
 
+diffLOH$foldChange <- NA
+row.pos <- which(! is.na(diffLOH$log2FoldChange) & 
+                diffLOH$log2FoldChange >= 0)
+row.neg <- which(! is.na(diffLOH$log2FoldChange) & 
+                diffLOH$log2FoldChange < 0)
+diffLOH$foldChange[row.pos] <- 2^diffLOH$log2FoldChange[row.pos]
+diffLOH$foldChange[row.neg] <- -2^((-1) * diffLOH$log2FoldChange[row.neg])
+
 nrow(diffLOH)
-diffLOH <- diffLOH[(diffLOH$log2FoldChange >= fc | diffLOH$log2FoldChange <= -fc),] 
+diffLOH <- diffLOH[(diffLOH$foldChange > fc | diffLOH$foldChange < -fc),] 
 diffLOH <- subset(diffLOH, padj < fdr)
 nrow(diffLOH)
 
@@ -794,15 +862,18 @@ diffLOHtable$locend <- mapIds(EnsDb.Hsapiens.v75,
 
 diffLOHtable$temp <- NULL
 
-diffLOHtable <- diffLOHtable %>% arrange(log2FoldChange)
-top_n(diffLOHtable, 10, log2FoldChange)
-top_n(diffLOHtable, -10, log2FoldChange)
+diffLOHtable <- diffLOHtable %>% arrange(foldChange) %>% dplyr::filter(padj < 0.05) %>% dplyr::filter(abs(foldChange)>1.5)
 
-write.csv(diffLOHtable, file = "DE-LOH.csv")
+top_n(diffLOHtable, 10, foldChange)
+top_n(diffLOHtable, -10, foldChange)
+
+diffLOHtable$baseMean <- NULL
+write.csv(diffLOHtable, file = "DE-LOH.csv", row.names =FALSE)
 ```
 
 ```{r Pathway analysis for LOH, cache=TRUE}
 diffLOHpath <- results(ddsMF, contrast=c("sampleCondition", "noLOH", "LOH"), pAdjustMethod ="fdr", alpha=fdr)
+
 diffLOHpath <- as.data.frame(diffLOHpath)
 
 diffLOHpath$foldChange <- NA
@@ -824,9 +895,11 @@ diffLOHpath$SYMBOL <- mapIds(EnsDb.Hsapiens.v75,
                      multiVals="first")
 
 diffLOHpath$baseMean <- NULL
+diffLOHpath$log2FoldChange <- NULL
 diffLOHpath$temp <- NULL
 
-diffLOHpath.flt <- diffLOHpath[(diffLOHpath$foldChange >= 1.5 | diffLOHpath$foldChange <= -1.5) & diffLOHpath$padj < 0.05,]
+diffLOHpath.flt <- diffLOHpath[(diffLOHpath$foldChange > fc | diffLOHpath$foldChange < -fc),] 
+diffLOHpath.flt <- subset(diffLOHpath, padj < fdr)
 
 genes.all <- diffLOHpath
 genes.sig <- diffLOHpath.flt
