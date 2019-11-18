@@ -393,7 +393,7 @@ df_limma <- data_frame(log2FoldChange = fit$coefficients[,1],
                        padj = qvals,
                        anno = fit$genes)
 
-with(df_limma, plot(log2FoldChange, -log10(padj), pch=20, main="Volcano plot of differential gene expression between basal \nbreast cancers in Nigerian and TCGA white breast cancer patients\nquantile corrected", xlim=c(-50,50), ylim=c(0,70)))
+with(df_limma, plot(log2FoldChange, -log10(padj), pch=20, main="Volcano plot of differential gene expression between basal \nbreast cancers in Nigerian and TCGA white breast cancer patients\nquantile corrected", xlim=c(-50,50), ylim=c(0,50)))
 with(subset(df_limma, padj<0.05 & (2^(abs(log2FoldChange))>50)), points(log2FoldChange, -log10(padj), pch=20, col="blue"))
 with(subset(df_limma, padj<0.05 & (2^(abs(log2FoldChange))>50)), textxy(log2FoldChange, -log10(padj), labs=anno$symbol, cex=.5))
 
@@ -471,7 +471,7 @@ df_limma <- data_frame(log2FoldChange = fit$coefficients[,1],
                        padj = qvals,
                        anno = fit$genes)
 
-with(df_limma, plot(log2FoldChange, -log10(padj), pch=20, main="Volcano plot of differential gene expression between Basal \nbreast cancers in Nigerian and TCGA black breast cancer patients\nquantile corrected", xlim=c(-50,50), ylim=c(0,70)))
+with(df_limma, plot(log2FoldChange, -log10(padj), pch=20, main="Volcano plot of differential gene expression between Basal \nbreast cancers in Nigerian and TCGA black breast cancer patients\nquantile corrected", xlim=c(-50,50), ylim=c(0,50)))
 with(subset(df_limma, padj<0.05 & (2^(abs(log2FoldChange))>50)), points(log2FoldChange, -log10(padj), pch=20, col="blue"))
 with(subset(df_limma, padj<0.05 & (2^(abs(log2FoldChange))>50)), textxy(log2FoldChange, -log10(padj), labs=anno$symbol, cex=.5))
 
@@ -549,7 +549,7 @@ df_limma <- data_frame(log2FoldChange = fit$coefficients[,1],
                        padj = qvals,
                        anno = fit$genes)
 
-with(df_limma, plot(log2FoldChange, -log10(padj), pch=20, main="Volcano plot of differential gene expression between LumA \nbreast cancers in Nigerian and TCGA white breast cancer patients\nquantile corrected", xlim=c(-50,50), ylim=c(0,70)))
+with(df_limma, plot(log2FoldChange, -log10(padj), pch=20, main="Volcano plot of differential gene expression between LumA \nbreast cancers in Nigerian and TCGA white breast cancer patients\nquantile corrected", xlim=c(-50,50), ylim=c(0,20)))
 with(subset(df_limma, padj<0.05 & (2^(abs(log2FoldChange))>50)), points(log2FoldChange, -log10(padj), pch=20, col="blue"))
 with(subset(df_limma, padj<0.05 & (2^(abs(log2FoldChange))>50)), textxy(log2FoldChange, -log10(padj), labs=anno$symbol, cex=.5))
 
@@ -627,7 +627,7 @@ df_limma <- data_frame(log2FoldChange = fit$coefficients[,1],
                        padj = qvals,
                        anno = fit$genes)
 
-with(df_limma, plot(log2FoldChange, -log10(padj), pch=20, main="Volcano plot of differential gene expression between LumA \nbreast cancers in Nigerian and TCGA black breast cancer patients\nquantile corrected", xlim=c(-50,50), ylim=c(0,70)))
+with(df_limma, plot(log2FoldChange, -log10(padj), pch=20, main="Volcano plot of differential gene expression between LumA \nbreast cancers in Nigerian and TCGA black breast cancer patients\nquantile corrected", xlim=c(-50,50), ylim=c(0,20)))
 with(subset(df_limma, padj<0.05 & (2^(abs(log2FoldChange))>50)), points(log2FoldChange, -log10(padj), pch=20, col="blue"))
 with(subset(df_limma, padj<0.05 & (2^(abs(log2FoldChange))>50)), textxy(log2FoldChange, -log10(padj), labs=anno$symbol, cex=.5))
 
@@ -705,7 +705,7 @@ df_limma <- data_frame(log2FoldChange = fit$coefficients[,1],
                        padj = qvals,
                        anno = fit$genes)
 
-with(df_limma, plot(log2FoldChange, -log10(padj), pch=20, main="Volcano plot of differential gene expression between LumB \nbreast cancers in Nigerian and TCGA white breast cancer patients\nquantile corrected", xlim=c(-50,50), ylim=c(0,70)))
+with(df_limma, plot(log2FoldChange, -log10(padj), pch=20, main="Volcano plot of differential gene expression between LumB \nbreast cancers in Nigerian and TCGA white breast cancer patients\nquantile corrected", xlim=c(-50,50), ylim=c(0,20)))
 with(subset(df_limma, padj<0.05 & (2^(abs(log2FoldChange))>50)), points(log2FoldChange, -log10(padj), pch=20, col="blue"))
 with(subset(df_limma, padj<0.05 & (2^(abs(log2FoldChange))>50)), textxy(log2FoldChange, -log10(padj), labs=anno$symbol, cex=.5))
 
@@ -783,7 +783,7 @@ df_limma <- data_frame(log2FoldChange = fit$coefficients[,1],
                        padj = qvals,
                        anno = fit$genes)
 
-with(df_limma, plot(log2FoldChange, -log10(padj), pch=20, main="Volcano plot of differential gene expression between LumA \nbreast cancers in Nigerian and TCGA black breast cancer patients\nquantile corrected", xlim=c(-50,50), ylim=c(0,70)))
+with(df_limma, plot(log2FoldChange, -log10(padj), pch=20, main="Volcano plot of differential gene expression between LumB \nbreast cancers in Nigerian and TCGA black breast cancer patients\nquantile corrected", xlim=c(-50,50), ylim=c(0,20)))
 with(subset(df_limma, padj<0.05 & (2^(abs(log2FoldChange))>50)), points(log2FoldChange, -log10(padj), pch=20, col="blue"))
 with(subset(df_limma, padj<0.05 & (2^(abs(log2FoldChange))>50)), textxy(log2FoldChange, -log10(padj), labs=anno$symbol, cex=.5))
 
@@ -861,7 +861,7 @@ df_limma <- data_frame(log2FoldChange = fit$coefficients[,1],
                        padj = qvals,
                        anno = fit$genes)
 
-with(df_limma, plot(log2FoldChange, -log10(padj), pch=20, main="Volcano plot of differential gene expression between Her2+ \nbreast cancers in Nigerian and TCGA white breast cancer patients\nquantile corrected", xlim=c(-50,50), ylim=c(0,70)))
+with(df_limma, plot(log2FoldChange, -log10(padj), pch=20, main="Volcano plot of differential gene expression between Her2+ \nbreast cancers in Nigerian and TCGA white breast cancer patients\nquantile corrected", xlim=c(-50,50), ylim=c(0,20)))
 with(subset(df_limma, padj<0.05 & (2^(abs(log2FoldChange))>50)), points(log2FoldChange, -log10(padj), pch=20, col="blue"))
 with(subset(df_limma, padj<0.05 & (2^(abs(log2FoldChange))>50)), textxy(log2FoldChange, -log10(padj), labs=anno$symbol, cex=.5))
 
@@ -1125,4 +1125,135 @@ write.csv(kk@result, file="GO-Nigerian-TCGAwhite-Her2.significantgenes.fdr0.05.f
 testgenename="ENSG00000118181.6"
 dds <- estimateSizeFactors(ddsHTSeqMF)
 plotCounts(dds, gene = testgenename, intgroup=c("condition1"), main="Distribution of RPS25 expression across groups (before DE analysis)")
+```
+
+
+
+```{r Pathway analysis for Nigerian-TCGA white-LumA, cache=TRUE}
+designNvsWHR <- design
+designNvsWHR$sampleCondition <- ifelse (designNvsWHR$sampleCondition=="TCGA_white.LumA", 0, as.character(designNvsWHR$sampleCondition))
+designNvsWHR$sampleCondition <- ifelse (designNvsWHR$sampleCondition=="Nigerian.LumA", 1, as.character(designNvsWHR$sampleCondition))
+
+designNvsWHR$sampleCondition <- ifelse (designNvsWHR$sampleCondition==0 | designNvsWHR$sampleCondition==1, designNvsWHR$sampleCondition, NA)
+
+designNvsWHR <- designNvsWHR %>% subset(is.na(sampleCondition)==FALSE)
+
+designNvsWHR$TCGA_white.LumA <- ifelse (designNvsWHR$sampleCondition==0, 1, 0)
+designNvsWHR$Nigerian.LumA <- ifelse (designNvsWHR$sampleCondition==1, 1, 0)
+
+designNvsWHR$sampleCondition <- NULL
+
+mm <- model.matrix(~0+designNvsWHR$TCGA_white.LumA+designNvsWHR$Nigerian.LumA)
+
+quantids <- rownames(designNvsWHR)
+rownames(mm) <- quantids
+colnames(mm) <- c("TCGA_white", "Nigerian")
+
+quantdata <- as.data.frame(t(counts(ddsHTSeqMF)))
+quantdata <- quantdata[quantids,]
+quantdata <- t(quantdata)
+
+d0 <- DGEList(counts=quantdata, genes=annotation)
+
+cutoff <- 10
+drop <- which(apply(cpm(d0), 1, max) < cutoff)
+d <- d0[-drop,] 
+dim(d) # Number of genes after taking out low expressed genes
+
+v=voom(d,designNvsWHR,plot=T, normalize="quantile")
+
+contr.matrix <- makeContrasts(TCGA_white.LumA-Nigerian.LumA, levels=colnames(designNvsWHR))
+
+fit <- lmFit(v, designNvsWHR)
+fit <- contrasts.fit(fit, contrasts=contr.matrix)
+fit <- eBayes(fit)
+dt <- decideTests(fit)
+summary(dt)
+
+df_limma <- data_frame(log2FoldChange = fit$coefficients[,1], 
+                       pval = fit$p.value[,1],
+                       padj = p.adjust(fit$p.value[,1], method='fdr'),
+                       anno = fit$genes)
+
+pathway.Nigerian.TCGAwhite.LumA <- as.data.frame(df_limma)
+
+pathway.Nigerian.TCGAwhite.LumA$foldChange <- NA
+row.pos <- which(! is.na(pathway.Nigerian.TCGAwhite.LumA$log2FoldChange) & 
+                pathway.Nigerian.TCGAwhite.LumA$log2FoldChange >= 0)
+row.neg <- which(! is.na(pathway.Nigerian.TCGAwhite.LumA$log2FoldChange) & 
+                pathway.Nigerian.TCGAwhite.LumA$log2FoldChange < 0)
+pathway.Nigerian.TCGAwhite.LumA$foldChange[row.pos] <- 2^pathway.Nigerian.TCGAwhite.LumA$log2FoldChange[row.pos]
+pathway.Nigerian.TCGAwhite.LumA$foldChange[row.neg] <- -2^((-1) * pathway.Nigerian.TCGAwhite.LumA$log2FoldChange[row.neg])
+
+pathway.Nigerian.TCGAwhite.LumA$log2FoldChange <- NULL
+pathway.Nigerian.TCGAwhite.LumA$ENSEMBL <- pathway.Nigerian.TCGAwhite.LumA$anno$GeneID
+pathway.Nigerian.TCGAwhite.LumA$SYMBOL <- pathway.Nigerian.TCGAwhite.LumA$anno$symbol
+
+pathway.Nigerian.TCGAwhite.LumA$anno$GeneID <- NULL
+pathway.Nigerian.TCGAwhite.LumA$anno$symbol <- NULL
+
+pathway.Nigerian.TCGAwhite.LumA.flt <- pathway.Nigerian.TCGAwhite.LumA %>% arrange(foldChange) %>% dplyr::filter(padj < 0.05) %>% dplyr::filter(abs(foldChange)>1.5)
+
+genes.all <- pathway.Nigerian.TCGAwhite.LumA
+genes.sig <- pathway.Nigerian.TCGAwhite.LumA.flt 
+
+genes.all$ENSEMBL <- gsub('[.]\\d+', '', genes.all$ENSEMBL, perl = TRUE)
+genes.sig$ENSEMBL <- gsub('[.]\\d+', '', genes.sig$ENSEMBL, perl = TRUE)
+
+genes.all.anno <- bitr(geneID   =  genes.all$ENSEMBL, 
+                      fromType = 'GENEID', 
+                      toType   = c('ENTREZID', 'SYMBOL'), 
+                      OrgDb    = 'EnsDb.Hsapiens.v75', 
+                      drop     = TRUE)
+
+genes.all.anno <- genes.all.anno[which(!duplicated(genes.all.anno$ENTREZID)), ]
+row.names(genes.all.anno) <- genes.all.anno$ENTREZID
+
+genes.all.anno$ENSEMBL <- genes.all.anno$GENEID
+genes.all.anno$GENEID <- NULL
+
+genes.all.anno <- merge(genes.all.anno, genes.all, by = 'ENSEMBL')
+row.names(genes.all.anno) <- genes.all.anno$ENTREZID
+
+genes.sig.anno <- genes.all.anno[genes.all.anno$ENSEMBL %in% 
+                                genes.sig$ENSEMBL,]
+
+gene.list <- genes.all.anno$foldChange
+names(gene.list) <- genes.all.anno$ENTREZID
+gene.list <- sort(gene.list, decreasing = TRUE)
+
+ego <- enrichGO(gene          = genes.sig.anno$ENTREZID,
+                universe      = as.character(genes.all.anno$ENTREZID),
+                OrgDb         = 'org.Hs.eg.db',
+                ont           = "BP",
+                pAdjustMethod = "fdr",
+                pvalueCutoff  = 0.05,
+                readable      = TRUE)
+
+as.data.frame(ego)
+save(ego, file="GO-Nigerian-TCGAwhite-LumA.significantgenes.fdr0.05.fc1.5.enrichGO.RData")
+write.csv(ego, file="GO-Nigerian-TCGAwhite-LumA.significantgenes.fdr0.05.fc1.5.enrichGO.csv")
+
+options(jupyter.plot_mimetypes = "image/svg+xml") 
+options(repr.plot.width = 10, repr.plot.height = 5)
+
+egokegg <- ego
+for(i in 1:5) { 
+  egokegg <- dropGO(egokegg, level = i)
+}
+
+p1 <- barplot(egokegg)
+p2 <- dotplot(egokegg)
+
+kk <- enrichKEGG(gene          = genes.sig.anno$ENTREZID,
+                 universe      = as.character(genes.all.anno$ENTREZID),
+                 organism      = "hsa",
+                 pAdjustMethod = "fdr",
+                 pvalueCutoff  = 0.05)
+
+plot(p1)
+plot(p2)
+
+save(kk, file="GO-Nigerian-TCGAwhite-LumA.significantgenes.fdr0.05.fc1.5.enrichKEGG.RData")
+write.csv(kk@result, file="GO-Nigerian-TCGAwhite-LumA.significantgenes.fdr0.05.fc1.5.enrichKEGG.csv")
 ```
