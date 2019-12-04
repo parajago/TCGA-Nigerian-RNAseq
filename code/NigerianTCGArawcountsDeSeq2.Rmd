@@ -29,13 +29,13 @@ library("sva")
 library(limma)
 library(calibrate)
 library(gplots)
-setwd("~/Research-Local/RNAseq-Local/Inputs/NigerianTCGA_quants")
+setwd("~/Research-Local/RNAseq-Local/Inputs/NigerianTCGA_quants-proteincoding")
 ```
 
 #Translation from HTSeq -> DESeq2 table
 I have 86 TCGA patients with whole-genome sequencing data and RNAseq data as well as 99 Nigerian patients with RNA-seq data. Raw counts were initially processed using HTSeq, so HTSeq data is being formatted for use with DESeq2.
 ```{r Preparing the sampleTable using HTSeq raw counts}
-FOLDER <- "/Users/parajago/Research-Local/RNAseq-Local/Inputs/NigerianTCGA_quants"
+FOLDER <- "/Users/parajago/Research-Local/RNAseq-Local/Inputs/NigerianTCGA_quants-proteincoding"
 sampleFiles <- grep("htseq.counts",list.files(FOLDER),value=TRUE)
 
 #Differential gene expression setup based on race (b/w/other)

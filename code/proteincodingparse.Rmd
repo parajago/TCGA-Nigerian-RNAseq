@@ -35,11 +35,11 @@ library(limma)
 library(calibrate)
 library(gplots)
 
-setwd("~/Research-Local/RNAseq-Local/Inputs/NigerianTCGA_quants-proteincoding")
+setwd("~/Research-Local/RNAseq-Local/Inputs/NigerianTCGA_quants")
 ```
 
 ```{r Annotating the tables and isolating protein-coding only before differential expression, warning=FALSE}
-FOLDER <- "/Users/parajago/Research-Local/RNAseq-Local/Inputs/NigerianTCGA_quants-proteincoding"
+FOLDER <- "/Users/parajago/Research-Local/RNAseq-Local/Inputs/NigerianTCGA_quants"
 sampleFiles <- grep("htseq.counts",list.files(FOLDER),value=TRUE)
 
 n=1
@@ -47,6 +47,7 @@ Nigerian <- 0 #counting variable for Nigerian patients
 Nigerian_pseudogene <- 0 # Sum of non-zero genes across all Nigerian patients that fit pseudogene type.
 Nigerian_protein_coding <- 0 # Sum of non-zero genes across all Nigerian patients that fit protein coding type.
 Nigerian_lincRNA <- 0 # Sum of non-zero genes across all Nigerian patients that fit lincRNA type.
+Nigerian_rRNA <- 0 
 TCGA <- 0 #counting variable for TCGA patients
 TCGA_pseudogene <- 0 # Sum of non-zero genes across all TCGA patients that fit pseudogene type.
 TCGA_protein_coding <- 0 # Sum of non-zero genes across all TCGA patients that fit protein-coding type.
@@ -72,10 +73,11 @@ while (n <= length(sampleFiles)){ #while loop that reads each file, sorts into N
     Nigerian_pseudogene <- Nigerian_pseudogene + nrow(temptable %>% dplyr::filter (biotype=="pseudogene" & V3 > 0)) #sum of rows that are pseudogenes and non-zero read value
     Nigerian_protein_coding <- Nigerian_protein_coding + nrow(temptable %>% dplyr::filter (biotype=="protein_coding" & V3 > 0))
     Nigerian_lincRNA <- Nigerian_lincRNA + nrow(temptable %>% dplyr::filter (biotype=="lincRNA" & V3 > 0))
+    Nigerian_rRNA <- Nigerian_rRNA + nrow(temptable %>% dplyr::filter (biotype=="rRNA" & V3 > 0))
     
     temptable <- temptable %>% dplyr::filter (biotype=="protein_coding") #This can be used if differential expression needs to be performed as protein-coding only is saved into file
     temptable$biotype <- NULL
-    write.table(temptable, file = tempname, sep="\t", col.names=FALSE, row.names=FALSE)
+    #write.table(temptable, file = tempname, sep="\t", col.names=FALSE, row.names=FALSE)
   }
   else{
     TCGA=TCGA+1
@@ -98,7 +100,7 @@ while (n <= length(sampleFiles)){ #while loop that reads each file, sorts into N
     
     temptable <- temptable %>% dplyr::filter (biotype=="protein_coding") #This can be used if differential expression needs to be performed as protein-coding only is saved into file
     temptable$biotype <- NULL
-    write.table(temptable, file = tempname, sep="\t", col.names=FALSE, row.names=FALSE)
+    #write.table(temptable, file = tempname, sep="\t", col.names=FALSE, row.names=FALSE)
   }
   temptable <- NULL 
   tempname <- NULL
