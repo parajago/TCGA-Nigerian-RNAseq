@@ -5,9 +5,11 @@ navbar:
   left:
     - text: "Home"
       href: index.html
-    - text: "Protein-Coding Only DE Analysis"
+    - text: "Protein-Coding Only DE Analysis - Aligned with Life History WGS"
       href: NigerianTCGArawcountsDeSeq2-proteincoding-IHC.html
-	- text: "Batch Effect assessment"
+    - text: "TCGA vs. Nigerian differential expression"
+      href: NigerianTCGArawcountslimma-voomDE-PAM50.html
+	- text: "Batch Effect work through"
 	  href: NigerianTCGArawcountsDeSeq2-pc2.html
     - text: "About"
       href: about.html

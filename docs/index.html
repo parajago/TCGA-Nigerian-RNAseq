@@ -204,7 +204,7 @@ div.section {
 
 <p>
 <button type="button" class="btn btn-default btn-workflowr btn-workflowr-report" data-toggle="collapse" data-target="#workflowr-report">
-<span class="glyphicon glyphicon-list" aria-hidden="true"></span> workflowr <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span>
+<span class="glyphicon glyphicon-list" aria-hidden="true"></span> workflowr <span class="glyphicon glyphicon-exclamation-sign text-danger" aria-hidden="true"></span>
 </button>
 </p>
 <div id="workflowr-report" class="collapse">
@@ -213,7 +213,7 @@ div.section {
 <a data-toggle="tab" href="#summary">Summary</a>
 </li>
 <li>
-<a data-toggle="tab" href="#checks"> Checks <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> </a>
+<a data-toggle="tab" href="#checks"> Checks <span class="glyphicon glyphicon-exclamation-sign text-danger" aria-hidden="true"></span> </a>
 </li>
 <li>
 <a data-toggle="tab" href="#versions">Past versions</a>
@@ -222,13 +222,13 @@ div.section {
 <div class="tab-content">
 <div id="summary" class="tab-pane fade in active">
 <p>
-<strong>Last updated:</strong> 2019-08-19
+<strong>Last updated:</strong> 2019-12-04
 </p>
 <p>
-<strong>Checks:</strong> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> 2 <span class="glyphicon glyphicon-exclamation-sign text-danger" aria-hidden="true"></span> 0
+<strong>Checks:</strong> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> 0 <span class="glyphicon glyphicon-exclamation-sign text-danger" aria-hidden="true"></span> 1
 </p>
 <p>
-<strong>Knit directory:</strong> <code>~/Research-Local/RNAseq-Local/TCGA-Nigerian-RNAseq/</code> <span class="glyphicon glyphicon-question-sign" aria-hidden="true" title="This is the local directory in which the code in this file was executed."> </span>
+<strong>Knit directory:</strong> <code>~/Research-Local/RNAseq-Local/</code> <span class="glyphicon glyphicon-question-sign" aria-hidden="true" title="This is the local directory in which the code in this file was executed."> </span>
 </p>
 <p>
 This reproducible <a href="http://rmarkdown.rstudio.com">R Markdown</a> analysis was created with <a
@@ -241,59 +241,12 @@ This reproducible <a href="http://rmarkdown.rstudio.com">R Markdown</a> analysis
 <div class="panel panel-default">
 <div class="panel-heading">
 <p class="panel-title">
-<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRMarkdownfilestronguptodate"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>R Markdown file:</strong> up-to-date </a>
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongnoversioncontrol"> <span class="glyphicon glyphicon-exclamation-sign text-danger" aria-hidden="true"></span> <strong>Repository version:</strong> no version control </a>
 </p>
 </div>
-<div id="strongRMarkdownfilestronguptodate" class="panel-collapse collapse">
+<div id="strongRepositoryversionstrongnoversioncontrol" class="panel-collapse collapse">
 <div class="panel-body">
-<p>Great! Since the R Markdown file has been committed to the Git repository, you know the exact version of the code that produced these results.</p>
-</div>
-</div>
-</div>
-<div class="panel panel-default">
-<div class="panel-heading">
-<p class="panel-title">
-<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomparajagoTCGANigerianRNAseqtree9fc69d9422c2383ba1e592f5306824b6f3dd3906targetblank9fc69d9a"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Repository version:</strong> <a href="https://github.com/parajago/TCGA-Nigerian-RNAseq/tree/9fc69d9422c2383ba1e592f5306824b6f3dd3906" target="_blank">9fc69d9</a> </a>
-</p>
-</div>
-<div id="strongRepositoryversionstrongahrefhttpsgithubcomparajagoTCGANigerianRNAseqtree9fc69d9422c2383ba1e592f5306824b6f3dd3906targetblank9fc69d9a" class="panel-collapse collapse">
-<div class="panel-body">
-<p>
-Great! You are using Git for version control. Tracking code development and connecting the code version to the results is critical for reproducibility. The version displayed above was the version of the Git repository at the time these results were generated. <br><br> Note that you need to be careful to ensure that all relevant files for the analysis have been committed to Git prior to generating the results (you can use <code>wflow_publish</code> or <code>wflow_git_commit</code>). workflowr only checks the R Markdown file, but you know if there are other scripts or data files that it depends on. Below is the status of the Git repository when the results were generated:
-</p>
-<pre><code>
-Ignored files:
-    Ignored:    .DS_Store
-    Ignored:    .Rproj.user/
-    Ignored:    analysis/.DS_Store
-    Ignored:    analysis/.Rhistory
-    Ignored:    code/.DS_Store
-    Ignored:    docs/.DS_Store
-    Ignored:    docs/figure/.DS_Store
-    Ignored:    plots/.DS_Store
-
-Untracked files:
-    Untracked:  analysis/NigerianTCGArawcountsDeSeq2-proteincoding-IHC.Rmd
-    Untracked:  analysis/untitled folder/
-    Untracked:  code/NigerianTCGArawcountsDeSeq2.Rmd
-    Untracked:  code/NigerianTCGArawcountsVoom.Rmd
-    Untracked:  plots/CCND1expression-Nigerian.jpg.jpeg
-    Untracked:  plots/CDK4expression-Nigerian.jpg.jpeg
-    Untracked:  plots/CDK6expression-Nigerian.jpg.jpeg
-
-Unstaged changes:
-    Modified:   .Rhistory
-    Modified:   analysis/NigerianTCGArawcountsDeSeq2-pc2.Rmd
-    Deleted:    analysis/NigerianTCGArawcountsDeSeq2-proteincoding.Rmd
-    Deleted:    analysis/NigerianTCGArawcountsDeSeq2.Rmd
-    Modified:   analysis/_site.yml
-    Modified:   analysis/about.Rmd
-    Deleted:    analysis/index.Rmd
-
-</code></pre>
-<p>
-Note that any generated files, e.g. HTML, png, CSS, etc., are not included in this status report because it is ok for generated content to have uncommitted changes.
-</p>
+<p>Tracking code development and connecting the code version to the results is critical for reproducibility. To start using Git, open the Terminal and type <code>git init</code> in your project directory.</p>
 </div>
 </div>
 </div>
@@ -302,7 +255,7 @@ Note that any generated files, e.g. HTML, png, CSS, etc., are not included in t
 </div>
 <div id="versions" class="tab-pane fade">
 <p>
-There are no past versions. Publish this analysis with <code>wflow_publish()</code> to start tracking its development.
+This project is not being versioned with Git. To obtain the full reproducibility benefits of using workflowr, please see <code>?wflow_start</code>.
 </p>
 <hr>
 </div>
@@ -321,7 +274,8 @@ There are no past versions. Publish this analysis with <code>wflow_publish()</co
 <p>Nigerians: Not aligned: 233461517 TCGA: Not aligned: 1725472254 (this is expected)</p>
 <ul>
 <li><p>Batch effect correction exploration: <a href="https://parajago.github.io/TCGA-Nigerian-RNAseq/NigerianTCGArawcountsDeSeq2-pc2.html" class="uri">https://parajago.github.io/TCGA-Nigerian-RNAseq/NigerianTCGArawcountsDeSeq2-pc2.html</a></p></li>
-<li><p>Differential expression analysis (protein coding genes only) using samples with whole genome sequencing available: <a href="https://parajago.github.io/TCGA-Nigerian-RNAseq/NigerianTCGArawcountsDeSeq2-proteincoding-IHC.html" class="uri">https://parajago.github.io/TCGA-Nigerian-RNAseq/NigerianTCGArawcountsDeSeq2-proteincoding-IHC.html</a></p></li>
+<li><p>Differential expression analysis (protein coding genes only) using samples with whole genome sequencing available as part of an accompanying project to the Life History Analysis: <a href="https://parajago.github.io/TCGA-Nigerian-RNAseq/NigerianTCGArawcountsDeSeq2-proteincoding-IHC.html" class="uri">https://parajago.github.io/TCGA-Nigerian-RNAseq/NigerianTCGArawcountsDeSeq2-proteincoding-IHC.html</a></p></li>
+<li><p>Differential expression analysis (protein coding genes only) comparing directly TCGA and Nigerian samples: <a href="https://parajago.github.io/TCGA-Nigerian-RNAseq/NigerianTCGArawcountslimma-voomDE-PAM50.html" class="uri">https://parajago.github.io/TCGA-Nigerian-RNAseq/NigerianTCGArawcountslimma-voomDE-PAM50.html</a></p></li>
 </ul>
 
 
