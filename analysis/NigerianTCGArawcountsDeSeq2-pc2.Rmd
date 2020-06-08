@@ -44,13 +44,13 @@ library("BiocParallel")
 library(RColorBrewer)
 library(Glimma)
 register(MulticoreParam(4))
-setwd("~/Research-Local/RNAseq-Local/Inputs/NigerianTCGA_quants-proteincoding")
+setwd("~/Research-Local/2019-rnaseq/Inputs/NigerianTCGA_quants-proteincoding")
 ```
 
 #Translation from HTSeq raw counts -> DESeq2 table of raw counts
-I have 86 TCGA patients with whole-genome sequencing data and RNAseq data as well as 99 Nigerian patients with RNA-seq data. Raw counts were initially processed using HTSeq, so HTSeq raw counts (with one file per patient) are being formatted for use with DESeq2.
-```{r Preparing the sampleTable using HTSeq raw counts}
-FOLDER <- "/Users/parajago/Research-Local/RNAseq-Local/Inputs/NigerianTCGA_quants-proteincoding"
+I have 84 TCGA patients (70 white or black) with whole-genome sequencing data and RNAseq data as well as 96 Nigerian patients with RNA-seq data. Raw counts were initially processed using HTSeq, so HTSeq raw counts (with one file per patient) are being formatted for use with DESeq2.
+```{r Preparing the sampleTable using HTSeq raw counts, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
+FOLDER <- "/Users/parajago/Research-Local/2019-rnaseq/Inputs/NigerianTCGA_quants-proteincoding"
 sampleFiles <- grep("htseq.counts",list.files(FOLDER),value=TRUE)
 
 #Differential gene expression setup based on race (b/w/other)
@@ -140,7 +140,7 @@ ddsHTSeqMF$sampleCondition <- relevel(ddsHTSeqMF$sampleCondition, ref = "Nigeria
 
 #Initial exploratory analysis
 These are initial visualizations of our data sets to assess for batch effect between the Nigerian and TCGA sample sets. 
-```{r Initial visualization of the data: VST}
+```{r Initial visualization of the data: VST, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
 dds <- estimateSizeFactors(ddsHTSeqMF) #The size factor is the median ratio of the sample over a "pseudosample": for each gene, the geometric mean of all samples. This accounts for sequencing depth. 
 
 vsd <- vst(ddsHTSeqMF, blind=FALSE) #Variance-stabilizing transformation, only using this since >50 samples
@@ -156,14 +156,14 @@ ggplot(df, aes(x = x, y = y)) + geom_hex(bins = 80) + coord_fixed() + facet_grid
 
 Figure 1: Graphical representation of the variance-stabilizing transformation relative to the standard transformation of log2(x+1). This reduces variance purely due to low read counts. VST is effectively employed in DESeq2. This transformation will be the input for subsequent visualizations (ONLY VISUALIZATIONS) in this section. 
 
-```{r Initial visualization of the data: mean SD plots}
+```{r Initial visualization of the data: mean SD plots, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
 meanSdPlot(log2(counts(estimateSizeFactors(ddsHTSeqMF),normalized=TRUE)[rowSums(counts(ddsHTSeqMF)) > 0,] + 1))
 meanSdPlot(assay(vsd[rowSums(counts(ddsHTSeqMF)) > 0,]))
 ```
 
 Figure 2: Plot of mean to variance to confirm that variance shrinking does work. This is another visualization of the approach noted in Figure 1.
 
-```{r Batch effect assessment-PCAs-1}
+```{r Batch effect assessment-PCAs-1, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
 #PCAs at this point of the analysis are the VST transformed counts, using the top 500 variance genes
 plotPCA(vsd, intgroup=c("condition1", "batch"), ntop=500)
 ```
@@ -173,17 +173,17 @@ There is a factor separating the TCGA patients into 2 groups that is not wholly 
 
 Of note, the PCA as performed by only has 33% variance explained with two variables when transformation is performed. 
 
-```{r Batch effect assessment-PCAs-2}
+```{r Batch effect assessment-PCAs-2, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
 plotPCA(vsd, intgroup=c("condition2"), ntop=1000)
 ```
 PCA 1-2:PCA demonstrating association with breast cancer subtype and gene expression. This is noted in both groups and consistent with known biology. Again, only 32% variance is explained with 2 principal components. 
 
-```{r Batch effect assessment-PCAs-3}
+```{r Batch effect assessment-PCAs-3, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
 plotPCA(vsd, intgroup=c("condition1", "condition2"), ntop=1000)
 ```
 PCA 1-3: Integrated PCA demonstrating combined effect of breast cancer subtype and race. Subtype appears to account for the clustering seen in the TCGA group. Again, only 32% variance is explained with 2 principal components (with top 1000 genes). 
 
-```{r Heatmap to assess clusters pre-analysis}
+```{r Heatmap to assess clusters pre-analysis, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
 #Heatmap to assess clusters pre-analysis
 topVarGenes <- head(order(rowVars(assay(vsd)), decreasing = TRUE), 250)
 hm  <- assay(vsd)[ topVarGenes, ]
@@ -207,7 +207,7 @@ We will discuss the following methods to manage the batch effect and our reasoni
 
 #Method 1: sva to account for batch effect related to the Nigerian/TCGA samples
 We are using SVA to create an unsupervised hypothetical "batch effect" variable that is then used to account for testing differences between the two groups. 
-```{r Batch effect assessment, message=FALSE}
+```{r Batch effect assessment, message=FALSE, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
 dat  <- counts(dds, normalized = TRUE)
 idx  <- rowMeans(dat) > 1
 dat  <- dat[idx, ]
@@ -237,7 +237,7 @@ Use of sva to create an unsupervised "batch effect" variable that effectively ha
 
 I am performing an intial differential expression analysis with a batch-uncorrected version of the counts as well as the version that incorporates SVA-based batch correction.  
 
-```{r Differential expression analysis -> batch effect comparison, cache=TRUE}
+```{r Differential expression analysis -> batch effect comparison, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
 ddsMF <- DESeq(ddsHTSeqMF) #This will refer to a version that does not include batch correction outside of what is accomplished through DESeq2 alone. 
 
 ddsMFbe <-DESeq(ddsHTSeqMFbe) 
@@ -251,7 +251,7 @@ fdr = 0.05 #Subsequent threshold of significance for p-value (adjusted by FDR)
 ```
 
 ##sva -> differential expression analysis overall results
-```{r MA plot of TCGA white Basal vs Nigerian Basal}
+```{r MA plot of TCGA white Basal vs Nigerian Basal, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
 cat("MA Plot 1: Original differential expression")
 res <- lfcShrink(ddsMF, coef="sampleCondition_TCGA_white.Basal_vs_Nigerian.Basal", type="ashr", optmethod = "mixEM")
 DESeq2::plotMA(res, ylim=c(-10,10), xlim=c(0.1,200))
@@ -266,7 +266,7 @@ An MAPlot demonstrates log2 fold changes attributable to the condition over the 
 We see an overrepresentation of significant negative log fold changes of expression in the Nigerian patients relative to the TCGA white patients, but this is exacerbated after the sva correction.
 
 ##sva -> Inter-TCGA test
-```{r DE test: TCGA black and TCGA white, cache=TRUE}
+```{r DE test: TCGA black and TCGA white, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
 #Without batch correction
 diffTCGA<- results(ddsMF, contrast=c("sampleCondition", "TCGA_black.Basal", "TCGA_white.Basal"), alpha=0.05)
 nrow(diffTCGA)
@@ -356,7 +356,7 @@ The histogram of unadjusted p-values for both uncorrected and SVA corrected appe
 The following is a demonstration example of comparing 32 Nigerian basal cases and 17 TCGA white basal cases. 
 
 ##sva -> Basal Nigerian-TCGA white (cross population) test
-```{r DE test: Nigerian basal vs TCGA white basal, cache=TRUE}
+```{r DE test: Nigerian basal vs TCGA white basal, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
 #Without batch correction
 resBasal<- results(ddsMF, contrast=c("sampleCondition", "Nigerian.Basal", "TCGA_white.Basal"), alpha=0.05)
 nrow(resBasal)
@@ -466,7 +466,7 @@ CCSER2: ENSG00000107771.11
 SYMPK:  ENSG00000125755.14
 ANKRD17: ENSG00000132466.13 -> Given the broad distribution of expression of this gene, this did not appear to be a good standard for comparison in our cohort. 
 
-```{r UBC and PUM1 cross-ethnic comparisons}
+```{r UBC and PUM1 cross-ethnic comparisons, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
 resBasal<- results(ddsMF, contrast=c("sampleCondition", "Nigerian.Basal", "TCGA_white.Basal"), alpha=0.05)
 
 genename <- "ENSG00000150991.10"
@@ -496,7 +496,7 @@ sympktempassay[,1:6]
 
 UBC and PUM1 (as well as CCSER2) demonstrate signifcantly different distribution between the Nigerian and TCGA samples (although the log2 fold change is less for the PUM1 gene). SYMPK does not have significantly different distribution. This suggests that normalization of the housekeeping genes can be used as a means of comparing the RNA read counts. 
 
-```{r RUVSeq use of housekeeping genes for normalization, cache=TRUE}
+```{r RUVSeq use of housekeeping genes for normalization, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
 genenames <- c("ENSG00000150991.10", "ENSG00000134644.11", "ENSG00000107771.11", "ENSG00000125755.14")
 
 set1 <- RUVg(counts(ddsHTSeqMF), genenames, k=1)
@@ -529,7 +529,7 @@ ddsMFRUV <- DESeq(ddsHTSeqMFRUV) #Running differential expression with the two h
 The RUV normalization demonstrates a different PCA with some clustering based on Nigerian vs. TCGA and some loss of clustering based on subtype relative to VSD normalization or SVA batch effect correction. 
 
 ##RUVseq -> differential expression analysis overall results
-```{r MA plot of TCGA white Basal vs Nigerian Basal for RUV}
+```{r MA plot of TCGA white Basal vs Nigerian Basal for RUV, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
 cat("MA Plot: RUVSeq-corrected differential expression")
 res2 <- lfcShrink(ddsMFRUV, coef="sampleCondition_TCGA_white.Basal_vs_Nigerian.Basal", type="ashr" , optmethod = "mixEM")
 DESeq2::plotMA(res2, ylim=c(-10,10), xlim=c(0.1,200))
@@ -538,7 +538,7 @@ DESeq2::plotMA(res2, ylim=c(-10,10), xlim=c(0.1,200))
 Again, we see an overrepresentation of significant negative log fold changes of expression in the Nigerian patients relative to the TCGA white patients that is exacerbated by the RUV correction.
 
 ##RUVseq -> Inter-TCGA test
-```{r DE test: TCGA black and TCGA white for RUV, cache=TRUE}
+```{r DE test: TCGA black and TCGA white for RUV, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
 #With RUV correction
 diffTCGA3<- results(ddsMFRUV, contrast=c("sampleCondition", "TCGA_black.Basal", "TCGA_white.Basal"), alpha=0.05)
 nrow(diffTCGA3)
@@ -568,7 +568,7 @@ with(subset(restemp3, padj<0.05 & (2^(abs(log2FoldChange))>50)), textxy(log2Fold
 Again, we see an overrepresentation of differentially expressed genes on the positive side relative to the negative, concerning for the same issue as seen in SVA batch correction. 
 
 ##RUVSeq -> Basal Nigerian-TCGA white and TCGA black (cross population) tests
-```{r DE test: Nigerian basal vs TCGA white basal and TCGA black basal for RUV, cache=TRUE}
+```{r DE test: Nigerian basal vs TCGA white basal and TCGA black basal for RUV, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
 #With RUV correction
 resBasal3<- results(ddsMFRUV, contrast=c("sampleCondition", "Nigerian.Basal", "TCGA_white.Basal"), alpha=0.05)
 nrow(resBasal3)
@@ -639,18 +639,18 @@ There is some reassurance that both methods are finding genes in common.
 #Method 3: Quantile normalization
 Quantile normalization is another technique that can be used to make distributions comparable. To quantile normalize two or more distributions to each other, without a reference distribution, one must sort the values within the distribution, then set to the average (usually, arithmetic mean) of the distributions. So the highest value in all cases becomes the mean of the highest values, the second highest value becomes the mean of the second highest values, and so on.
 
-```{r Quantile normalization setup and visualization}
+```{r Quantile normalization setup and visualization, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
 countmatrix <- assay(ddsHTSeqMF) #Raw counts organized into matrix format from individual files
 countmatrix2 <- log2(countmatrix + 1) #Basic transformation of the count data 
-countmatrix2 = countmatrix2 [rowMeans(countmatrix2) > 0, ] #Remove if there is no data re: counts
+countmatrix2 <- countmatrix2[rowSums(countmatrix2) > 0, ] #Remove if there is no data re: counts
 
 plot(density(countmatrix2[,1]),lwd=3,ylim=c(0,.30), main="Density of counts with log2[count]+1 transformation ONLY") 
-for(i in 1:185){lines(density(countmatrix2[,i]),lwd=3)} #This demonstrates that there is a difference in distributions between the Nigerian and TCGA data with basic log transformation normalization 
+for(i in 1:180){lines(density(countmatrix2[,i]),lwd=3)} #This demonstrates that there is a difference in distributions between the Nigerian and TCGA data with basic log transformation normalization 
 
 norm_countmatrix <- as.matrix(countmatrix2) 
 norm_countmatrix = normalize.quantiles(norm_countmatrix)
 plot(density(norm_countmatrix[,1]),lwd=3,ylim=c(0,.3), main="Density of counts with quantile normalization")
-for(i in 1:184){lines(density(norm_countmatrix[,i]),lwd=3)} #This demonstrates the effect of comparative quantile normalization
+for(i in 1:180){lines(density(norm_countmatrix[,i]),lwd=3)} #This demonstrates the effect of comparative quantile normalization
 
 colnames (norm_countmatrix) <- colnames (countmatrix2)
 rownames (norm_countmatrix) <- rownames (countmatrix2)
@@ -658,27 +658,27 @@ rownames (norm_countmatrix) <- rownames (countmatrix2)
 norm_countmatrix <- as.data.frame(norm_countmatrix)
 countmatrixNigerian <- dplyr::select(norm_countmatrix, contains("LIB"))
 plot(density(countmatrixNigerian[,1]),lwd=3,ylim=c(0,.3), main="Density of counts with quantile normalization - Nigerian")
-for(i in 1:98){lines(density(countmatrixNigerian[,i]),lwd=3)} #This demonstrates the result of the normalized Nigerian counts separately
+for(i in 1:96){lines(density(countmatrixNigerian[,i]),lwd=3)} #This demonstrates the result of the normalized Nigerian counts separately
 
 tcgacolnames <- colnames(countmatrix)
 tcgacolnames <- setdiff(tcgacolnames, colnames(countmatrixNigerian))
 countmatrixTCGA <- norm_countmatrix[ , tcgacolnames]
 plot(density(countmatrixTCGA[,1]),lwd=3,ylim=c(0,.3), main="Density of counts with quantile normalization - TCGA")
-for(i in 1:85){lines(density(countmatrixTCGA[,i]),lwd=3)} #This demonstrates the result of the normalized TCGA counts separately
+for(i in 1:84){lines(density(countmatrixTCGA[,i]),lwd=3)} #This demonstrates the result of the normalized TCGA counts separately
 
 norm_countmatrix <- as.data.frame(norm_countmatrix)
 t_norm_countmatrix <- t(norm_countmatrix)
 
 t_norm_countmatrix <- cbind (t_norm_countmatrix, sampleTable2) #This binds the characteristics of the original patients to the quantile normalized counts. CBinding was checked to make sure that patients were correctly aligned to characteristics. 
 
-quant.pca <- prcomp(t_norm_countmatrix[,1:19745])
+quant.pca <- prcomp(t_norm_countmatrix[,1:19724])
 autoplot(quant.pca, data=t_norm_countmatrix, colour='sampleCondition', main="PCA of quantile normalization results prior to DE analysis")
 ```
 The quantile normalization demonstrates a PCA that has similar clustering and % explanations relative to VSD normalization, but the differences between groups have been narrowed. 
 
 ##Quantile normalization -> DE analysis and Inter-TCGA test
 
-```{r Limma-voom differential expression results for TCGA black/TCGA white Basal, cache=TRUE}
+```{r Limma-voom differential expression results for TCGA black/TCGA white Basal, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
 design <- t_norm_countmatrix
 design <- design %>% dplyr::select(sampleCondition)
 
@@ -743,7 +743,7 @@ It has been previously demonstrated that there are expression difference between
 
 ##Quantile normalization -> Basal Nigerian-TCGA white (cross population) test
 
-```{r Limma-voom differential expression results for Nigerian/TCGA Basal, cache=TRUE}
+```{r Limma-voom differential expression results for Nigerian/TCGA Basal, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
 design <- t_norm_countmatrix
 design <- design %>% dplyr::select(sampleCondition)
 
@@ -812,14 +812,14 @@ with(subset(df_limma, padj<0.05 & (2^(abs(log2FoldChange))>50)), textxy(log2Fold
 As per Wei Shi's preferred method: Counts were converted to log2 counts per million, quantile normalized and precision weighted with the 'voom' function of the limma package46,47. A linear model was fitted to each gene, and empirical Bayes moderated t-statistics were used to assess differences in expression48. Empirical Bayes moderated-t P values were computed relative to a fold-change cutoff of 1.5-fold. P values were adjusted to control the global FDR across all comparisons with the 'global' option of the limma package. Genes were considered differentially expressed if they had an FDR of 0.05.
 
 ##Limma's removeBatchEffect for visualization only
-```{r Removing batch effect with Limma:removeBatchEffect (visualization only)}
+```{r Removing batch effect with Limma:removeBatchEffect (visualization only), message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
 mat <- assay(vsd) 
 mat <- limma::removeBatchEffect(mat, vsd$condition1)
 assay(vsd) <- mat
 plotPCA(vsd, intgroup=c("condition1", "condition2"))
 ```
 
-```{r Heatmap to assess clusters after Limma:removeBatchEffect (visualization only)}
+```{r Heatmap to assess clusters after Limma:removeBatchEffect (visualization only), message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
 #Heatmap to assess clusters post-batch effect removal
 topVarGenes <- head(order(rowVars(assay(vsd)), decreasing = TRUE), 250)
 hm  <- assay(vsd)[ topVarGenes, ]
@@ -837,7 +837,7 @@ In addition, the voom method is considered more appropriate for data with signif
 We will test the internal validity of using DESeq2 using comparisons between subtypes, comparisons within the Nigerian cohort. This will not use the batch effect corrected approach with SVA given the demonstrations we showed earlier of the inappropriate exaggeration of positive findings.
 
 ##Inter-subtype gene expression testing
-```{r DE test: Nigerian basal vs Nigerian Her2, cache=TRUE}
+```{r DE test: Nigerian basal vs Nigerian Her2, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
 rescrosstype<- results(ddsMF, contrast=c("sampleCondition", "Nigerian.Basal", "Nigerian.Her2"), alpha=0.05)
 nrow(rescrosstype)
 
@@ -882,7 +882,7 @@ with(subset(restempcheck, padj<0.01 & abs(log2FoldChange)>25), textxy(log2FoldCh
 
 The unadjusted p-value histogram and volcano plot appear appropriate without batch correction in the cross-subtype test. It is reassuring that we are seeing more normal volcano plots on the within-assay comparison. 
 
-```{r Hand code value check of Her2}
+```{r Hand code value check of Her2, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
 genename <- "ENSG00000141736.9"
 her2comparematrix <- plotCounts(ddsMF, gene = genename, intgroup=c("condition1", "condition2"), main="Distribution of HER2 expression across groups", returnData = TRUE)
 
@@ -908,7 +908,7 @@ The cross subtype comparison did find a statistically significant difference bet
 We will now assess arbitrary within-Nigerian samples to identify any other within sample sources of bias. 
 
 ##Arbitrary grouping of Nigerian patients cross-checked with each other
-```{r Nigerian group cross check, cache=TRUE}
+```{r Nigerian group cross check, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
 table(batchval, sampleConditionPAM50)
 
 sampletableNigerian <- sampleTable2
@@ -948,7 +948,7 @@ with(subset(restempcheck, padj<0.05 & (2^(abs(log2FoldChange))>50)), textxy(log2
 
 #Methods cross check
 To compare results between methods to identify the best approach to normalization, we noted the top and bottom log2foldchange genes per method. 
-```{r Methods cross check}
+```{r Methods cross check, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
 print("SVA Batch effect correction")
 top_n(resBasal2print, 10, log2FoldChange)
 top_n(resBasal2print, -10, log2FoldChange)
@@ -978,3 +978,231 @@ plotCounts(dds, gene = testgenename, intgroup=c("condition1"), main="Distributio
 
 ```
 
+#ADDENDUM: HRD signature analysis
+```{r: HRD signature analysis, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE, eval=FALSE}
+sampleTable3 <- sampleTable %>% dplyr::filter(condition1=="Nigerian")
+sampleTable3 <- sampleTable3 %>% dplyr::select("sampleName", "fileName", "condition2", "batch")
+colnames(sampleTable3)[3] <- "sampleCondition"
+
+ddsHTSeqMFNigerianonly <- DESeqDataSetFromHTSeqCount(sampleTable=sampleTable3,
+                                       directory=FOLDER,
+                                       design=~sampleCondition)
+
+ddsHTSeqMFNigerianonly <- ddsHTSeqMFNigerianonly[rowSums(counts(ddsHTSeqMFNigerianonly)) > 0, ] #Pre-filtering the dataset by removing the rows without information about gene expression
+
+dds <- estimateSizeFactors(ddsHTSeqMFNigerianonly)
+
+HRDgenes=c("ENSG00000149311.13", "ENSG00000105393.11", "ENSG00000138376.6", "ENSG00000197299.6", "ENSG00000012048.15", "ENSG00000139618.10", "ENSG00000158019.16", "ENSG00000136492.4", "ENSG00000183765.16", "ENSG00000154920.10", "ENSG00000163322.9", "ENSG00000187741.10", "ENSG00000187790.6", "ENSG00000020922.8", "ENSG00000104320.9", "ENSG00000083093.5", "ENSG00000062822.8", "ENSG00000113522.9", "ENSG00000182185.14", "ENSG00000108384.10", "ENSG00000185379.16", "ENSG00000002016.12", "ENSG00000197275.8", "ENSG00000085999.7", "ENSG00000101773.12", "ENSG00000132383.7", "ENSG00000139351.10", "ENSG00000177302.10", "ENSG00000100038.15", "ENSG00000163781.8", "ENSG00000087206.12", "ENSG00000196584.2", "ENSG00000126215.9")
+
+ATMcounts <- plotCounts(dds, gene="ENSG00000149311.13", intgroup="sampleCondition", 
+                returnData=TRUE)
+ATMcounts$sampleName <- row.names(ATMcounts)
+ATMcounts$percent10 <- ntile(ATMcounts$count, 10)
+temp <- ATMcounts %>% dplyr::filter(percent10==1) %>% dplyr::select(sampleName, sampleCondition, count)
+#write.table(temp, file="ATMlowest10thpercentile.csv", sep=",", row.names=FALSE, col.names=TRUE)
+
+BARD1counts <- plotCounts(dds, gene="ENSG00000138376.6", intgroup="sampleCondition", 
+                returnData=TRUE)
+BARD1counts$sampleName <- row.names(BARD1counts)
+BARD1counts$percent10 <- ntile(BARD1counts$count, 10)
+temp <- BARD1counts %>% dplyr::filter(percent10==1) %>% dplyr::select(sampleName, sampleCondition, count)
+#write.table(temp, file="BARD1lowest10thpercentile.csv", sep=",", row.names=FALSE, col.names=TRUE)
+
+BLMcounts <- plotCounts(dds, gene="ENSG00000197299.6", intgroup="sampleCondition", 
+                returnData=TRUE)
+BLMcounts$sampleName <- row.names(BLMcounts)
+BLMcounts$percent10 <- ntile(BLMcounts$count, 10)
+temp <- BLMcounts %>% dplyr::filter(percent10==1) %>% dplyr::select(sampleName, sampleCondition, count)
+#write.table(temp, file="BLMlowest10thpercentile.csv", sep=",", row.names=FALSE, col.names=TRUE)
+
+BRCA1counts <- plotCounts(dds, gene="ENSG00000012048.15", intgroup="sampleCondition", 
+                returnData=TRUE)
+BRCA1counts$sampleName <- row.names(BRCA1counts)
+BRCA1counts$percent10 <- ntile(BRCA1counts$count, 10)
+temp <- BRCA1counts %>% dplyr::filter(percent10==1) %>% dplyr::select(sampleName, sampleCondition, count)
+#write.table(temp, file="BRCA1lowest10thpercentile.csv", sep=",", row.names=FALSE, col.names=TRUE)
+
+BRCA2counts <- plotCounts(dds, gene="ENSG00000139618.10", intgroup="sampleCondition", 
+                returnData=TRUE)
+BRCA2counts$sampleName <- row.names(BRCA2counts)
+BRCA2counts$percent10 <- ntile(BRCA2counts$count, 10)
+temp <- BRCA2counts %>% dplyr::filter(percent10==1) %>% dplyr::select(sampleName, sampleCondition, count)
+#write.table(temp, file="BRCA2lowest10thpercentile.csv", sep=",", row.names=FALSE, col.names=TRUE)
+
+BRIP1counts <- plotCounts(dds, gene="ENSG00000136492.4", intgroup="sampleCondition", 
+                returnData=TRUE)
+BRIP1counts$sampleName <- row.names(BRIP1counts)
+BRIP1counts$percent10 <- ntile(BRIP1counts$count, 10)
+temp <- BRIP1counts %>% dplyr::filter(percent10==1) %>% dplyr::select(sampleName, sampleCondition, count)
+#write.table(temp, file="BRIP1lowest10thpercentile.csv", sep=",", row.names=FALSE, col.names=TRUE)
+
+CHEK2counts <- plotCounts(dds, gene="ENSG00000183765.16", intgroup="sampleCondition", 
+                returnData=TRUE)
+CHEK2counts$sampleName <- row.names(CHEK2counts)
+CHEK2counts$percent10 <- ntile(CHEK2counts$count, 10)
+temp <- CHEK2counts %>% dplyr::filter(percent10==1) %>% dplyr::select(sampleName, sampleCondition, count)
+#write.table(temp, file="CHEK2lowest10thpercentile.csv", sep=",", row.names=FALSE, col.names=TRUE)
+
+FAM175Acounts <- plotCounts(dds, gene="ENSG00000163322.9", intgroup="sampleCondition", 
+                returnData=TRUE)
+FAM175Acounts$sampleName <- row.names(FAM175Acounts)
+FAM175Acounts$percent10 <- ntile(FAM175Acounts$count, 10)
+temp <- FAM175Acounts %>% dplyr::filter(percent10==1) %>% dplyr::select(sampleName, sampleCondition, count)
+#write.table(temp, file="FAM175Alowest10thpercentile.csv", sep=",", row.names=FALSE, col.names=TRUE)
+
+
+FANCAcounts <- plotCounts(dds, gene="ENSG00000187741.10", intgroup="sampleCondition", 
+                returnData=TRUE)
+FANCAcounts$sampleName <- row.names(FANCAcounts)
+FANCAcounts$percent10 <- ntile(FANCAcounts$count, 10)
+temp <- FANCAcounts %>% dplyr::filter(percent10==1) %>% dplyr::select(sampleName, sampleCondition, count)
+#write.table(temp, file="FANCAlowest10thpercentile.csv", sep=",", row.names=FALSE, col.names=TRUE)
+
+FANCMcounts <- plotCounts(dds, gene="ENSG00000187790.6", intgroup="sampleCondition", 
+                returnData=TRUE)
+FANCMcounts$sampleName <- row.names(FANCMcounts)
+FANCMcounts$percent10 <- ntile(FANCMcounts$count, 10)
+temp <- FANCMcounts %>% dplyr::filter(percent10==1) %>% dplyr::select(sampleName, sampleCondition, count)
+#write.table(temp, file="FANCMlowest10thpercentile.csv", sep=",", row.names=FALSE, col.names=TRUE)
+
+MRE11Acounts <- plotCounts(dds, gene="ENSG00000020922.8", intgroup="sampleCondition", 
+                returnData=TRUE)
+MRE11Acounts$sampleName <- row.names(MRE11Acounts)
+MRE11Acounts$percent10 <- ntile(MRE11Acounts$count, 10)
+temp <- MRE11Acounts %>% dplyr::filter(percent10==1) %>% dplyr::select(sampleName, sampleCondition, count)
+#write.table(temp, file="MRE11Alowest10thpercentile.csv", sep=",", row.names=FALSE, col.names=TRUE)
+
+NBNcounts <- plotCounts(dds, gene="ENSG00000104320.9", intgroup="sampleCondition", 
+                returnData=TRUE)
+NBNcounts$sampleName <- row.names(NBNcounts)
+NBNcounts$percent10 <- ntile(NBNcounts$count, 10)
+temp <- NBNcounts %>% dplyr::filter(percent10==1) %>% dplyr::select(sampleName, sampleCondition, count)
+#write.table(temp, file="NBNlowest10thpercentile.csv", sep=",", row.names=FALSE, col.names=TRUE)
+
+PALB2counts <- plotCounts(dds, gene="ENSG00000083093.5", intgroup="sampleCondition", 
+                returnData=TRUE)
+PALB2counts$sampleName <- row.names(PALB2counts)
+PALB2counts$percent10 <- ntile(PALB2counts$count, 10)
+temp <- PALB2counts %>% dplyr::filter(percent10==1) %>% dplyr::select(sampleName, sampleCondition, count)
+#write.table(temp, file="PALB2lowest10thpercentile.csv", sep=",", row.names=FALSE, col.names=TRUE)
+
+POLD1counts <- plotCounts(dds, gene="ENSG00000062822.8", intgroup="sampleCondition", 
+                returnData=TRUE)
+POLD1counts$sampleName <- row.names(POLD1counts)
+POLD1counts$percent10 <- ntile(POLD1counts$count, 10)
+temp <- POLD1counts %>% dplyr::filter(percent10==1) %>% dplyr::select(sampleName, sampleCondition, count)
+#write.table(temp, file="POLD1lowest10thpercentile.csv", sep=",", row.names=FALSE, col.names=TRUE)
+
+RAD51Ccounts <- plotCounts(dds, gene="ENSG00000108384.10", intgroup="sampleCondition", 
+                returnData=TRUE)
+RAD51Ccounts$sampleName <- row.names(RAD51Ccounts)
+RAD51Ccounts$percent10 <- ntile(RAD51Ccounts$count, 10)
+temp <- RAD51Ccounts %>% dplyr::filter(percent10==1) %>% dplyr::select(sampleName, sampleCondition, count)
+#write.table(temp, file="RAD51Clowest10thpercentile.csv", sep=",", row.names=FALSE, col.names=TRUE)
+
+XRCCcounts <- plotCounts(dds, gene="ENSG00000196584.2", intgroup="sampleCondition", 
+                returnData=TRUE)
+XRCCcounts$sampleName <- row.names(XRCCcounts)
+XRCCcounts$percent10 <- ntile(XRCCcounts$count, 10)
+temp <- XRCCcounts %>% dplyr::filter(percent10==1) %>% dplyr::select(sampleName, sampleCondition, count)
+#write.table(temp, file="XRCClowest10thpercentile.csv", sep=",", row.names=FALSE, col.names=TRUE)
+
+testgenename="ENSG00000149311.13"
+plotCounts(dds, gene = testgenename, intgroup="sampleCondition", main="Distribution of ATM expression in Nigerian cohort")
+
+testgenename="ENSG00000105393.11"
+plotCounts(dds, gene = testgenename, intgroup="sampleCondition", main="Distribution of BABAM1 expression in Nigerian cohort")
+
+testgenename="ENSG00000138376.6"
+plotCounts(dds, gene = testgenename, intgroup="sampleCondition", main="Distribution of BARD1 expression in Nigerian cohort")
+
+testgenename="ENSG00000197299.6"
+plotCounts(dds, gene = testgenename, intgroup="sampleCondition", main="Distribution of BLM expression in Nigerian cohort")
+
+testgenename="ENSG00000012048.15"
+plotCounts(dds, gene = testgenename, intgroup="sampleCondition", main="Distribution of BRCA1 expression in Nigerian cohort")
+
+testgenename="ENSG00000139618.10"
+plotCounts(dds, gene = testgenename, intgroup="sampleCondition", main="Distribution of BRCA2 expression in Nigerian cohort")
+
+testgenename="ENSG00000158019.16"
+plotCounts(dds, gene = testgenename, intgroup="sampleCondition", main="Distribution of BRE expression in Nigerian cohort")
+
+testgenename="ENSG00000136492.4"
+plotCounts(dds, gene = testgenename, intgroup="sampleCondition", main="Distribution of BRIP1 expression in Nigerian cohort")
+
+testgenename="ENSG00000183765.16"
+plotCounts(dds, gene = testgenename, intgroup="sampleCondition", main="Distribution of CHEK2 expression in Nigerian cohort")
+
+testgenename="ENSG00000154920.10"
+plotCounts(dds, gene = testgenename, intgroup="sampleCondition", main="Distribution of EME1 expression in Nigerian cohort")
+
+testgenename="ENSG00000163322.9"
+plotCounts(dds, gene = testgenename, intgroup="sampleCondition", main="Distribution of FAM175A expression in Nigerian cohort")
+
+testgenename="ENSG00000187741.10"
+plotCounts(dds, gene = testgenename, intgroup="sampleCondition", main="Distribution of FANCA expression in Nigerian cohort")
+
+testgenename="ENSG00000187790.6"
+plotCounts(dds, gene = testgenename, intgroup="sampleCondition", main="Distribution of FANCM expression in Nigerian cohort")
+
+testgenename="ENSG00000020922.8"
+plotCounts(dds, gene = testgenename, intgroup="sampleCondition", main="Distribution of MRE11A expression in Nigerian cohort")
+
+testgenename="ENSG00000104320.9"
+plotCounts(dds, gene = testgenename, intgroup="sampleCondition", main="Distribution of NBN expression in Nigerian cohort")
+
+testgenename="ENSG00000083093.5"
+plotCounts(dds, gene = testgenename, intgroup="sampleCondition", main="Distribution of PALB2 expression in Nigerian cohort")
+
+testgenename="ENSG00000062822.8"
+plotCounts(dds, gene = testgenename, intgroup="sampleCondition", main="Distribution of POLD1 expression in Nigerian cohort")
+
+testgenename="ENSG00000113522.9"
+plotCounts(dds, gene = testgenename, intgroup="sampleCondition", main="Distribution of RAD50 expression in Nigerian cohort")
+
+testgenename="ENSG00000182185.14"
+plotCounts(dds, gene = testgenename, intgroup="sampleCondition", main="Distribution of RAD51B expression in Nigerian cohort")
+
+testgenename="ENSG00000108384.10"
+plotCounts(dds, gene = testgenename, intgroup="sampleCondition", main="Distribution of RAD51C expression in Nigerian cohort")
+
+testgenename="ENSG00000185379.16"
+plotCounts(dds, gene = testgenename, intgroup="sampleCondition", main="Distribution of RAD51D expression in Nigerian cohort")
+
+testgenename="ENSG00000002016.12"
+plotCounts(dds, gene = testgenename, intgroup="sampleCondition", main="Distribution of RAD52 expression in Nigerian cohort")
+
+testgenename="ENSG00000197275.8"
+plotCounts(dds, gene = testgenename, intgroup="sampleCondition", main="Distribution of RAD54B expression in Nigerian cohort")
+
+testgenename="ENSG00000085999.7"
+plotCounts(dds, gene = testgenename, intgroup="sampleCondition", main="Distribution of RAD54L expression in Nigerian cohort")
+
+testgenename="ENSG00000101773.12"
+plotCounts(dds, gene = testgenename, intgroup="sampleCondition", main="Distribution of RBBP8 expression in Nigerian cohort")
+
+testgenename="ENSG00000132383.7"
+plotCounts(dds, gene = testgenename, intgroup="sampleCondition", main="Distribution of RPA1 expression in Nigerian cohort")
+
+testgenename="ENSG00000139351.10"
+plotCounts(dds, gene = testgenename, intgroup="sampleCondition", main="Distribution of SYCP3 expression in Nigerian cohort")
+
+testgenename="ENSG00000177302.10"
+plotCounts(dds, gene = testgenename, intgroup="sampleCondition", main="Distribution of TOP3A expression in Nigerian cohort")
+
+testgenename="ENSG00000100038.15"
+plotCounts(dds, gene = testgenename, intgroup="sampleCondition", main="Distribution of TOP3B expression in Nigerian cohort")
+
+testgenename="ENSG00000163781.8"
+plotCounts(dds, gene = testgenename, intgroup="sampleCondition", main="Distribution of TOPBP1 expression in Nigerian cohort")
+
+testgenename="ENSG00000087206.12"
+plotCounts(dds, gene = testgenename, intgroup="sampleCondition", main="Distribution of UIMC1 expression in Nigerian cohort")
+
+testgenename="ENSG00000196584.2"
+plotCounts(dds, gene = testgenename, intgroup="sampleCondition", main="Distribution of XRCC2 expression in Nigerian cohort")
+
+testgenename="ENSG00000126215.9"
+plotCounts(dds, gene = testgenename, intgroup="sampleCondition", main="Distribution of XRCC3 expression in Nigerian cohort")
+```

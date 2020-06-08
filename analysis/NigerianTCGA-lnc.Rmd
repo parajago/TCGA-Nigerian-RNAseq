@@ -1,0 +1,1097 @@
+---
+title: "Nigerian-TCGA Differential Expression Analysis Using Limma/Voom Long Non-Coding Genes Only"
+author: "Padma Sheila Rajagopal, MD MPH"
+date: "6/7/2020"
+
+site: workflowr::wflow_site
+output:
+  workflowr::wflow_html:
+    df_print: paged
+    toc: true
+    theme: spacelab
+    highlight: textmate
+---
+```{r Setup, message=FALSE, warning=FALSE, echo=FALSE, results=FALSE}
+rm(list = ls())
+knitr::opts_chunk$set(message=FALSE, warning=FALSE)
+library(gplots)
+library(ggbiplot)
+library(ggplot2)
+library(edgeR)
+library("DESeq2")
+library("RUVSeq")
+library(vsn)
+library("genefilter")
+library(pheatmap)
+library(clusterProfiler)
+library(pathview)
+library("AnnotationDbi")
+library(checkmate)
+library(affy)
+library("dplyr")
+library(stringi)
+library("hexbin")
+library("org.Hs.eg.db")
+library('GenomicFeatures')
+library(EnsDb.Hsapiens.v75)
+library("sva")
+library(limma)
+library(calibrate)
+library(ggfortify)
+library("ashr")
+library(preprocessCore)
+library("BiocParallel")
+library(RColorBrewer)
+library(Glimma)
+library(clusterProfiler)
+library(pathview)
+library(AnnotationHub)
+library(fgsea)
+library(msigdbr)
+
+register(MulticoreParam(4))
+setwd("~/Research-Local/2019-rnaseq/Inputs/NigerianTCGA_quants-lnc")
+```
+
+#Translation from HTSeq raw counts -> Count Matrix
+I have 84 TCGA patients with whole-genome sequencing data and RNAseq data as well as 95 Nigerian patients with RNA-seq data. Raw counts were initially processed using HTSeq, so HTSeq data is being formatted for use with DESeq2 and limma-voom. 
+
+```{r Preparing the sampleTable using HTSeq raw counts, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
+FOLDER <- "/Users/parajago/Research-Local/2019-rnaseq/Inputs/NigerianTCGA_quants-lnc"
+sampleFiles <- grep("htseq.counts",list.files(FOLDER),value=TRUE)
+
+#Differential gene expression setup based on race (b/w/other)
+sampleConditionrace <- sampleFiles
+countVar2=1
+for (sample in sampleConditionrace){
+  if (stri_detect_fixed(sample,"LIB")==TRUE){
+    sampleConditionrace[countVar2] <- "Nigerian"
+    countVar2=countVar2+1
+  } else if (stri_detect_fixed(sample,"black")==TRUE){
+    sampleConditionrace[countVar2] <- "TCGA_black"
+    countVar2=countVar2+1
+  } else if (stri_detect_fixed(sample,"white")==TRUE){
+    sampleConditionrace[countVar2] <- "TCGA_white"
+    countVar2=countVar2+1
+  } else{
+    sampleConditionrace[countVar2] <- "TCGA_other"
+    countVar2=countVar2+1
+  }
+}
+
+#Condition based on PAM50 subtype 
+sampleConditionPAM50 <- sampleFiles
+countVar2=1
+for (sample in sampleConditionPAM50){
+  if (stri_detect_fixed(sample,"Her2")==TRUE){
+    sampleConditionPAM50[countVar2] <- "Her2"
+    countVar2=countVar2+1
+  } else if (stri_detect_fixed(sample,"Basal")==TRUE){
+    sampleConditionPAM50[countVar2] <- "Basal"
+    countVar2=countVar2+1
+  } else if (stri_detect_fixed(sample,"LumA")==TRUE){
+    sampleConditionPAM50[countVar2] <- "LumA"
+    countVar2=countVar2+1
+  } else if (stri_detect_fixed(sample,"LumB")==TRUE){
+    sampleConditionPAM50[countVar2] <- "LumB"
+    countVar2=countVar2+1
+  } else if (stri_detect_fixed(sample,"PAMNL")==TRUE){
+    sampleConditionPAM50[countVar2] <- "Normal"
+    countVar2=countVar2+1
+  } else{
+    sampleConditionPAM50[countVar2] <- "PAM_other"
+    countVar2=countVar2+1
+  }
+}
+
+#Condition based on batch (relevant to the Nigerian patients only; no difference in batch for the TCGA patients)
+batchval <- sampleFiles
+countVar2=1
+for (sample in batchval){
+  if (stri_detect_fixed(sample,"batch1")==TRUE){
+    batchval[countVar2] <- "batch1"
+    countVar2=countVar2+1
+  } else if (stri_detect_fixed(sample,"batch23")==TRUE){
+    batchval[countVar2] <- "batch23"
+    countVar2=countVar2+1
+  } else if (stri_detect_fixed(sample,"batch4")==TRUE){
+    batchval[countVar2] <- "batch4"
+    countVar2=countVar2+1
+  } else if (stri_detect_fixed(sample,"batch5")==TRUE){
+    batchval[countVar2] <- "batch5"
+    countVar2=countVar2+1
+  } else{
+    batchval[countVar2] <- "batchT"
+    countVar2=countVar2+1
+  }
+}
+
+table(sampleConditionrace, sampleConditionPAM50)
+
+sampleTable <- data.frame(sampleName=gsub(".htseq.counts","",sampleFiles),
+                          fileName=sampleFiles,
+                          condition1=sampleConditionrace,
+                          condition2=sampleConditionPAM50,
+                          batch=batchval)
+
+sampleTable$sampleCondition <- paste(sampleTable$condition1, sampleTable$condition2, sep=".")
+
+ddsHTSeqMF <- DESeqDataSetFromHTSeqCount(sampleTable=sampleTable,
+                                       directory=FOLDER,
+                                       design=~sampleCondition)
+
+ddsHTSeqMF <- ddsHTSeqMF[rowSums(counts(ddsHTSeqMF)) > 0, ] #Pre-filtering the dataset by removing the rows without any information about gene expression -> there are 7109 genes and this removes 393
+```
+
+#Quantile normalization
+Please refer to: 
+https://parajago.github.io/TCGA-Nigerian-RNAseq/NigerianTCGArawcountsDeSeq2-pc2.html
+regarding comparison between the Nigerian and TCGA data sets and why quantile normalization under the limma-voom approach was chosen for primary differential expression analysis. 
+
+##Data visualization
+```{r Quantile normalization setup and visualization, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
+countmatrix <- assay(ddsHTSeqMF) #Raw counts organized into matrix format from individual files
+countmatrix2 <- log2(countmatrix + 1) #Basic transformation of the count data 
+
+plot(density(countmatrix2[,1]),lwd=3,ylim=c(0,.30), main="Density of counts with log2[count]+1 transformation ONLY") 
+for(i in 1:179){lines(density(countmatrix2[,i]),lwd=3)} #There is a LOT of variety in the long non-coding RNA counts
+
+norm_countmatrix <- as.matrix(countmatrix2) 
+norm_countmatrix = normalize.quantiles(norm_countmatrix)
+plot(density(norm_countmatrix[,1]),lwd=3,ylim=c(0,.3), main="Density of counts with quantile normalization")
+for(i in 1:179){lines(density(norm_countmatrix[,i]),lwd=3)} #This demonstrates the effect of comparative quantile normalization -- this is improved albeit not completely normalized.
+
+colnames (norm_countmatrix) <- colnames (countmatrix2)
+rownames (norm_countmatrix) <- rownames (countmatrix2)
+
+norm_countmatrix <- as.data.frame(norm_countmatrix)
+countmatrixNigerian <- dplyr::select(norm_countmatrix, contains("LIB"))
+plot(density(countmatrixNigerian[,1]),lwd=3,ylim=c(0,.3), main="Density of counts with quantile normalization - Nigerian")
+for(i in 1:95){lines(density(countmatrixNigerian[,i]),lwd=3)} #This demonstrates the result of the normalized Nigerian counts separately. We see that there is a lot of variability with the long noncoding RNA here. 
+
+tcgacolnames <- colnames(countmatrix)
+tcgacolnames <- setdiff(tcgacolnames, colnames(countmatrixNigerian))
+countmatrixTCGA <- norm_countmatrix[ , tcgacolnames]
+plot(density(countmatrixTCGA[,1]),lwd=3,ylim=c(0,.3), main="Density of counts with quantile normalization - TCGA")
+for(i in 1:84){
+  lines(density(countmatrixTCGA[,i]),lwd=3);
+#  print(colnames(countmatrix)[i])
+#  invisible(readline(prompt=i))
+  } #This demonstrates the result of the normalized TCGA counts separately
+
+norm_countmatrix <- as.data.frame(norm_countmatrix)
+t_norm_countmatrix <- t(norm_countmatrix)
+
+t_norm_countmatrix <- cbind (t_norm_countmatrix, sampleTable) #This binds the characteristics of the original patients to the quantile normalized counts. CBinding was checked to make sure that patients were correctly aligned to characteristics. 
+
+quant.pca <- prcomp(t_norm_countmatrix[,1:6716])
+autoplot(quant.pca, data=t_norm_countmatrix, colour='sampleCondition', shape='condition1', main="PCA of quantile normalization of long non-coding RNA results prior to DE analysis")
+```
+
+#Differential expression setup
+```{r Differential expression setup, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
+annotation <- as.data.frame(row.names(countmatrix))
+colnames(annotation) <- c("GeneID")
+annotation$temp <- gsub("[.].+", "", annotation[,1])
+
+annotation$symbol <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=annotation$temp,
+                     column="SYMBOL",
+                     keytype="GENEID",           
+                     multiVals="first")
+
+annotation$symbol <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=annotation$temp,
+                     column="SYMBOL",
+                     keytype="GENEID",           
+                     multiVals="first")
+
+annotation$chr <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=annotation$temp,
+                     column="SEQNAME",
+                     keytype="GENEID",           
+                     multiVals="first")
+
+annotation$locstart <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=annotation$temp,
+                     column="GENESEQSTART",
+                     keytype="GENEID",
+                     multiVals="first")
+
+annotation$locend <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=annotation$temp,
+                     column="GENESEQEND",
+                     keytype="GENEID",
+                     multiVals="first")
+annotation$temp <- NULL
+
+design <- t_norm_countmatrix
+design <- design %>% dplyr::select(sampleCondition)
+
+#MsigDB from the Broad
+m_df = msigdbr(species = "Homo sapiens")
+m_list = m_df %>% split(x = .$gene_symbol, f = .$gs_name)
+```
+
+##DE: Nigerian/TCGA White - Basal
+```{r Limma-voom differential expression results for Nigerian/TCGA white Basal patients, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
+designNvsW <- design
+designNvsW$sampleCondition <- ifelse (designNvsW$sampleCondition=="TCGA_white.Basal", 0, as.character(designNvsW$sampleCondition))
+designNvsW$sampleCondition <- ifelse (designNvsW$sampleCondition=="Nigerian.Basal", 1, as.character(designNvsW$sampleCondition))
+
+designNvsW$sampleCondition <- ifelse (designNvsW$sampleCondition==0 | designNvsW$sampleCondition==1, designNvsW$sampleCondition, NA)
+
+designNvsW <- designNvsW %>% subset(is.na(sampleCondition)==FALSE)
+
+designNvsW$TCGA_white.Basal <- ifelse (designNvsW$sampleCondition==0, 1, 0)
+designNvsW$Nigerian.Basal <- ifelse (designNvsW$sampleCondition==1, 1, 0)
+
+designNvsW$sampleCondition <- NULL
+
+mm <- model.matrix(~0+designNvsW$TCGA_white.Basal+designNvsW$Nigerian.Basal)
+
+quantids <- rownames(designNvsW)
+rownames(mm) <- quantids
+colnames(mm) <- c("TCGA_white", "Nigerian")
+
+quantdata <- as.data.frame(t(counts(ddsHTSeqMF)))
+quantdata <- quantdata[quantids,]
+quantdata <- t(quantdata)
+
+d0 <- DGEList(counts=quantdata, genes=annotation)
+
+cutoff <- 10
+drop <- which(apply(cpm(d0), 1, max) < cutoff)
+d <- d0[-drop,] 
+dim(d) # Number of genes after taking out low expressed genes = 14785
+
+v=voom(d,designNvsW,plot=T, normalize="quantile")
+
+contr.matrix <- makeContrasts(TCGA_white.Basal-Nigerian.Basal, levels=colnames(designNvsW))
+
+fit <- lmFit(v, designNvsW)
+fit <- contrasts.fit(fit, contrasts=contr.matrix)
+fit <- eBayes(fit)
+dt <- decideTests(fit)
+summary(dt)
+
+hist(fit$p.value, ylim=c(0,3000), main="Histogram of unadjusted p-values of differential gene expression\n between basal breast cancers in Nigerian and TCGA white patients\n quantile corrected+LNC RNA")
+
+qvals<-p.adjust(fit$p.value[,1], method='fdr')
+
+df_limma <- data_frame(log2FoldChange = fit$coefficients[,1], 
+                       pval = fit$p.value[,1],
+                       padj = qvals,
+                       anno = fit$genes)
+
+with(df_limma, plot(log2FoldChange, -log10(padj), pch=20, main="Volcano plot of differential gene expression between basal \nbreast cancers in Nigerian and TCGA white breast cancer patients\nquantile corrected+LNC RNA", xlim=c(-50,50), ylim=c(0,50)))
+with(subset(df_limma, padj<0.05 & (2^(abs(log2FoldChange))>50)), points(log2FoldChange, -log10(padj), pch=20, col="blue"))
+with(subset(df_limma, padj<0.05 & (2^(abs(log2FoldChange))>50)), textxy(log2FoldChange, -log10(padj), labs=anno$symbol, cex=.5))
+
+df_limmaprint <- as.data.frame(df_limma)
+
+df_limmaprint$foldChange <- NA
+row.pos <- which(! is.na(df_limmaprint$log2FoldChange) & 
+                df_limmaprint$log2FoldChange >= 0)
+row.neg <- which(! is.na(df_limmaprint$log2FoldChange) & 
+                df_limmaprint$log2FoldChange < 0)
+df_limmaprint$foldChange[row.pos] <- 2^df_limmaprint$log2FoldChange[row.pos]
+df_limmaprint$foldChange[row.neg] <- -2^((-1) * df_limmaprint$log2FoldChange[row.neg])
+
+df_limmaprint <- df_limmaprint %>% arrange(foldChange) %>% dplyr::filter(padj < 0.05) %>% dplyr::filter(abs(foldChange)>1.5)
+
+#We take a quick look at genes with the strongest fold change across both groups
+top_n(df_limmaprint, 10, foldChange)
+top_n(df_limmaprint, -10, foldChange)
+
+fit$genes$status <- ifelse(fit$F.p.value<0.05,"red","black")
+limma::plotMA(fit, xlab = "Average log-expression",
+       ylab = "Expression log-ratio (this sample vs others)", status=fit$genes$status, 
+       main = "MA Plot of differential gene expression between basal \nbreast cancers in Nigerian and TCGA white breast cancer patients")
+
+vismatrix <- cpm(d$counts, log=TRUE, prior.count = 3) #log normalized counts for visualization
+vismatrix <- t(vismatrix)
+vismatrix <- as.data.frame(vismatrix)
+vismatrix$sampleName <- rownames(vismatrix)
+
+mergeids <- t_norm_countmatrix %>% dplyr::select(sampleName, sampleCondition)
+
+vismatrix <- merge.data.frame(vismatrix, mergeids, all.x=TRUE, all.y=FALSE)
+
+#Heatmap of most differentially expressed genes AFTER quantile normalization.
+heatmapmatrix <- (t(vismatrix))
+colnames(heatmapmatrix) <- heatmapmatrix[1,]
+heatmapmatrix <- heatmapmatrix[-1,]
+heatmapmatrix <- heatmapmatrix[1:5172,]
+class(heatmapmatrix) <- "numeric"
+heatmapmatrix <- as.data.frame(heatmapmatrix)
+
+topVarGenes <- head(df_limmaprint[order(df_limmaprint$log2FoldChange, decreasing=TRUE), ], 50)
+topVarGeneslim <- as.character(topVarGenes$anno$GeneID)
+
+bottomVarGenes <- head(df_limmaprint[order(df_limmaprint$log2FoldChange, decreasing=FALSE), ], 50)
+bottomVarGeneslim <- as.character(bottomVarGenes$anno$GeneID)
+
+hm <- subset (heatmapmatrix, rownames(heatmapmatrix) %in% topVarGeneslim |  rownames(heatmapmatrix) %in% bottomVarGeneslim) 
+hm <- as.matrix(hm)
+hm <- hm - rowMeans(hm)
+annohm <- as.data.frame(colData(ddsHTSeqMF)[, c("condition1", "batch")])
+colnames(annohm) <- c("Ethnicity", "Batch")
+rownames(annohm) <- colnames(ddsHTSeqMF)
+
+pheatmap(hm, annotation_col = annohm, cluster_rows=TRUE, cluster_cols=TRUE, clustering_distance_rows = "euclidean", clustering_distance_cols = "euclidean", clustering_method = "complete", show_rownames=TRUE, show_colnames = FALSE, main="Heat map: LNC RNA DE genes in TCGA white basal breast cancer patients\nquantile normalization")
+
+#Saving full output of significantly differentially expressed genes
+write.csv(df_limmaprint, file = "TCGA_white-Nigerian-LNC-Basal.csv", row.names = FALSE)
+rankBasalwhite <- as.matrix(df_limmaprint)
+rankBasalwhite <- as.data.frame(rankBasalwhite)
+rankBasalwhite <- rankBasalwhite %>% dplyr::select(anno.symbol, log2FoldChange)
+rankBasalwhite$log2FoldChange <- as.numeric(levels(rankBasalwhite$log2FoldChange))[rankBasalwhite$log2FoldChange]
+colnames(rankBasalwhite) <- c("ID", "t")
+rankBasalwhite <- setNames(rankBasalwhite$t, rankBasalwhite$ID)
+
+fgseaBasalwhite <- fgsea(m_list, rankBasalwhite, minSize=20, maxSize=1000, nperm=1000)
+fgseaBasalwhite <- fgseaBasalwhite[order(pval), ]
+
+#fwrite(fgseaBasalwhite, file="fgseaResBasalwhiteLNC.txt", sep="\t", sep2=c("", " ", ""))
+```
+
+##DE: Nigerian/TCGA Black - Basal
+```{r Limma-voom differential expression results for Nigerian/TCGA black Basal patients, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
+designNvsB <- design
+designNvsB$sampleCondition <- ifelse (designNvsB$sampleCondition=="TCGA_black.Basal", 0, as.character(designNvsB$sampleCondition))
+designNvsB$sampleCondition <- ifelse (designNvsB$sampleCondition=="Nigerian.Basal", 1, as.character(designNvsB$sampleCondition))
+
+designNvsB$sampleCondition <- ifelse (designNvsB$sampleCondition==0 | designNvsB$sampleCondition==1, designNvsB$sampleCondition, NA)
+
+designNvsB <- designNvsB %>% subset(is.na(sampleCondition)==FALSE)
+
+designNvsB$TCGA_black.Basal <- ifelse (designNvsB$sampleCondition==0, 1, 0)
+designNvsB$Nigerian.Basal <- ifelse (designNvsB$sampleCondition==1, 1, 0)
+
+designNvsB$sampleCondition <- NULL
+
+mm <- model.matrix(~0+designNvsB$TCGA_black.Basal+designNvsB$Nigerian.Basal)
+
+quantids <- rownames(designNvsB)
+rownames(mm) <- quantids
+colnames(mm) <- c("TCGA_black", "Nigerian")
+
+quantdata <- as.data.frame(t(counts(ddsHTSeqMF)))
+quantdata <- quantdata[quantids,]
+quantdata <- t(quantdata)
+
+d0 <- DGEList(counts=quantdata, genes=annotation)
+
+cutoff <- 10
+drop <- which(apply(cpm(d0), 1, max) < cutoff)
+d <- d0[-drop,] 
+dim(d) # Number of genes after taking out low expressed genes
+
+v=voom(d,designNvsB,plot=T, normalize="quantile")
+
+contr.matrix <- makeContrasts(TCGA_black.Basal-Nigerian.Basal, levels=colnames(designNvsB))
+
+fit <- lmFit(v, designNvsB)
+fit <- contrasts.fit(fit, contrasts=contr.matrix)
+fit <- eBayes(fit)
+dt <- decideTests(fit)
+summary(dt)
+
+hist(fit$p.value, ylim=c(0,3000), main="Histogram of unadjusted p-values of differential gene expression\n between TNBC breast cancers in Nigerian and TCGA black patients\n quantile corrected")
+
+qvals<-p.adjust(fit$p.value[,1], method='fdr')
+
+df_limma <- data_frame(log2FoldChange = fit$coefficients[,1], 
+                       pval = fit$p.value[,1],
+                       padj = qvals,
+                       anno = fit$genes)
+
+with(df_limma, plot(log2FoldChange, -log10(padj), pch=20, main="Volcano plot of differential gene expression between Basal \nbreast cancers in Nigerian and TCGA black breast cancer patients\nquantile corrected", xlim=c(-50,50), ylim=c(0,50)))
+with(subset(df_limma, padj<0.05 & (2^(abs(log2FoldChange))>50)), points(log2FoldChange, -log10(padj), pch=20, col="blue"))
+with(subset(df_limma, padj<0.05 & (2^(abs(log2FoldChange))>50)), textxy(log2FoldChange, -log10(padj), labs=anno$symbol, cex=.5))
+
+df_limmaprint <- as.data.frame(df_limma)
+
+df_limmaprint$foldChange <- NA
+row.pos <- which(! is.na(df_limmaprint$log2FoldChange) & 
+                df_limmaprint$log2FoldChange >= 0)
+row.neg <- which(! is.na(df_limmaprint$log2FoldChange) & 
+                df_limmaprint$log2FoldChange < 0)
+df_limmaprint$foldChange[row.pos] <- 2^df_limmaprint$log2FoldChange[row.pos]
+df_limmaprint$foldChange[row.neg] <- -2^((-1) * df_limmaprint$log2FoldChange[row.neg])
+
+df_limmaprint <- df_limmaprint %>% arrange(foldChange) %>% dplyr::filter(padj < 0.05) %>% dplyr::filter(abs(foldChange)>1.5)
+
+top_n(df_limmaprint, 10, foldChange)
+top_n(df_limmaprint, -10, foldChange)
+
+fit$genes$status <- ifelse(fit$F.p.value<0.05,"red","black")
+limma::plotMA(fit, xlab = "Average log-expression",
+       ylab = "Expression log-ratio (this sample vs others)", status=fit$genes$status, 
+       main = "MA Plot of differential gene expression between basal \nbreast cancers in Nigerian and TCGA black breast cancer patients")
+
+vismatrix <- cpm(d$counts, log=TRUE, prior.count = 3)
+vismatrix <- t(vismatrix)
+vismatrix <- as.data.frame(vismatrix)
+vismatrix$sampleName <- rownames(vismatrix)
+
+mergeids <- t_norm_countmatrix %>% dplyr::select(sampleName, sampleCondition)
+
+vismatrix <- merge.data.frame(vismatrix, mergeids, all.x=TRUE, all.y=FALSE)
+
+#Heatmap of most differentially expressed genes AFTER quantile normalization.
+heatmapmatrix <- (t(vismatrix))
+colnames(heatmapmatrix) <- heatmapmatrix[1,]
+heatmapmatrix <- heatmapmatrix[-1,]
+heatmapmatrix <- heatmapmatrix[1:5305,]
+class(heatmapmatrix) <- "numeric"
+heatmapmatrix <- as.data.frame(heatmapmatrix)
+
+topVarGenes <- head(df_limmaprint[order(df_limmaprint$foldChange, decreasing=TRUE), ], 50)
+topVarGeneslim <- as.character(topVarGenes$anno$GeneID)
+
+bottomVarGenes <- head(df_limmaprint[order(df_limmaprint$foldChange, decreasing=FALSE), ], 50)
+bottomVarGeneslim <- as.character(bottomVarGenes$anno$GeneID)
+
+hm <- subset (heatmapmatrix, rownames(heatmapmatrix) %in% topVarGeneslim |  rownames(heatmapmatrix) %in% bottomVarGeneslim) 
+hm <- as.matrix(hm)
+hm <- hm - rowMeans(hm)
+annohm <- as.data.frame(colData(ddsHTSeqMF)[, c("condition1", "batch")])
+colnames(annohm) <- c("Ethnicity", "Batch")
+rownames(annohm) <- colnames(ddsHTSeqMF)
+
+pheatmap(hm, annotation_col = annohm, cluster_rows=TRUE, cluster_cols=TRUE, clustering_distance_rows = "euclidean", clustering_distance_cols = "euclidean", clustering_method = "complete", show_rownames=TRUE, show_colnames = FALSE, main="Heat map: LNC DE genes in TCGA black Basal breast cancer patients\nquantile normalization")
+
+#Saving full output of significantly differentially expressed genes
+write.csv(df_limmaprint, file = "TCGA_black-Nigerian-Basal-LNC.csv", row.names = FALSE)
+
+rankBasalblack <- as.matrix(df_limmaprint)
+rankBasalblack <- as.data.frame(rankBasalblack)
+rankBasalblack <- rankBasalblack %>% dplyr::select(anno.symbol, log2FoldChange)
+rankBasalblack$log2FoldChange <- as.numeric(levels(rankBasalblack$log2FoldChange))[rankBasalblack$log2FoldChange]
+colnames(rankBasalblack) <- c("ID", "t")
+rankBasalblack <- setNames(rankBasalblack$t, rankBasalblack$ID)
+
+fgseaBasalblack <- fgsea(m_list, rankBasalblack, minSize=20, maxSize=1000, nperm=1000)
+fgseaBasalblack <- fgseaBasalblack[order(pval), ]
+
+#fwrite(fgseaBasalblack, file="fgseaResBasalblack.txt", sep="\t", sep2=c("", " ", ""))
+```
+
+##DE: Nigerian/TCGA White - HER2 (no TCGA Black HER2+ patients)
+```{r Limma-voom differential expression results for Nigerian/TCGA white HER2+, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
+designNvsWHER2 <- design
+designNvsWHER2$sampleCondition <- ifelse (designNvsWHER2$sampleCondition=="TCGA_white.Her2", 0, as.character(designNvsWHER2$sampleCondition))
+designNvsWHER2$sampleCondition <- ifelse (designNvsWHER2$sampleCondition=="Nigerian.Her2", 1, as.character(designNvsWHER2$sampleCondition))
+
+designNvsWHER2$sampleCondition <- ifelse (designNvsWHER2$sampleCondition==0 | designNvsWHER2$sampleCondition==1, designNvsWHER2$sampleCondition, NA)
+
+designNvsWHER2 <- designNvsWHER2 %>% subset(is.na(sampleCondition)==FALSE)
+
+designNvsWHER2$TCGA_white.Her2 <- ifelse (designNvsWHER2$sampleCondition==0, 1, 0)
+designNvsWHER2$Nigerian.Her2 <- ifelse (designNvsWHER2$sampleCondition==1, 1, 0)
+
+designNvsWHER2$sampleCondition <- NULL
+
+mm <- model.matrix(~0+designNvsWHER2$TCGA_white.Her2+designNvsWHER2$Nigerian.Her2)
+
+quantids <- rownames(designNvsWHER2)
+rownames(mm) <- quantids
+colnames(mm) <- c("TCGA_white", "Nigerian")
+
+quantdata <- as.data.frame(t(counts(ddsHTSeqMF)))
+quantdata <- quantdata[quantids,]
+quantdata <- t(quantdata)
+
+d0 <- DGEList(counts=quantdata, genes=annotation)
+
+cutoff <- 10
+drop <- which(apply(cpm(d0), 1, max) < cutoff)
+d <- d0[-drop,] 
+dim(d) # Number of genes after taking out low expressed genes
+
+v=voom(d,designNvsWHER2,plot=T, normalize="quantile")
+
+contr.matrix <- makeContrasts(TCGA_white.Her2-Nigerian.Her2, levels=colnames(designNvsWHER2))
+
+fit <- lmFit(v, designNvsWHER2)
+fit <- contrasts.fit(fit, contrasts=contr.matrix)
+fit <- eBayes(fit)
+dt <- decideTests(fit)
+summary(dt)
+
+hist(fit$p.value, ylim=c(0,3000), main="Histogram of unadjusted p-values of differential gene expression\n between Her2+ breast cancers in Nigerian and TCGA white patients\n quantile corrected")
+
+qvals<-p.adjust(fit$p.value[,1], method='fdr')
+
+df_limma <- data_frame(log2FoldChange = fit$coefficients[,1], 
+                       pval = fit$p.value[,1],
+                       padj = qvals,
+                       anno = fit$genes)
+
+with(df_limma, plot(log2FoldChange, -log10(padj), pch=20, main="Volcano plot of differential gene expression between Her2+ \nbreast cancers in Nigerian and TCGA white breast cancer patients\nquantile corrected", xlim=c(-50,50), ylim=c(0,20)))
+with(subset(df_limma, padj<0.05 & (2^(abs(log2FoldChange))>50)), points(log2FoldChange, -log10(padj), pch=20, col="blue"))
+with(subset(df_limma, padj<0.05 & (2^(abs(log2FoldChange))>50)), textxy(log2FoldChange, -log10(padj), labs=anno$symbol, cex=.5))
+
+df_limmaprint <- as.data.frame(df_limma)
+
+df_limmaprint$foldChange <- NA
+row.pos <- which(! is.na(df_limmaprint$log2FoldChange) & 
+                df_limmaprint$log2FoldChange >= 0)
+row.neg <- which(! is.na(df_limmaprint$log2FoldChange) & 
+                df_limmaprint$log2FoldChange < 0)
+df_limmaprint$foldChange[row.pos] <- 2^df_limmaprint$log2FoldChange[row.pos]
+df_limmaprint$foldChange[row.neg] <- -2^((-1) * df_limmaprint$log2FoldChange[row.neg])
+
+df_limmaprint <- df_limmaprint %>% arrange(foldChange) %>% dplyr::filter(padj < 0.05) %>% dplyr::filter(abs(foldChange)>1.5)
+
+#We take a quick look at genes with the strongest fold change across both groups
+top_n(df_limmaprint, 10, foldChange)
+top_n(df_limmaprint, -10, foldChange)
+
+fit$genes$status <- ifelse(fit$F.p.value<0.05,"red","black")
+limma::plotMA(fit, xlab = "Average log-expression",
+       ylab = "Expression log-ratio (this sample vs others)", status=fit$genes$status, 
+       main = "MA Plot of differential gene expression between Her2 \nbreast cancers in Nigerian and TCGA white breast cancer patients")
+
+vismatrix <- cpm(d$counts, log=TRUE, prior.count = 3)
+vismatrix <- t(vismatrix)
+vismatrix <- as.data.frame(vismatrix)
+vismatrix$sampleName <- rownames(vismatrix)
+
+mergeids <- t_norm_countmatrix %>% dplyr::select(sampleName, sampleCondition)
+
+vismatrix <- merge.data.frame(vismatrix, mergeids, all.x=TRUE, all.y=FALSE)
+
+#Heatmap of most differentially expressed genes AFTER quantile normalization.
+heatmapmatrix <- (t(vismatrix))
+colnames(heatmapmatrix) <- heatmapmatrix[1,]
+heatmapmatrix <- heatmapmatrix[-1,]
+heatmapmatrix <- heatmapmatrix[1:4652,]
+class(heatmapmatrix) <- "numeric"
+heatmapmatrix <- as.data.frame(heatmapmatrix)
+
+topVarGenes <- head(df_limmaprint[order(df_limmaprint$foldChange, decreasing=TRUE), ], 50)
+topVarGeneslim <- as.character(topVarGenes$anno$GeneID)
+
+bottomVarGenes <- head(df_limmaprint[order(df_limmaprint$foldChange, decreasing=FALSE), ], 50)
+bottomVarGeneslim <- as.character(bottomVarGenes$anno$GeneID)
+
+hm <- subset (heatmapmatrix, rownames(heatmapmatrix) %in% topVarGeneslim |  rownames(heatmapmatrix) %in% bottomVarGeneslim) 
+hm <- as.matrix(hm)
+hm <- hm - rowMeans(hm)
+annohm <- as.data.frame(colData(ddsHTSeqMF)[, c("condition1", "batch")])
+colnames(annohm) <- c("Ethnicity", "Batch")
+rownames(annohm) <- colnames(ddsHTSeqMF)
+
+pheatmap(hm, annotation_col = annohm, cluster_rows=TRUE, cluster_cols=TRUE, clustering_distance_rows = "euclidean", clustering_distance_cols = "euclidean", clustering_method = "complete", show_rownames=TRUE, show_colnames = FALSE, main="Heat map: DE genes in TCGA white HER2 breast cancer patients\nquantile normalization, LNC")
+
+#Saving full output of significantly differentially expressed genes
+write.csv(df_limmaprint, file = "TCGAwhite-Nigerian-Her2.LNC.csv", row.names = FALSE)
+
+rankHER2white <- as.matrix(df_limmaprint)
+rankHER2white <- as.data.frame(rankHER2white)
+rankHER2white <- rankHER2white %>% dplyr::select(anno.symbol, log2FoldChange)
+rankHER2white$log2FoldChange <- as.numeric(levels(rankHER2white$log2FoldChange))[rankHER2white$log2FoldChange]
+colnames(rankHER2white) <- c("ID", "t")
+rankHER2white <- setNames(rankHER2white$t, rankHER2white$ID)
+
+fgseaHER2white <- fgsea(m_list, rankHER2white, minSize=20, maxSize=1000, nperm=1000)
+fgseaHER2white <- fgseaHER2white[order(pval), ]
+
+#fwrite(fgseaHER2white, file="fgseaResHER2white.txt", sep="\t", sep2=c("", " ", ""))
+```
+
+##DE: Nigerian/TCGA White - LumA
+```{r Limma-voom differential expression results for Nigerian/TCGA white LumA, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
+designNvsWHR <- design
+designNvsWHR$sampleCondition <- ifelse (designNvsWHR$sampleCondition=="TCGA_white.LumA", 0, as.character(designNvsWHR$sampleCondition))
+designNvsWHR$sampleCondition <- ifelse (designNvsWHR$sampleCondition=="Nigerian.LumA", 1, as.character(designNvsWHR$sampleCondition))
+
+designNvsWHR$sampleCondition <- ifelse (designNvsWHR$sampleCondition==0 | designNvsWHR$sampleCondition==1, designNvsWHR$sampleCondition, NA)
+
+designNvsWHR <- designNvsWHR %>% subset(is.na(sampleCondition)==FALSE)
+
+designNvsWHR$TCGA_white.LumA <- ifelse (designNvsWHR$sampleCondition==0, 1, 0)
+designNvsWHR$Nigerian.LumA <- ifelse (designNvsWHR$sampleCondition==1, 1, 0)
+
+designNvsWHR$sampleCondition <- NULL
+
+mm <- model.matrix(~0+designNvsWHR$TCGA_white.LumA+designNvsWHR$Nigerian.LumA)
+
+quantids <- rownames(designNvsWHR)
+rownames(mm) <- quantids
+colnames(mm) <- c("TCGA_white", "Nigerian")
+
+quantdata <- as.data.frame(t(counts(ddsHTSeqMF)))
+quantdata <- quantdata[quantids,]
+quantdata <- t(quantdata)
+
+d0 <- DGEList(counts=quantdata, genes=annotation)
+
+cutoff <- 10
+drop <- which(apply(cpm(d0), 1, max) < cutoff)
+d <- d0[-drop,] 
+dim(d) # Number of genes after taking out low expressed genes
+
+v=voom(d,designNvsWHR,plot=T, normalize="quantile")
+
+contr.matrix <- makeContrasts(TCGA_white.LumA-Nigerian.LumA, levels=colnames(designNvsWHR))
+
+fit <- lmFit(v, designNvsWHR)
+fit <- contrasts.fit(fit, contrasts=contr.matrix)
+fit <- eBayes(fit)
+dt <- decideTests(fit)
+summary(dt)
+
+hist(fit$p.value, ylim=c(0,3000), main="Histogram of unadjusted p-values of differential gene expression\n between LumA breast cancers in Nigerian and TCGA white patients\n quantile corrected")
+
+qvals<-p.adjust(fit$p.value[,1], method='fdr')
+
+df_limma <- data_frame(log2FoldChange = fit$coefficients[,1], 
+                       pval = fit$p.value[,1],
+                       padj = qvals,
+                       anno = fit$genes)
+
+with(df_limma, plot(log2FoldChange, -log10(padj), pch=20, main="Volcano plot of differential gene expression between LumA \nbreast cancers in Nigerian and TCGA white breast cancer patients\nquantile corrected", xlim=c(-50,50), ylim=c(0,20)))
+with(subset(df_limma, padj<0.05 & (2^(abs(log2FoldChange))>50)), points(log2FoldChange, -log10(padj), pch=20, col="blue"))
+with(subset(df_limma, padj<0.05 & (2^(abs(log2FoldChange))>50)), textxy(log2FoldChange, -log10(padj), labs=anno$symbol, cex=.5))
+
+df_limmaprint <- as.data.frame(df_limma)
+
+df_limmaprint$foldChange <- NA
+row.pos <- which(! is.na(df_limmaprint$log2FoldChange) & 
+                df_limmaprint$log2FoldChange >= 0)
+row.neg <- which(! is.na(df_limmaprint$log2FoldChange) & 
+                df_limmaprint$log2FoldChange < 0)
+df_limmaprint$foldChange[row.pos] <- 2^df_limmaprint$log2FoldChange[row.pos]
+df_limmaprint$foldChange[row.neg] <- -2^((-1) * df_limmaprint$log2FoldChange[row.neg])
+
+df_limmaprint <- df_limmaprint %>% arrange(foldChange) %>% dplyr::filter(padj < 0.05) %>% dplyr::filter(abs(foldChange)>1.5)
+
+#We take a quick look at genes with the strongest fold change across both groups
+top_n(df_limmaprint, 10, foldChange)
+top_n(df_limmaprint, -10, foldChange)
+
+fit$genes$status <- ifelse(fit$F.p.value<0.05,"red","black")
+limma::plotMA(fit, xlab = "Average log-expression",
+       ylab = "Expression log-ratio (this sample vs others)", status=fit$genes$status, 
+       main = "MA Plot of differential gene expression between LumA \nbreast cancers in Nigerian and TCGA white breast cancer patients")
+
+vismatrix <- cpm(d$counts, log=TRUE, prior.count = 3)
+vismatrix <- t(vismatrix)
+vismatrix <- as.data.frame(vismatrix)
+vismatrix$sampleName <- rownames(vismatrix)
+
+mergeids <- t_norm_countmatrix %>% dplyr::select(sampleName, sampleCondition)
+
+vismatrix <- merge.data.frame(vismatrix, mergeids, all.x=TRUE, all.y=FALSE)
+
+#Heatmap of most differentially expressed genes AFTER quantile normalization. 
+heatmapmatrix <- (t(vismatrix))
+colnames(heatmapmatrix) <- heatmapmatrix[1,]
+heatmapmatrix <- heatmapmatrix[-1,]
+heatmapmatrix <- heatmapmatrix[1:4211,]
+class(heatmapmatrix) <- "numeric"
+heatmapmatrix <- as.data.frame(heatmapmatrix)
+
+topVarGenes <- head(df_limmaprint[order(df_limmaprint$foldChange, decreasing=TRUE), ], 50)
+topVarGeneslim <- as.character(topVarGenes$anno$GeneID)
+
+bottomVarGenes <- head(df_limmaprint[order(df_limmaprint$foldChange, decreasing=FALSE), ], 50)
+bottomVarGeneslim <- as.character(bottomVarGenes$anno$GeneID)
+
+hm <- subset (heatmapmatrix, rownames(heatmapmatrix) %in% topVarGeneslim |  rownames(heatmapmatrix) %in% bottomVarGeneslim) 
+hm <- as.matrix(hm)
+hm <- hm - rowMeans(hm)
+annohm <- as.data.frame(colData(ddsHTSeqMF)[, c("condition1", "batch")])
+colnames(annohm) <- c("Ethnicity", "Batch")
+rownames(annohm) <- colnames(ddsHTSeqMF)
+
+pheatmap(hm, annotation_col = annohm, cluster_rows=TRUE, cluster_cols=TRUE, clustering_distance_rows = "euclidean", clustering_distance_cols = "euclidean", clustering_method = "complete", show_rownames=TRUE, show_colnames = FALSE, main="Heat map: DE genes in TCGA white LumA breast cancer patients\nquantile normalization, LNC")
+
+#Saving full output of significantly differentially expressed genes
+write.csv(df_limmaprint, file = "TCGA_white-Nigerian-LumA-LNC.csv", row.names = FALSE)
+
+rankLumAwhite <- as.matrix(df_limmaprint)
+rankLumAwhite <- as.data.frame(rankLumAwhite)
+rankLumAwhite <- rankLumAwhite %>% dplyr::select(anno.symbol, log2FoldChange)
+rankLumAwhite$log2FoldChange <- as.numeric(levels(rankLumAwhite$log2FoldChange))[rankLumAwhite$log2FoldChange]
+colnames(rankLumAwhite) <- c("ID", "t")
+rankLumAwhite <- setNames(rankLumAwhite$t, rankLumAwhite$ID)
+
+fgseaLumAwhite <- fgsea(m_list, rankLumAwhite, minSize=20, maxSize=1000, nperm=1000)
+fgseaLumAwhite <- fgseaHER2white[order(pval), ]
+
+#fwrite(fgseaLumAwhite, file="fgseaResLumAwhite.txt", sep="\t", sep2=c("", " ", ""))
+```
+
+##DE: Nigerian/TCGA Black - LumA
+```{r Limma-voom differential expression results for Nigerian/TCGA black LumA, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
+designNvsBHR <- design
+designNvsBHR$sampleCondition <- ifelse (designNvsBHR$sampleCondition=="TCGA_black.LumA", 0, as.character(designNvsBHR$sampleCondition))
+designNvsBHR$sampleCondition <- ifelse (designNvsBHR$sampleCondition=="Nigerian.LumA", 1, as.character(designNvsBHR$sampleCondition))
+
+designNvsBHR$sampleCondition <- ifelse (designNvsBHR$sampleCondition==0 | designNvsBHR$sampleCondition==1, designNvsBHR$sampleCondition, NA)
+
+designNvsBHR <- designNvsBHR %>% subset(is.na(sampleCondition)==FALSE)
+
+designNvsBHR$TCGA_black.LumA <- ifelse (designNvsBHR$sampleCondition==0, 1, 0)
+designNvsBHR$Nigerian.LumA <- ifelse (designNvsBHR$sampleCondition==1, 1, 0)
+
+designNvsBHR$sampleCondition <- NULL
+
+mm <- model.matrix(~0+designNvsBHR$TCGA_black.LumA+designNvsBHR$Nigerian.LumA)
+
+quantids <- rownames(designNvsBHR)
+rownames(mm) <- quantids
+colnames(mm) <- c("TCGA_black", "Nigerian")
+
+quantdata <- as.data.frame(t(counts(ddsHTSeqMF)))
+quantdata <- quantdata[quantids,]
+quantdata <- t(quantdata)
+
+d0 <- DGEList(counts=quantdata, genes=annotation)
+
+cutoff <- 10
+drop <- which(apply(cpm(d0), 1, max) < cutoff)
+d <- d0[-drop,] 
+dim(d) # Number of genes after taking out low expressed genes
+
+v=voom(d,designNvsBHR,plot=T, normalize="quantile")
+
+contr.matrix <- makeContrasts(TCGA_black.LumA-Nigerian.LumA, levels=colnames(designNvsBHR))
+
+fit <- lmFit(v, designNvsBHR)
+fit <- contrasts.fit(fit, contrasts=contr.matrix)
+fit <- eBayes(fit)
+dt <- decideTests(fit)
+summary(dt)
+
+hist(fit$p.value, ylim=c(0,3000), main="Histogram of unadjusted p-values of differential gene expression\n between LumA breast cancers in Nigerian and TCGA black patients\n quantile corrected")
+
+qvals<-p.adjust(fit$p.value[,1], method='fdr')
+
+df_limma <- data_frame(log2FoldChange = fit$coefficients[,1], 
+                       pval = fit$p.value[,1],
+                       padj = qvals,
+                       anno = fit$genes)
+
+with(df_limma, plot(log2FoldChange, -log10(padj), pch=20, main="Volcano plot of differential gene expression between LumA \nbreast cancers in Nigerian and TCGA black breast cancer patients\nquantile corrected", xlim=c(-50,50), ylim=c(0,20)))
+with(subset(df_limma, padj<0.05 & (2^(abs(log2FoldChange))>50)), points(log2FoldChange, -log10(padj), pch=20, col="blue"))
+with(subset(df_limma, padj<0.05 & (2^(abs(log2FoldChange))>50)), textxy(log2FoldChange, -log10(padj), labs=anno$symbol, cex=.5))
+
+df_limmaprint <- as.data.frame(df_limma)
+
+df_limmaprint$foldChange <- NA
+row.pos <- which(! is.na(df_limmaprint$log2FoldChange) & 
+                df_limmaprint$log2FoldChange >= 0)
+row.neg <- which(! is.na(df_limmaprint$log2FoldChange) & 
+                df_limmaprint$log2FoldChange < 0)
+df_limmaprint$foldChange[row.pos] <- 2^df_limmaprint$log2FoldChange[row.pos]
+df_limmaprint$foldChange[row.neg] <- -2^((-1) * df_limmaprint$log2FoldChange[row.neg])
+
+df_limmaprint <- df_limmaprint %>% arrange(foldChange) %>% dplyr::filter(padj < 0.05) %>% dplyr::filter(abs(foldChange)>1.5)
+
+#We take a quick look at genes with the strongest fold change across both groups
+top_n(df_limmaprint, 10, foldChange)
+top_n(df_limmaprint, -10, foldChange)
+
+fit$genes$status <- ifelse(fit$F.p.value<0.05,"red","black")
+limma::plotMA(fit, xlab = "Average log-expression",
+       ylab = "Expression log-ratio (this sample vs others)", status=fit$genes$status, 
+       main = "MA Plot of differential gene expression between LumA \nbreast cancers in Nigerian and TCGA white breast cancer patients")
+
+vismatrix <- cpm(d$counts, log=TRUE, prior.count = 3)
+vismatrix <- t(vismatrix)
+vismatrix <- as.data.frame(vismatrix)
+vismatrix$sampleName <- rownames(vismatrix)
+
+mergeids <- t_norm_countmatrix %>% dplyr::select(sampleName, sampleCondition)
+
+vismatrix <- merge.data.frame(vismatrix, mergeids, all.x=TRUE, all.y=FALSE)
+
+heatmapmatrix <- (t(vismatrix))
+colnames(heatmapmatrix) <- heatmapmatrix[1,]
+heatmapmatrix <- heatmapmatrix[-1,]
+heatmapmatrix <- heatmapmatrix[1:4056,]
+class(heatmapmatrix) <- "numeric"
+heatmapmatrix <- as.data.frame(heatmapmatrix)
+
+topVarGenes <- head(df_limmaprint[order(df_limmaprint$foldChange, decreasing=TRUE), ], 50)
+topVarGeneslim <- as.character(topVarGenes$anno$GeneID)
+
+bottomVarGenes <- head(df_limmaprint[order(df_limmaprint$foldChange, decreasing=FALSE), ], 50)
+bottomVarGeneslim <- as.character(bottomVarGenes$anno$GeneID)
+
+hm <- subset (heatmapmatrix, rownames(heatmapmatrix) %in% topVarGeneslim |  rownames(heatmapmatrix) %in% bottomVarGeneslim) 
+hm <- as.matrix(hm)
+hm <- hm - rowMeans(hm)
+annohm <- as.data.frame(colData(ddsHTSeqMF)[, c("condition1", "batch")])
+colnames(annohm) <- c("Ethnicity", "Batch")
+rownames(annohm) <- colnames(ddsHTSeqMF)
+
+pheatmap(hm, annotation_col = annohm, cluster_rows=TRUE, cluster_cols=TRUE, clustering_distance_rows = "euclidean", clustering_distance_cols = "euclidean", clustering_method = "complete", show_rownames=TRUE, show_colnames = FALSE, main="Heat map: DE genes in LumA breast cancer patients\nquantile normalization + LNC")
+
+#Saving full output of significantly differentially expressed genes
+write.csv(df_limmaprint, file = "TCGA_black-Nigerian-LumA-LNC.csv", row.names = FALSE)
+
+rankLumAblack <- as.matrix(df_limmaprint)
+rankLumAblack <- as.data.frame(rankLumAblack)
+rankLumAblack <- rankLumAblack %>% dplyr::select(anno.symbol, log2FoldChange)
+rankLumAblack$log2FoldChange <- as.numeric(levels(rankLumAblack$log2FoldChange))[rankLumAblack$log2FoldChange]
+colnames(rankLumAblack) <- c("ID", "t")
+rankLumAblack <- setNames(rankLumAblack$t, rankLumAblack$ID)
+
+fgseaLumAblack <- fgsea(m_list, rankLumAblack, minSize=20, maxSize=1000, nperm=1000)
+fgseaLumAblack <- fgseaLumAblack[order(pval), ]
+
+#fwrite(fgseaLumAblack, file="fgseaResLumAblack.txt", sep="\t", sep2=c("", " ", ""))
+```
+
+##DE: Nigerian/TCGA White - LumB
+```{r Limma-voom differential expression results for Nigerian/TCGA white LumB, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
+designNvsWHR <- design
+designNvsWHR$sampleCondition <- ifelse (designNvsWHR$sampleCondition=="TCGA_white.LumB", 0, as.character(designNvsWHR$sampleCondition))
+designNvsWHR$sampleCondition <- ifelse (designNvsWHR$sampleCondition=="Nigerian.LumB", 1, as.character(designNvsWHR$sampleCondition))
+
+designNvsWHR$sampleCondition <- ifelse (designNvsWHR$sampleCondition==0 | designNvsWHR$sampleCondition==1, designNvsWHR$sampleCondition, NA)
+
+designNvsWHR <- designNvsWHR %>% subset(is.na(sampleCondition)==FALSE)
+
+designNvsWHR$TCGA_white.LumB <- ifelse (designNvsWHR$sampleCondition==0, 1, 0)
+designNvsWHR$Nigerian.LumB <- ifelse (designNvsWHR$sampleCondition==1, 1, 0)
+
+designNvsWHR$sampleCondition <- NULL
+
+mm <- model.matrix(~0+designNvsWHR$TCGA_white.LumB+designNvsWHR$Nigerian.LumB)
+
+quantids <- rownames(designNvsWHR)
+rownames(mm) <- quantids
+colnames(mm) <- c("TCGA_white", "Nigerian")
+
+quantdata <- as.data.frame(t(counts(ddsHTSeqMF)))
+quantdata <- quantdata[quantids,]
+quantdata <- t(quantdata)
+
+d0 <- DGEList(counts=quantdata, genes=annotation)
+
+cutoff <- 10
+drop <- which(apply(cpm(d0), 1, max) < cutoff)
+d <- d0[-drop,] 
+dim(d) # Number of genes after taking out low expressed genes
+
+v=voom(d,designNvsWHR,plot=T, normalize="quantile")
+
+contr.matrix <- makeContrasts(TCGA_white.LumB-Nigerian.LumB, levels=colnames(designNvsWHR))
+
+fit <- lmFit(v, designNvsWHR)
+fit <- contrasts.fit(fit, contrasts=contr.matrix)
+fit <- eBayes(fit)
+dt <- decideTests(fit)
+summary(dt)
+
+hist(fit$p.value, ylim=c(0,3000), main="Histogram of unadjusted p-values of differential gene expression\n between LumB breast cancers in Nigerian and TCGA white patients\n quantile corrected")
+
+qvals<-p.adjust(fit$p.value[,1], method='fdr')
+
+df_limma <- data_frame(log2FoldChange = fit$coefficients[,1], 
+                       pval = fit$p.value[,1],
+                       padj = qvals,
+                       anno = fit$genes)
+
+with(df_limma, plot(log2FoldChange, -log10(padj), pch=20, main="Volcano plot of differential gene expression between LumB \nbreast cancers in Nigerian and TCGA white breast cancer patients\nquantile corrected", xlim=c(-50,50), ylim=c(0,20)))
+with(subset(df_limma, padj<0.05 & (2^(abs(log2FoldChange))>50)), points(log2FoldChange, -log10(padj), pch=20, col="blue"))
+with(subset(df_limma, padj<0.05 & (2^(abs(log2FoldChange))>50)), textxy(log2FoldChange, -log10(padj), labs=anno$symbol, cex=.5))
+
+df_limmaprint <- as.data.frame(df_limma)
+
+df_limmaprint$foldChange <- NA
+row.pos <- which(! is.na(df_limmaprint$log2FoldChange) & 
+                df_limmaprint$log2FoldChange >= 0)
+row.neg <- which(! is.na(df_limmaprint$log2FoldChange) & 
+                df_limmaprint$log2FoldChange < 0)
+df_limmaprint$foldChange[row.pos] <- 2^df_limmaprint$log2FoldChange[row.pos]
+df_limmaprint$foldChange[row.neg] <- -2^((-1) * df_limmaprint$log2FoldChange[row.neg])
+
+df_limmaprint <- df_limmaprint %>% arrange(foldChange) %>% dplyr::filter(padj < 0.05) %>% dplyr::filter(abs(foldChange)>1.5)
+
+#We take a quick look at genes with the strongest fold change across both groups
+top_n(df_limmaprint, 10, foldChange)
+top_n(df_limmaprint, -10, foldChange)
+
+fit$genes$status <- ifelse(fit$F.p.value<0.05,"red","black")
+limma::plotMA(fit, xlab = "Average log-expression",
+       ylab = "Expression log-ratio (this sample vs others)", status=fit$genes$status, 
+       main = "MA Plot of differential gene expression between LumB \nbreast cancers in Nigerian and TCGA white breast cancer patients")
+
+vismatrix <- cpm(d$counts, log=TRUE, prior.count = 3)
+vismatrix <- t(vismatrix)
+vismatrix <- as.data.frame(vismatrix)
+vismatrix$sampleName <- rownames(vismatrix)
+
+mergeids <- t_norm_countmatrix %>% dplyr::select(sampleName, sampleCondition)
+
+vismatrix <- merge.data.frame(vismatrix, mergeids, all.x=TRUE, all.y=FALSE)
+
+heatmapmatrix <- (t(vismatrix))
+colnames(heatmapmatrix) <- heatmapmatrix[1,]
+heatmapmatrix <- heatmapmatrix[-1,]
+heatmapmatrix <- heatmapmatrix[1:4272,]
+class(heatmapmatrix) <- "numeric"
+heatmapmatrix <- as.data.frame(heatmapmatrix)
+
+topVarGenes <- head(df_limmaprint[order(df_limmaprint$foldChange, decreasing=TRUE), ], 50)
+topVarGeneslim <- as.character(topVarGenes$anno$GeneID)
+
+bottomVarGenes <- head(df_limmaprint[order(df_limmaprint$foldChange, decreasing=FALSE), ], 50)
+bottomVarGeneslim <- as.character(bottomVarGenes$anno$GeneID)
+
+hm <- subset (heatmapmatrix, rownames(heatmapmatrix) %in% topVarGeneslim |  rownames(heatmapmatrix) %in% bottomVarGeneslim) 
+hm <- as.matrix(hm)
+hm <- hm - rowMeans(hm)
+annohm <- as.data.frame(colData(ddsHTSeqMF)[, c("condition1", "batch")])
+colnames(annohm) <- c("Ethnicity", "Batch")
+rownames(annohm) <- colnames(ddsHTSeqMF)
+
+pheatmap(hm, annotation_col = annohm, cluster_rows=TRUE, cluster_cols=TRUE, clustering_distance_rows = "euclidean", clustering_distance_cols = "euclidean", clustering_method = "complete", show_rownames=TRUE, show_colnames = FALSE, main="Heat map: DE genes in TCGA-white/Nigerian LumB breast cancer patients\nquantile normalization + LNC")
+
+#Saving full output of significantly differentially expressed genes
+write.csv(df_limmaprint, file = "TCGA_white-Nigerian-LumB-LNC.csv", row.names = FALSE)
+
+rankLumBwhite <- as.matrix(df_limmaprint)
+rankLumBwhite <- as.data.frame(rankLumBwhite)
+rankLumBwhite <- rankLumBwhite %>% dplyr::select(anno.symbol, log2FoldChange)
+rankLumBwhite$log2FoldChange <- as.numeric(levels(rankLumBwhite$log2FoldChange))[rankLumBwhite$log2FoldChange]
+colnames(rankLumBwhite) <- c("ID", "t")
+rankLumBwhite <- setNames(rankLumBwhite$t, rankLumBwhite$ID)
+
+fgseaLumBwhite <- fgsea(m_list, rankLumBwhite, minSize=20, maxSize=1000, nperm=1000)
+fgseaLumBwhite <- fgseaLumBwhite[order(pval), ]
+
+#fwrite(fgseaLumBwhite, file="fgseaResLumBwhite.txt", sep="\t", sep2=c("", " ", ""))
+```
+
+##DE: Nigerian/TCGA Black - LumB
+```{r Limma-voom differential expression results for Nigerian/TCGA black LumB, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
+designNvsBHR <- design
+designNvsBHR$sampleCondition <- ifelse (designNvsBHR$sampleCondition=="TCGA_black.LumB", 0, as.character(designNvsBHR$sampleCondition))
+designNvsBHR$sampleCondition <- ifelse (designNvsBHR$sampleCondition=="Nigerian.LumB", 1, as.character(designNvsBHR$sampleCondition))
+
+designNvsBHR$sampleCondition <- ifelse (designNvsBHR$sampleCondition==0 | designNvsBHR$sampleCondition==1, designNvsBHR$sampleCondition, NA)
+
+designNvsBHR <- designNvsBHR %>% subset(is.na(sampleCondition)==FALSE)
+
+designNvsBHR$TCGA_black.LumB <- ifelse (designNvsBHR$sampleCondition==0, 1, 0)
+designNvsBHR$Nigerian.LumB <- ifelse (designNvsBHR$sampleCondition==1, 1, 0)
+
+designNvsBHR$sampleCondition <- NULL
+
+mm <- model.matrix(~0+designNvsBHR$TCGA_black.LumB+designNvsBHR$Nigerian.LumB)
+
+quantids <- rownames(designNvsBHR)
+rownames(mm) <- quantids
+colnames(mm) <- c("TCGA_black", "Nigerian")
+
+quantdata <- as.data.frame(t(counts(ddsHTSeqMF)))
+quantdata <- quantdata[quantids,]
+quantdata <- t(quantdata)
+
+d0 <- DGEList(counts=quantdata, genes=annotation)
+
+cutoff <- 10
+drop <- which(apply(cpm(d0), 1, max) < cutoff)
+d <- d0[-drop,] 
+dim(d) # Number of genes after taking out low expressed genes
+
+v=voom(d,designNvsBHR,plot=T, normalize="quantile")
+
+contr.matrix <- makeContrasts(TCGA_black.LumB-Nigerian.LumB, levels=colnames(designNvsBHR))
+
+fit <- lmFit(v, designNvsBHR)
+fit <- contrasts.fit(fit, contrasts=contr.matrix)
+fit <- eBayes(fit)
+dt <- decideTests(fit)
+summary(dt)
+
+hist(fit$p.value, ylim=c(0,3000), main="Histogram of unadjusted p-values of differential gene expression\n between LumB breast cancers in Nigerian and TCGA black patients\n quantile corrected")
+
+qvals<-p.adjust(fit$p.value[,1], method='fdr')
+
+df_limma <- data_frame(log2FoldChange = fit$coefficients[,1], 
+                       pval = fit$p.value[,1],
+                       padj = qvals,
+                       anno = fit$genes)
+
+with(df_limma, plot(log2FoldChange, -log10(padj), pch=20, main="Volcano plot of differential gene expression between LumB \nbreast cancers in Nigerian and TCGA black breast cancer patients\nquantile corrected", xlim=c(-50,50), ylim=c(0,20)))
+with(subset(df_limma, padj<0.05 & (2^(abs(log2FoldChange))>50)), points(log2FoldChange, -log10(padj), pch=20, col="blue"))
+with(subset(df_limma, padj<0.05 & (2^(abs(log2FoldChange))>50)), textxy(log2FoldChange, -log10(padj), labs=anno$symbol, cex=.5))
+
+df_limmaprint <- as.data.frame(df_limma)
+
+df_limmaprint$foldChange <- NA
+row.pos <- which(! is.na(df_limmaprint$log2FoldChange) & 
+                df_limmaprint$log2FoldChange >= 0)
+row.neg <- which(! is.na(df_limmaprint$log2FoldChange) & 
+                df_limmaprint$log2FoldChange < 0)
+df_limmaprint$foldChange[row.pos] <- 2^df_limmaprint$log2FoldChange[row.pos]
+df_limmaprint$foldChange[row.neg] <- -2^((-1) * df_limmaprint$log2FoldChange[row.neg])
+
+df_limmaprint <- df_limmaprint %>% arrange(foldChange) %>% dplyr::filter(padj < 0.05) %>% dplyr::filter(abs(foldChange)>1.5)
+
+#We take a quick look at genes with the strongest fold change across both groups
+top_n(df_limmaprint, 10, foldChange)
+top_n(df_limmaprint, -10, foldChange)
+
+fit$genes$status <- ifelse(fit$F.p.value<0.05,"red","black")
+limma::plotMA(fit, xlab = "Average log-expression",
+       ylab = "Expression log-ratio (this sample vs others)", status=fit$genes$status, 
+       main = "MA Plot of differential gene expression between LumB \nbreast cancers in Nigerian and TCGA black breast cancer patients")
+
+vismatrix <- cpm(d$counts, log=TRUE, prior.count = 3)
+vismatrix <- t(vismatrix)
+vismatrix <- as.data.frame(vismatrix)
+vismatrix$sampleName <- rownames(vismatrix)
+
+mergeids <- t_norm_countmatrix %>% dplyr::select(sampleName, sampleCondition)
+
+vismatrix <- merge.data.frame(vismatrix, mergeids, all.x=TRUE, all.y=FALSE)
+
+heatmapmatrix <- (t(vismatrix))
+colnames(heatmapmatrix) <- heatmapmatrix[1,]
+heatmapmatrix <- heatmapmatrix[-1,]
+heatmapmatrix <- heatmapmatrix[1:4081,]
+class(heatmapmatrix) <- "numeric"
+heatmapmatrix <- as.data.frame(heatmapmatrix)
+
+topVarGenes <- head(df_limmaprint[order(df_limmaprint$foldChange, decreasing=TRUE), ], 50)
+topVarGeneslim <- as.character(topVarGenes$anno$GeneID)
+
+bottomVarGenes <- head(df_limmaprint[order(df_limmaprint$foldChange, decreasing=FALSE), ], 50)
+bottomVarGeneslim <- as.character(bottomVarGenes$anno$GeneID)
+
+hm <- subset (heatmapmatrix, rownames(heatmapmatrix) %in% topVarGeneslim |  rownames(heatmapmatrix) %in% bottomVarGeneslim) 
+hm <- as.matrix(hm)
+hm <- hm - rowMeans(hm)
+annohm <- as.data.frame(colData(ddsHTSeqMF)[, c("condition1", "batch")])
+colnames(annohm) <- c("Ethnicity", "Batch")
+rownames(annohm) <- colnames(ddsHTSeqMF)
+
+pheatmap(hm, annotation_col = annohm, cluster_rows=TRUE, cluster_cols=TRUE, clustering_distance_rows = "euclidean", clustering_distance_cols = "euclidean", clustering_method = "complete", show_rownames=TRUE, show_colnames = FALSE, main="Heat map: DE genes in TCGA black/Nigerian LumB breast cancer patients\nquantile normalization, LNC")
+
+#Saving full output of significantly differentially expressed genes
+write.csv(df_limmaprint, file = "TCGA_black-Nigerian-LumB-LNC.csv", row.names = FALSE)
+
+rankLumBblack <- as.matrix(df_limmaprint)
+rankLumBblack <- as.data.frame(rankLumBblack)
+rankLumBblack <- rankLumBblack %>% dplyr::select(anno.symbol, log2FoldChange)
+rankLumBblack$log2FoldChange <- as.numeric(levels(rankLumBblack$log2FoldChange))[rankLumBblack$log2FoldChange]
+colnames(rankLumBblack) <- c("ID", "t")
+rankLumBblack <- setNames(rankLumBblack$t, rankLumBblack$ID)
+
+fgseaLumBblack <- fgsea(m_list, rankLumBblack, minSize=20, maxSize=1000, nperm=1000)
+fgseaLumBblack <- fgseaLumBblack[order(pval), ]
+
+#fwrite(fgseaLumBblack, file="fgseaResLumBblack.txt", sep="\t", sep2=c("", " ", ""))
+```

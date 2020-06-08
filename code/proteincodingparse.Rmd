@@ -35,12 +35,12 @@ library(limma)
 library(calibrate)
 library(gplots)
 
-setwd("~/Research-Local/RNAseq-Local/Inputs/NigerianTCGA_quants")
+setwd("~/Research-Local/2019-rnaseq/Inputs/NigerianTCGA_quants-lnc")
 ```
 
 ```{r Annotating the tables and isolating protein-coding only before differential expression, warning=FALSE}
-FOLDER <- "/Users/parajago/Research-Local/RNAseq-Local/Inputs/NigerianTCGA_quants"
-sampleFiles <- grep("htseq.counts",list.files(FOLDER),value=TRUE)
+FOLDER <- "/Users/parajago/Research-Local/2019-rnaseq/Inputs/NigerianTCGA_quants-lnc"
+sampleFiles <- grep(".htseq.counts",list.files(FOLDER), value=TRUE)
 
 n=1
 Nigerian <- 0 #counting variable for Nigerian patients
@@ -75,9 +75,9 @@ while (n <= length(sampleFiles)){ #while loop that reads each file, sorts into N
     Nigerian_lincRNA <- Nigerian_lincRNA + nrow(temptable %>% dplyr::filter (biotype=="lincRNA" & V3 > 0))
     Nigerian_rRNA <- Nigerian_rRNA + nrow(temptable %>% dplyr::filter (biotype=="rRNA" & V3 > 0))
     
-    temptable <- temptable %>% dplyr::filter (biotype=="protein_coding") #This can be used if differential expression needs to be performed as protein-coding only is saved into file
+    temptable <- temptable %>% dplyr::filter (biotype=="lincRNA") #This can be used if differential expression needs to be performed as protein-coding only is saved into file
     temptable$biotype <- NULL
-    #write.table(temptable, file = tempname, sep="\t", col.names=FALSE, row.names=FALSE)
+    write.table(temptable, file = tempname, sep="\t", col.names=FALSE, row.names=FALSE)
   }
   else{
     TCGA=TCGA+1
@@ -98,9 +98,9 @@ while (n <= length(sampleFiles)){ #while loop that reads each file, sorts into N
     TCGA_protein_coding <- TCGA_protein_coding + nrow(temptable %>% dplyr::filter (biotype=="protein_coding" & V3 > 0))
     TCGA_lincRNA <- TCGA_lincRNA + nrow(temptable %>% dplyr::filter (biotype=="lincRNA" & V3 > 0))
     
-    temptable <- temptable %>% dplyr::filter (biotype=="protein_coding") #This can be used if differential expression needs to be performed as protein-coding only is saved into file
+    temptable <- temptable %>% dplyr::filter (biotype=="lincRNA") #This can be used if differential expression needs to be performed as protein-coding only is saved into file
     temptable$biotype <- NULL
-    #write.table(temptable, file = tempname, sep="\t", col.names=FALSE, row.names=FALSE)
+    write.table(temptable, file = tempname, sep="\t", col.names=FALSE, row.names=FALSE)
   }
   temptable <- NULL 
   tempname <- NULL
@@ -110,7 +110,7 @@ while (n <= length(sampleFiles)){ #while loop that reads each file, sorts into N
 ```
 
 
-```{r Identifying top pseudogenes across Nigerian and TCGA patients}
+```{r Identifying top long noncoding RNAs across Nigerian and TCGA patients}
 n=1
 Nigerian<-0 
 TCGA <-0
@@ -118,7 +118,7 @@ TCGA <-0
 temptable <- read.table(sampleFiles[1], sep="\t") #Creates a dummy data frame of the largest possible size that can be used to template both Nigerians and TCGA
 temptable$V1 <- NULL
 temptable$V4 <- 0
-names(temptable) <- c("V2", "geneID", "counts", "biotype")
+colnames(temptable) <- c("V2", "counts", "biotype")
 
 Nigeriancounts <- temptable
 TCGAcounts <- temptable
@@ -130,20 +130,16 @@ while (n <= length(sampleFiles)){ #While loop sums reads across each element
     temptable2 <- read.table(sampleFiles[n], sep="\t")
     Nigeriancounts <- merge(Nigeriancounts, temptable2, by="V2") #merge the sum data table and the new data table and delete all merged elements once added 
     Nigeriancounts$V1 <- NULL
+    Nigeriancounts$counts=Nigeriancounts$V3+Nigeriancounts$counts
     Nigeriancounts$V3 <- NULL
-    Nigeriancounts$V5 <- NULL
-    Nigeriancounts$counts=Nigeriancounts$V4+Nigeriancounts$counts
-    Nigeriancounts$V4 <- NULL
   }
   else{
     TCGA=TCGA+1
     temptable2 <- read.table(sampleFiles[n], sep="\t")
     TCGAcounts <- merge(TCGAcounts, temptable2, by="V2")
     TCGAcounts$V1 <- NULL
+    TCGAcounts$counts=TCGAcounts$V3+TCGAcounts$counts
     TCGAcounts$V3 <- NULL
-    TCGAcounts$V5 <- NULL
-    TCGAcounts$counts=TCGAcounts$V4+TCGAcounts$counts
-    TCGAcounts$V4 <- NULL
   }
   temptable2 <- NULL 
   tempname <- NULL
@@ -151,15 +147,15 @@ while (n <= length(sampleFiles)){ #While loop sums reads across each element
   n=n+1
 }
 
-Nigerianpseudogenetable <- Nigeriancounts[with(Nigeriancounts,order(-counts)),]
-Nigerianpseudogenetable <- Nigerianpseudogenetable %>% mutate(rank = dense_rank(desc(counts)))
-Nigerianpseudogenetable$rank <- Nigerianpseudogenetable$rank-4 #Excludes summary statistics on top from rankings
-Nigerianpseudogenetable <- Nigerianpseudogenetable %>% dplyr::filter (biotype=="pseudogene")
-head (Nigerianpseudogenetable, 10)
+NigerianlncRNAtable <- Nigeriancounts[with(Nigeriancounts,order(-V3)),]
+NigerianlncRNAtable <- NigerianlncRNAtable %>% mutate(rank = dense_rank(desc(V3)))
+NigerianlncRNAtable$rank <- NigerianlncRNAtable$rank-4 #Excludes summary statistics on top from rankings
+NigerianlncRNAtable <- NigerianlncRNAtable %>% dplyr::filter (biotype=="lincRNA")
+head (NigerianlncRNAtable, 10)
 
-TCGApseudogenetable <- TCGAcounts[with(TCGAcounts,order(-counts)),]
-TCGApseudogenetable <- TCGApseudogenetable %>% mutate(rank = dense_rank(desc(counts)))
-TCGApseudogenetable$rank <- TCGApseudogenetable$rank-4
-TCGApseudogenetable <- TCGApseudogenetable %>% dplyr::filter (biotype=="pseudogene")
-head (TCGApseudogenetable, 10)
+TCGAlncRNAtable <- TCGAcounts[with(TCGAcounts,order(-counts)),]
+TCGAlncRNAtable <- TCGAlncRNAtable %>% mutate(rank = dense_rank(desc(counts)))
+TCGAlncRNAtable$rank <- TCGAlncRNAtable$rank-4
+TCGAlncRNAtable <- TCGAlncRNAtable %>% dplyr::filter (biotype=="lincRNA")
+head (TCGAlncRNAtable, 10)
 ```
