@@ -1,7 +1,7 @@
 ---
 title: "Nigerian-TCGA Differential Expression Analysis Using DeSeq2 - Differential gene expression in Life History Whole-Genome samples"
 author: "Padma Sheila Rajagopal, MD MPH"
-date: "6/7/2020"
+date: "8/10/2020"
 
 site: workflowr::wflow_site
 output:
@@ -151,7 +151,7 @@ for (sample in sampleGATA3){
     sampleGATA3[countVar2] <- "GATA3wt"
     countVar2=countVar2+1
   } else{
-    sampleGATA3[countVar2] <- "NA"
+    sampleGATA3[countVar2] <- NA
     countVar2=countVar2+1
   }
 }
@@ -169,7 +169,34 @@ for (sample in sampleTP53){
     sampleTP53[countVar2] <- "TP53double"
     countVar2=countVar2+1
   } else{
-    sampleTP53[countVar2] <- "NA"
+    sampleTP53[countVar2] <- NA
+    countVar2=countVar2+1
+  }
+}
+
+samplesil <-sampleFiles
+countVar2=1
+for (sample in samplesil){
+  if (stri_detect_fixed(sample,"sil")==TRUE){
+    samplesil[countVar2] <- "silent"
+    countVar2=countVar2+1
+  } else if (stri_detect_fixed(sample,"LIB")==TRUE & stri_detect_fixed(sample,"sil")==FALSE){
+    samplesil[countVar2] <- "nl"
+    countVar2=countVar2+1
+  } else{
+    samplesil[countVar2] <- NA
+    countVar2=countVar2+1
+  }
+}
+
+samplesdual <-sampleFiles
+countVar2=1
+for (sample in samplesdual){
+  if (stri_detect_fixed(sample,"dual")==TRUE){
+    samplesdual[countVar2] <- "dual"
+    countVar2=countVar2+1
+  } else{
+    samplesdual[countVar2] <- NA
     countVar2=countVar2+1
   }
 }
@@ -183,6 +210,8 @@ sampleTable <- data.frame(sampleName=gsub("htseq.counts","",sampleFiles),
                           condition3=sample14qLOH,
                           condition4=sampleGATA3,
                           condition5=sampleTP53,
+                          condition6=samplesil,
+                          condition7=samplesdual,
                           batch=batchval)
 
 sampleTable$sampleCondition <- paste(sampleTable$condition1, sampleTable$condition2, sep=".")
@@ -281,7 +310,6 @@ design <- t_norm_countmatrix %>% dplyr::select(sampleCondition)
 
 fc = 1.5 #Subsequent threshold of signifcance for log2 fold change -> 0.58 = log2(1.5)
 fdr = 0.05 #Subsequent threshold of significance for p-value (adjusted by FDR)
-
 ```
 
 #DE: 14q LOH in HER2 patients (Nigerian)
@@ -328,6 +356,7 @@ dt <- decideTests(fit)
 summary(dt)
 ```
 No significant differential expression was identified via quantile normalization/voom, which is expected as this method can be overly convservative for inter-group differential expression estimation. We have previously validated DESeq2 for inter-Nigerian comparison. 
+
 
 ```{r DESeq2 differential expression results for Nigerian HER2+ 14q LOH, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
 sampleTableLOH <- data.frame(sampleName=gsub(".htseq.counts","",sampleFiles),
@@ -529,6 +558,112 @@ plot(p2)
 #save(kk, file="GO-LOH.significantgenes.fdr0.05.fc1.5.enrichKEGG.RData")
 #write.csv(kk@result, file="GO-LOH.significantgenes.fdr0.05.fc1.5.enrichKEGG.csv")
 ```
+Pathway analysis results regarding differentially expressed genes between the 14q LOH and 14q intact Nigerian tumor genomes. 
+
+#DE: Silent genomes in Nigerian patients
+```{r DESeq2 differential expression results for Nigerian silent genomes, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
+sampleTablesil <- data.frame(sampleName=gsub(".htseq.counts","",sampleFiles),
+                          fileName=sampleFiles,
+                          sampleCondition=samplesil)
+
+sampleTablesil <- sampleTablesil %>% subset((sampleCondition=="NA")==FALSE)
+
+ddsHTSeqMFsil <- DESeqDataSetFromHTSeqCount(
+                                      sampleTable=sampleTablesil,
+                                      directory=FOLDER,
+                                      design=~sampleCondition)
+
+ddsHTSeqMFsil <- ddsHTSeqMFsil[rowSums(counts(ddsHTSeqMFsil)) > 0, ] #Pre-filtering the dataset by removing the rows without any  information about gene expression - 981 genes removed
+
+ddssil <- estimateSizeFactors(ddsHTSeqMFsil) #The size factor is the median ratio of the sample over a "pseudosample": for each gene, the geometric mean of all samples. This accounts for sequencing depth. 
+
+vsd <- vst(ddsHTSeqMFsil, blind=FALSE) #Variance-stabilizing transformation, only using this since >50 samples
+
+plotPCA(vsd, intgroup=c("sampleCondition")) + labs(title="PCA of Nigerian patient RNAseq data based on silent genomes")
+
+ddssil <- DESeq(ddsHTSeqMFsil)
+resultsNames(ddssil)
+
+cat("MA Plot: Differential expression in Nigerian breast cancer patients by 'silent genome' status")
+ressil <- lfcShrink(ddssil, coef="sampleCondition_silent_vs_nl", type="ashr", optmethod = "mixEM")
+DESeq2::plotMA(ressil, ylim=c(-10,10), xlim=c(0.1,200))
+
+diffsil <- results(ddssil, contrast=c("sampleCondition", "silent", "nl"), pAdjustMethod ="fdr", alpha=fdr)
+
+diffsil$foldChange <- NA
+row.pos <- which(! is.na(diffsil$log2FoldChange) & 
+                diffsil$log2FoldChange >= 0)
+row.neg <- which(! is.na(diffsil$log2FoldChange) & 
+                diffsil$log2FoldChange < 0)
+diffsil$foldChange[row.pos] <- 2^diffsil$log2FoldChange[row.pos]
+diffsil$foldChange[row.neg] <- -2^((-1) * diffsil$log2FoldChange[row.neg])
+
+nrow(diffsil)
+diffsil <- diffsil[(diffsil$foldChange > fc | diffsil$foldChange < -fc),] 
+diffsil <- subset(diffsil, padj < fdr)
+nrow(diffsil)
+
+restemp <- lfcShrink(ddssil, contrast=c("sampleCondition", "silent", "nl"), res = diffsil, type="ashr", optmethod = "mixEM")
+
+restemp$temp <- row.names(restemp)
+restemp$temp <- gsub("[.].+", "", restemp$temp)
+
+restemp$symbol <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=restemp$temp,
+                     column="SYMBOL",
+                     keytype="GENEID",           
+                     multiVals="first")
+
+with(restemp, plot(log2FoldChange, -log10(padj), pch=20, main="Volcano plot of differential gene expression between \nbreast cancers in Nigerian patients with and without 'silent genomes'", xlim=c(-10,10), ylim=c(0,10)))
+with(subset(restemp, padj<0.05 & (2^(abs(log2FoldChange))>50)), points(log2FoldChange, -log10(padj), pch=20, col="blue"))
+with(subset(restemp, padj<0.05 & (2^(abs(log2FoldChange))>50)), textxy(log2FoldChange, -log10(padj), labs=symbol, cex=.5))
+
+diffsiltable <- as.data.frame(diffsil)
+diffsiltable$temp <- row.names(diffsil)
+diffsiltable$temp <- gsub("[.].+", "", diffsiltable$temp)
+
+diffsiltable$symbol <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=diffsiltable$temp,
+                     column="SYMBOL",
+                     keytype="GENEID",           
+                     multiVals="first")
+
+diffsiltable$biotype <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=diffsiltable$temp,
+                     column="GENEBIOTYPE",
+                     keytype="GENEID",           
+                     multiVals="first")
+
+diffsiltable$chr <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=diffsiltable$temp,
+                     column="SEQNAME",
+                     keytype="GENEID",           
+                     multiVals="first")
+
+diffsiltable$locstart <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=diffsiltable$temp,
+                     column="GENESEQSTART",
+                     keytype="GENEID",
+                     multiVals="first")
+
+diffsiltable$locend <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=diffsiltable$temp,
+                     column="GENESEQEND",
+                     keytype="GENEID",
+                     multiVals="first")
+
+diffsiltable$temp <- NULL
+
+diffsiltable <- diffsiltable %>% arrange(foldChange) %>% dplyr::filter(padj < 0.05) %>% dplyr::filter(abs(foldChange)>1.5)
+
+top_n(diffsiltable, 10, foldChange)
+top_n(diffsiltable, -10, foldChange)
+
+diffsiltable$baseMean <- NULL
+
+#write.csv(diffsiltable, file = "RNA-DE-Nigerian-silent.csv", row.names =FALSE)
+```
+We found 62 significantly differentially expressed genes between those patients with silent genomes and non-silent genomes among the Nigerian patients. We were able to use DESeq2 for this process as this comparison was made only within the Nigerian patients.
 
 #DE: GATA3 (Nigerian)
 Among the Nigerian patients, 8 demonstrated GATA3 loss of heterozygosity and 9 demonstrated GATA3 mutations. 32 patients had GATA3 WT. 
@@ -966,3 +1101,237 @@ plotCounts(ddsTP53, gene="ENSG00000141510.11", intgroup=c("batch"), main="Distri
 ```
 
 There are 35 differentially expressed genes among the TP53 single changes in the Nigerian cohort and 61 differentially expressed genes among the TP53 double hits in the Nigerian cohort.
+
+#Comparison of Silent vs. GATA3 vs. TP53 in Nigerians
+```{r DESeq2 differential expression results for silent vs. GATA3 vs. TP53 Nigerian, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
+sampleTableall <- data.frame(sampleName=gsub(".htseq.counts","",sampleFiles),
+                          fileName=sampleFiles,
+                          condition1=sampleConditionrace,
+                          condition2=sampleGATA3,
+                          condition3=sampleTP53,
+                          condition4=samplesil,
+                          condition5=samplesdual)
+
+sampleTableall <- sampleTableall %>% subset((condition1=="Nigerian")==TRUE)
+sampleTableall$condition1 <- NULL
+
+sampleTableall$sampleCondition <- paste(sampleTableall$condition2, sampleTableall$condition3, sampleTableall$condition4, sampleTableall$condition5, sep=".")
+
+ddsHTSeqMFall <- DESeqDataSetFromHTSeqCount(
+                                      sampleTable=sampleTableall,
+                                      directory=FOLDER,
+                                      design=~sampleCondition)
+
+ddsHTSeqMFall <- ddsHTSeqMFall[rowSums(counts(ddsHTSeqMFall)) > 0, ] #Pre-filtering the dataset by removing the rows without any  information about gene expression
+
+ddsall <- estimateSizeFactors(ddsHTSeqMFall) #The size factor is the median ratio of the sample over a "pseudosample": for each gene, the geometric mean of all samples. This accounts for sequencing depth. 
+
+vsd <- vst(ddsHTSeqMFall, blind=TRUE) #Variance-stabilizing transformation
+
+plotPCA(vsd, intgroup=c("sampleCondition")) + labs(title="PCA of Nigerian patient RNAseq data based on GATA3 vs. TP53 vs. silent genomes")
+
+sampleTablemod<- data.frame(sampleName=gsub(".htseq.counts","",sampleFiles),
+                          fileName=sampleFiles,
+                          condition1=sampleConditionrace,
+                          condition2=sampleGATA3,
+                          condition3=sampleTP53,
+                          condition4=samplesil)
+
+sampleTablemod <- sampleTablemod %>% subset((condition1=="Nigerian")==TRUE)
+sampleTablemod$condition1 <- NULL
+
+sampleTablemod$condition2 <- ifelse (sampleTablemod$condition2 != "GATA3wt", "GATA3alt", "GATA3wt")
+sampleTablemod$condition3 <- ifelse (sampleTablemod$condition3 != "TP53wt", "TP53alt", "TP53wt")  
+
+sampleTablemod$sampleCondition <- paste(sampleTablemod$condition2, sampleTablemod$condition4, sep=".")
+
+ddsHTSeqMFGATAsil <- DESeqDataSetFromHTSeqCount(
+                                      sampleTable=sampleTablemod,
+                                      directory=FOLDER,
+                                      design=~sampleCondition)
+
+ddsHTSeqMFGATAsil <- ddsHTSeqMFGATAsil[rowSums(counts(ddsHTSeqMFGATAsil)) > 0, ] #Pre-filtering the dataset by removing the rows without any  information about gene expression
+
+ddsGATAsil <- estimateSizeFactors(ddsHTSeqMFGATAsil) #The size factor is the median ratio of the sample over a "pseudosample": for each gene, the geometric mean of all samples. This accounts for sequencing depth. 
+
+vsdGATAsil <- vst(ddsHTSeqMFGATAsil, blind=TRUE) #Variance-stabilizing transformation, only using this since >50 samples
+
+plotPCA(vsdGATAsil, intgroup=c("sampleCondition")) + labs(title="PCA of Nigerian patient RNAseq data based on GATA3 vs. silent genomes")
+
+ddsGATAsil <- DESeq(ddsHTSeqMFGATAsil)
+resultsNames(ddsGATAsil)
+
+cat("MA Plot: Differential expression in Nigerian breast cancer patients by 'silent genome' vs. 'GATA mutation' status")
+resGATAsil <- lfcShrink(ddsGATAsil, coef="sampleCondition_GATA3wt.silent_vs_GATA3alt.nl", type="ashr", optmethod = "mixEM")
+DESeq2::plotMA(resGATAsil, ylim=c(-10,10), xlim=c(0.1,200))
+
+diffGATAsil <- results(ddsGATAsil, contrast=c("sampleCondition", "GATA3wt.silent", "GATA3alt.nl"), pAdjustMethod ="fdr", alpha=fdr)
+
+diffGATAsil$foldChange <- NA
+row.pos <- which(! is.na(diffGATAsil$log2FoldChange) & 
+                diffGATAsil$log2FoldChange >= 0)
+row.neg <- which(! is.na(diffGATAsil$log2FoldChange) & 
+                diffGATAsil$log2FoldChange < 0)
+diffGATAsil$foldChange[row.pos] <- 2^diffGATAsil$log2FoldChange[row.pos]
+diffGATAsil$foldChange[row.neg] <- -2^((-1) * diffGATAsil$log2FoldChange[row.neg])
+
+nrow(diffGATAsil)
+diffGATAsil <- diffGATAsil[(diffGATAsil$foldChange > fc | diffGATAsil$foldChange < -fc),] 
+diffGATAsil <- subset(diffGATAsil, padj < fdr)
+nrow(diffGATAsil)
+
+restemp <- lfcShrink(ddsGATAsil, contrast=c("sampleCondition", "GATA3wt.silent", "GATA3alt.nl"), res = diffGATAsil, type="ashr", optmethod = "mixEM")
+restemp$temp <- row.names(restemp)
+restemp$temp <- gsub("[.].+", "", restemp$temp)
+
+restemp$symbol <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=restemp$temp,
+                     column="SYMBOL",
+                     keytype="GENEID",           
+                     multiVals="first")
+
+with(restemp, plot(log2FoldChange, -log10(padj), pch=20, main="Volcano plot of differential gene expression between \nbreast cancers in Nigerian patients with 'silent genomes' vs. GATA3 variants", xlim=c(-10,10), ylim=c(1,8)))
+with(subset(restemp, padj<0.05 & (2^(abs(log2FoldChange))>50)), points(log2FoldChange, -log10(padj), pch=20, col="blue"))
+with(subset(restemp, padj<0.05 & (2^(abs(log2FoldChange))>50)), textxy(log2FoldChange, -log10(padj), labs=symbol, cex=.5))
+
+diffGATAsiltable <- as.data.frame(diffGATAsil)
+diffGATAsiltable$temp <- row.names(diffGATAsil)
+diffGATAsiltable$temp <- gsub("[.].+", "", diffGATAsiltable$temp)
+
+diffGATAsiltable$symbol <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=diffGATAsiltable$temp,
+                     column="SYMBOL",
+                     keytype="GENEID",           
+                     multiVals="first")
+
+diffGATAsiltable$biotype <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=diffGATAsiltable$temp,
+                     column="GENEBIOTYPE",
+                     keytype="GENEID",           
+                     multiVals="first")
+
+diffGATAsiltable$chr <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=diffGATAsiltable$temp,
+                     column="SEQNAME",
+                     keytype="GENEID",           
+                     multiVals="first")
+
+diffGATAsiltable$locstart <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=diffGATAsiltable$temp,
+                     column="GENESEQSTART",
+                     keytype="GENEID",
+                     multiVals="first")
+
+diffGATAsiltable$locend <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=diffGATAsiltable$temp,
+                     column="GENESEQEND",
+                     keytype="GENEID",
+                     multiVals="first")
+
+diffGATAsiltable$temp <- NULL
+
+diffGATAsiltable <- diffGATAsiltable %>% arrange(foldChange) %>% dplyr::filter(padj < 0.05) %>% dplyr::filter(abs(foldChange)>1.5)
+
+top_n(diffGATAsiltable, 10, foldChange)
+top_n(diffGATAsiltable, -10, foldChange)
+
+diffGATAsiltable$baseMean <- NULL
+
+#write.csv(diffGATAsiltable, file = "DE-Nigerian-GATA3-silent.csv", row.names =FALSE)
+
+sampleTablemod$sampleCondition <- paste(sampleTablemod$condition3, sampleTablemod$condition4, sep=".")
+
+ddsHTSeqMFTP53sil <- DESeqDataSetFromHTSeqCount(
+                                      sampleTable=sampleTablemod,
+                                      directory=FOLDER,
+                                      design=~sampleCondition)
+
+ddsHTSeqMFTP53sil <- ddsHTSeqMFTP53sil[rowSums(counts(ddsHTSeqMFTP53sil)) > 0, ] #Pre-filtering the dataset by removing the rows without any  information about gene expression
+
+ddsTP53sil <- estimateSizeFactors(ddsHTSeqMFTP53sil) #The size factor is the median ratio of the sample over a "pseudosample": for each gene, the geometric mean of all samples. This accounts for sequencing depth. 
+
+vsdTP53sil <- vst(ddsHTSeqMFTP53sil, blind=TRUE) #Variance-stabilizing transformation, only using this since >50 samples
+
+plotPCA(vsdTP53sil, intgroup=c("sampleCondition")) + labs(title="PCA of Nigerian patient RNAseq data based on TP53 vs. silent genomes")
+
+ddsTP53sil <- DESeq(ddsHTSeqMFTP53sil)
+resultsNames(ddsTP53sil)
+
+cat("MA Plot: Differential expression in Nigerian breast cancer patients by 'silent genome' vs. 'TP53 mutation' status")
+resTP53sil <- lfcShrink(ddsTP53sil, coef="sampleCondition_TP53wt.silent_vs_TP53alt.nl", type="ashr", optmethod = "mixEM")
+DESeq2::plotMA(resTP53sil, ylim=c(-10,10), xlim=c(0.1,200))
+
+diffTP53sil <- results(ddsTP53sil, contrast=c("sampleCondition", "TP53wt.silent", "TP53alt.nl"), pAdjustMethod ="fdr", alpha=fdr)
+
+diffTP53sil$foldChange <- NA
+row.pos <- which(! is.na(diffTP53sil$log2FoldChange) & 
+                diffTP53sil$log2FoldChange >= 0)
+row.neg <- which(! is.na(diffTP53sil$log2FoldChange) & 
+                diffTP53sil$log2FoldChange < 0)
+diffTP53sil$foldChange[row.pos] <- 2^diffTP53sil$log2FoldChange[row.pos]
+diffTP53sil$foldChange[row.neg] <- -2^((-1) * diffTP53sil$log2FoldChange[row.neg])
+
+nrow(diffTP53sil)
+diffTP53sil <- diffTP53sil[(diffTP53sil$foldChange > fc | diffTP53sil$foldChange < -fc),] 
+diffTP53sil <- subset(diffTP53sil, padj < fdr)
+nrow(diffTP53sil)
+
+restemp <- lfcShrink(ddsTP53sil, contrast=c("sampleCondition", "TP53wt.silent", "TP53alt.nl"), res = diffTP53sil, type="ashr", optmethod = "mixEM")
+restemp$temp <- row.names(restemp)
+restemp$temp <- gsub("[.].+", "", restemp$temp)
+
+restemp$symbol <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=restemp$temp,
+                     column="SYMBOL",
+                     keytype="GENEID",           
+                     multiVals="first")
+
+with(restemp, plot(log2FoldChange, -log10(padj), pch=20, main="Volcano plot of differential gene expression between \nbreast cancers in Nigerian patients with 'silent genomes' vs. TP53 variants", xlim=c(-10,10), ylim=c(1,8)))
+with(subset(restemp, padj<0.05 & (2^(abs(log2FoldChange))>50)), points(log2FoldChange, -log10(padj), pch=20, col="blue"))
+with(subset(restemp, padj<0.05 & (2^(abs(log2FoldChange))>50)), textxy(log2FoldChange, -log10(padj), labs=symbol, cex=.5))
+
+diffTP53siltable <- as.data.frame(diffTP53sil)
+diffTP53siltable$temp <- row.names(diffTP53sil)
+diffTP53siltable$temp <- gsub("[.].+", "", diffTP53siltable$temp)
+
+diffTP53siltable$symbol <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=diffTP53siltable$temp,
+                     column="SYMBOL",
+                     keytype="GENEID",           
+                     multiVals="first")
+
+diffTP53siltable$biotype <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=diffTP53siltable$temp,
+                     column="GENEBIOTYPE",
+                     keytype="GENEID",           
+                     multiVals="first")
+
+diffTP53siltable$chr <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=diffTP53siltable$temp,
+                     column="SEQNAME",
+                     keytype="GENEID",           
+                     multiVals="first")
+
+diffTP53siltable$locstart <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=diffTP53siltable$temp,
+                     column="GENESEQSTART",
+                     keytype="GENEID",
+                     multiVals="first")
+
+diffTP53siltable$locend <- mapIds(EnsDb.Hsapiens.v75,
+                     keys=diffTP53siltable$temp,
+                     column="GENESEQEND",
+                     keytype="GENEID",
+                     multiVals="first")
+
+diffTP53siltable$temp <- NULL
+
+diffTP53siltable <- diffTP53siltable %>% arrange(foldChange) %>% dplyr::filter(padj < 0.05) %>% dplyr::filter(abs(foldChange)>1.5)
+
+top_n(diffTP53siltable, 10, foldChange)
+top_n(diffTP53siltable, -10, foldChange)
+
+diffTP53siltable$baseMean <- NULL
+
+write.csv(diffTP53siltable, file = "DE-Nigerian-TP53-silent.csv", row.names =FALSE)
+```
