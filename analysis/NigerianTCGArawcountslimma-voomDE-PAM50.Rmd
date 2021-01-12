@@ -1,7 +1,7 @@
 ---
 title: "Nigerian-TCGA Differential Expression Analysis Using Limma/Voom Protein-Coding Genes Only for whole-genome samples (PAM50) without ribosomal proteins"
 author: "Padma Sheila Rajagopal, MD MPH"
-date: "6/7/2020"
+date: "1/11/2021"
 
 site: workflowr::wflow_site
 output:
@@ -15,8 +15,11 @@ output:
 rm(list = ls())
 knitr::opts_chunk$set(message=FALSE, warning=FALSE)
 library(gplots)
-library(ggbiplot)
 library(ggplot2)
+library(tidyverse)
+library(ggplot2)
+library(ggrepel)
+library(RColorBrewer)
 library(edgeR)
 library("DESeq2")
 library("RUVSeq")
@@ -50,14 +53,14 @@ library(fgsea)
 library(msigdbr)
 
 register(MulticoreParam(4))
-setwd("~/Research-Local/2019-rnaseq/Inputs/NigerianTCGA_quants-proteincoding")
+setwd("~/Research-Local/2020-rnaseq/Inputs/NigerianTCGA_quants-proteincoding")
 ```
 
 #Translation from HTSeq raw counts -> Count Matrix
 I have 84 TCGA patients with whole-genome sequencing data and RNAseq data as well as 96 Nigerian patients with RNA-seq data. Raw counts were initially processed using HTSeq, so HTSeq data is being formatted for use with DESeq2 and limma-voom. 
 
 ```{r Preparing the sampleTable using HTSeq raw counts, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
-FOLDER <- "/Users/parajago/Research-Local/2019-rnaseq/Inputs/NigerianTCGA_quants-proteincoding"
+FOLDER <- "/Users/parajago/Research-Local/2020-rnaseq/Inputs/NigerianTCGA_quants-proteincoding"
 sampleFiles <- grep("htseq.counts",list.files(FOLDER),value=TRUE)
 
 #Differential gene expression setup based on race (b/w/other)
@@ -184,8 +187,10 @@ t_norm_countmatrix <- t(norm_countmatrix)
 
 t_norm_countmatrix <- cbind (t_norm_countmatrix, sampleTable) #This binds the characteristics of the original patients to the quantile normalized counts. CBinding was checked to make sure that patients were correctly aligned to characteristics. 
 
-quant.pca <- prcomp(t_norm_countmatrix[,1:19724])
-autoplot(quant.pca, data=t_norm_countmatrix, colour='sampleCondition', shape='condition1', main="PCA of quantile normalization results prior to DE analysis")
+t_norm_countmatrix_temp <- subset(t_norm_countmatrix, t_norm_countmatrix$condition1!="TCGA_other")
+
+quant.pca <- prcomp(t_norm_countmatrix_temp[,1:19724])
+autoplot(quant.pca, data=t_norm_countmatrix_temp, colour='sampleCondition', shape='condition1', main="PCA of quantile normalization results prior to DE analysis")
 ```
 In the raw data with log transformation only, we are able to see that there are two peaks corresponding to the two datasets (Nigerian and TCGA). The quantile normalization demonstrates a PCA that has similar clustering. Only ~20% of the distribution of the data set is explained by the PCA1, 2 of the variables.
 
@@ -253,12 +258,38 @@ summary(sumassess)
 The high rho and significant p-value in the Spearman rank correlation suggests that there is a strong correlation when comparing the means and sums across genes from the Nigerian and TCGA pools. We did not find any subtype specific interaction effects arising within the basal tumors (largest pool)
 
 #Specific gene comparison
-```{r Specific gene comparison, message=FALSE, warning=FALSE, echo=FALSE}
+```{r Specific gene comparison, message=FALSE, warning=FALSE, echo=FALSE, results=FALSE}
 #ESR1 expression between Nigerian and TCGA (with minimal normalization, before DE analysis)
 dds <- estimateSizeFactors(ddsHTSeqMF)
 plotCounts(dds, gene = "ENSG00000091831.17", intgroup=c("sampleCondition"), main="Distribution of ESR1 expression across groups (before DE analysis)")
 esr_countmatrix <- t_norm_countmatrix %>% dplyr::select("ENSG00000091831.17", "fileName", "condition1", "condition2")
 #write.table(esr_countmatrix, file="esrpam50.csv", sep=",")
+
+#TNFSF10 expression within Nigerians by subtype
+sampleTableTNF <- data.frame(sampleName=gsub(".htseq.counts","",sampleFiles),
+                          fileName=sampleFiles,
+                          condition1=sampleConditionrace,
+                          condition2=sampleConditionPAM50)
+sampleTableTNF <- sampleTableTNF %>% dplyr::filter(condition1=="Nigerian")
+sampleTableTNF$condition1 <- NULL
+
+colnames(sampleTableTNF) <- c("sampleName", "fileName", "sampleCondition")
+
+ddsHTSeqMFTNF <- DESeqDataSetFromHTSeqCount(sampleTable=sampleTableTNF,
+                                       directory=FOLDER,
+                                       design=~sampleCondition)
+
+ddsHTSeqMFTNF <- ddsHTSeqMFTNF[rowSums(counts(ddsHTSeqMFTNF)) > 0, ]
+ddsTNF <- estimateSizeFactors(ddsHTSeqMFTNF)
+TNF <- plotCounts(ddsTNF, gene = "ENSG00000121858.6", intgroup=c("sampleCondition"), returnData = TRUE)
+
+ggplot(TNF, aes(x = sampleCondition, y = count, fill=sampleCondition)) + 
+  geom_boxplot() +
+  theme_bw() +
+  scale_fill_manual(values=c("#FF0000", "#FFFF00", "#00FF00", "#00FFFF", "#0033FF")) + 
+  coord_trans(y="log2") + 
+  ggtitle("Distribution of TNFSF10 expression across Nigerian subtypes") +
+  theme(plot.title = element_text(hjust = 0.5))
 ```
 This section is to compare the distribution/variance in gene counts for specific genes of breast cancer interest across both populations. 
 
@@ -389,7 +420,7 @@ df_limma <- data_frame(log2FoldChange = fit$coefficients[,1],
                        padj = qvals,
                        anno = fit$genes)
 
-with(df_limma, plot(log2FoldChange, -log10(padj), pch=20, main="Volcano plot of differential gene expression between basal \nbreast cancers in Nigerian and TCGA white breast cancer patients\nquantile corrected+ribosome removed", xlim=c(-50,50), ylim=c(0,50)))
+with(df_limma, plot(log2FoldChange, -log10(padj), pch=20, main="Volcano plot of differential gene expression between basal \nbreast cancers in Nigerian and TCGA white breast cancer patients\nquantile corrected+ribosome removed", xlim=c(-30,30), ylim=c(0,30)))
 with(subset(df_limma, padj<0.05 & (2^(abs(log2FoldChange))>50)), points(log2FoldChange, -log10(padj), pch=20, col="blue"))
 with(subset(df_limma, padj<0.05 & (2^(abs(log2FoldChange))>50)), textxy(log2FoldChange, -log10(padj), labs=anno$symbol, cex=.5))
 
@@ -459,19 +490,18 @@ pheatmap(hm, annotation_col = annohm, cluster_rows=TRUE, cluster_cols=TRUE, clus
 
 #Saving full output of significantly differentially expressed genes
 #write.csv(df_limmaprint, file = "TCGA_white-Nigerian-Basal-woribosomes.csv", row.names = FALSE)
-rankBasalwhite <- as.matrix(df_limmaprint)
-rankBasalwhite <- as.data.frame(rankBasalwhite)
-rankBasalwhite <- rankBasalwhite %>% dplyr::select(anno.symbol, log2FoldChange)
-rankBasalwhite$log2FoldChange <- as.numeric(levels(rankBasalwhite$log2FoldChange))[rankBasalwhite$log2FoldChange]
-colnames(rankBasalwhite) <- c("ID", "t")
-rankBasalwhite <- setNames(rankBasalwhite$t, rankBasalwhite$ID)
+#rankBasalwhite <- as.matrix(df_limmaprint)
+#rankBasalwhite <- as.data.frame(rankBasalwhite)
+#rankBasalwhite <- rankBasalwhite %>% dplyr::select(anno.symbol, log2FoldChange)
+#rankBasalwhite$log2FoldChange <- as.numeric(levels(rankBasalwhite$log2FoldChange))[rankBasalwhite$log2FoldChange]
+#colnames(rankBasalwhite) <- c("ID", "t")
+#rankBasalwhite <- setNames(rankBasalwhite$t, rankBasalwhite$ID)
 
-fgseaBasalwhite <- fgsea(m_list, rankBasalwhite, minSize=20, maxSize=1000, nperm=1000)
-fgseaBasalwhite <- fgseaBasalwhite[order(pval), ]
+#fgseaBasalwhite <- fgsea(m_list, rankBasalwhite, minSize=20, maxSize=1000, nperm=1000)
+#fgseaBasalwhite <- fgseaBasalwhite[order(pval), ]
 
 #fwrite(fgseaBasalwhite, file="fgseaResBasalwhite.txt", sep="\t", sep2=c("", " ", ""))
 ```
-
 
 ##VEGF and Claudin gene signatures
 ```{r Gene signatures, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
@@ -510,11 +540,10 @@ vegf_countmatrix$signature <- rowSums(vegf_countmatrix[,c("ENSG00000148926.5", "
 vegf_countmatrix$condition12 <- paste(vegf_countmatrix$condition1, vegf_countmatrix$condition2)
   
 temp_vegf_countmatrix <- vegf_countmatrix %>% dplyr::filter(condition1=="Nigerian")
-plot(temp_vegf_countmatrix$condition2, temp_vegf_countmatrix$signature, main="Distribution of Nigerian samples by VEGF gene set (RNA)")
+ggplot(temp_vegf_countmatrix, aes(x=condition2, y=signature)) + geom_boxplot() + xlab("Breast cancer subtype") + ylab ("VEGF signature") + theme_bw()
 
-temp_vegf_countmatrix2 <- vegf_countmatrix %>% dplyr::select(condition12, signature)
-ggplot(temp_vegf_countmatrix2, aes(x = condition12, y=signature)) + geom_boxplot()
-
+#temp_vegf_countmatrix2 <- vegf_countmatrix %>% dplyr::select(condition12, signature)
+#ggplot(temp_vegf_countmatrix2, aes(x = condition12, y=signature)) + geom_boxplot() 
 
 #Heatmap based on Claudin data
 basalsepgenes <- df_limmaprint %>% dplyr::filter(anno$symbol=="AXL" | anno$symbol=="CAV1" | anno$symbol=="CD24" | anno$symbol=="CLDN4" | anno$symbol=="DDR1" | anno$symbol=="DSP" | anno$symbol=="EMP3" | anno$symbol=="GNG11" | anno$symbol=="JUP" | anno$symbol=="KRT19" | anno$symbol=="KRT8" | anno$symbol=="LEPRE1" | anno$symbol=="LHFP" | anno$symbol=="MPP1" | anno$symbol=="NT5E" | anno$symbol=="PVRL3" | anno$symbol=="RAB25" | anno$symbol=="SPINT1" | anno$symbol=="SPINT2" | anno$symbol=="VAMP8" | anno$symbol=="VIM" | anno$symbol=="EPCAM" | anno$symbol=="ESRP1" | anno$symbol=="GRHL2" | anno$symbol=="TMEM158" | anno$symbol=="SH2B3" | anno$symbol=="ZEB1")
@@ -568,13 +597,13 @@ claudin_countmatrix$signature <- rowSums(claudin_countmatrix[,c("ENSG00000167601
 claudin_countmatrix$condition12 <- paste(claudin_countmatrix$condition1, claudin_countmatrix$condition2)
   
 temp_claudin_countmatrix <- claudin_countmatrix %>% dplyr::filter(condition1=="Nigerian")
-plot(temp_claudin_countmatrix$condition2, temp_claudin_countmatrix$signature, main="Distribution of Nigerian samples by claudin gene set (RNA)")
+ggplot(temp_claudin_countmatrix, aes(x=condition2, y=signature)) + geom_boxplot() + xlab("Breast cancer subtype") + ylab ("Claudin signature")+theme_bw()
 
-temp_claudin_countmatrix2 <- claudin_countmatrix %>% dplyr::select(condition12, signature)
-ggplot(temp_claudin_countmatrix2, aes(x = condition12, y=signature)) + geom_boxplot()
+#plot(temp_claudin_countmatrix$condition2, temp_claudin_countmatrix$signature, main="Distribution of Nigerian samples by claudin gene set (RNA)")
 
+#temp_claudin_countmatrix2 <- claudin_countmatrix %>% dplyr::select(condition12, signature)
+#ggplot(temp_claudin_countmatrix2, aes(x = condition12, y=signature)) + geom_boxplot()
 ```
-
 
 ##DE: Nigerian/TCGA Black - Basal
 ```{r Limma-voom differential expression results for Nigerian/TCGA black Basal patients, message=FALSE, warning=FALSE, echo=FALSE, cache=TRUE}
@@ -658,7 +687,7 @@ df_limma <- data_frame(log2FoldChange = fit$coefficients[,1],
                        padj = qvals,
                        anno = fit$genes)
 
-with(df_limma, plot(log2FoldChange, -log10(padj), pch=20, main="Volcano plot of differential gene expression between Basal \nbreast cancers in Nigerian and TCGA black breast cancer patients\nquantile corrected+ribosome removed", xlim=c(-50,50), ylim=c(0,50)))
+with(df_limma, plot(log2FoldChange, -log10(padj), pch=20, main="Volcano plot of differential gene expression between Basal \nbreast cancers in Nigerian and TCGA black breast cancer patients\nquantile corrected+ribosome removed", xlim=c(-30,30), ylim=c(0,30)))
 with(subset(df_limma, padj<0.05 & (2^(abs(log2FoldChange))>50)), points(log2FoldChange, -log10(padj), pch=20, col="blue"))
 with(subset(df_limma, padj<0.05 & (2^(abs(log2FoldChange))>50)), textxy(log2FoldChange, -log10(padj), labs=anno$symbol, cex=.5))
 
@@ -728,15 +757,15 @@ pheatmap(hm, annotation_col = annohm, cluster_rows=TRUE, cluster_cols=TRUE, clus
 #Saving full output of significantly differentially expressed genes
 #write.csv(df_limmaprint, file = "TCGA_black-Nigerian-Basal-woribosomes.csv", row.names = FALSE)
 
-rankBasalblack <- as.matrix(df_limmaprint)
-rankBasalblack <- as.data.frame(rankBasalblack)
-rankBasalblack <- rankBasalblack %>% dplyr::select(anno.symbol, log2FoldChange)
-rankBasalblack$log2FoldChange <- as.numeric(levels(rankBasalblack$log2FoldChange))[rankBasalblack$log2FoldChange]
-colnames(rankBasalblack) <- c("ID", "t")
-rankBasalblack <- setNames(rankBasalblack$t, rankBasalblack$ID)
+#rankBasalblack <- as.matrix(df_limmaprint)
+#rankBasalblack <- as.data.frame(rankBasalblack)
+#rankBasalblack <- rankBasalblack %>% dplyr::select(anno.symbol, log2FoldChange)
+#rankBasalblack$log2FoldChange <- as.numeric(levels(rankBasalblack$log2FoldChange))[rankBasalblack$log2FoldChange]
+#colnames(rankBasalblack) <- c("ID", "t")
+#rankBasalblack <- setNames(rankBasalblack$t, rankBasalblack$ID)
 
-fgseaBasalblack <- fgsea(m_list, rankBasalblack, minSize=20, maxSize=1000, nperm=1000)
-fgseaBasalblack <- fgseaBasalblack[order(pval), ]
+#fgseaBasalblack <- fgsea(m_list, rankBasalblack, minSize=20, maxSize=1000, nperm=1000)
+#fgseaBasalblack <- fgseaBasalblack[order(pval), ]
 
 #fwrite(fgseaBasalblack, file="fgseaResBasalblack.txt", sep="\t", sep2=c("", " ", ""))
 ```
@@ -962,7 +991,7 @@ df_limma <- data_frame(log2FoldChange = fit$coefficients[,1],
                        padj = qvals,
                        anno = fit$genes)
 
-with(df_limma, plot(log2FoldChange, -log10(padj), pch=20, main="Volcano plot of differential gene expression between Her2+ \nbreast cancers in Nigerian and TCGA white breast cancer patients\nquantile corrected", xlim=c(-50,50), ylim=c(0,20)))
+with(df_limma, plot(log2FoldChange, -log10(padj), pch=20, main="Volcano plot of differential gene expression between Her2+ \nbreast cancers in Nigerian and TCGA white breast cancer patients\nquantile corrected+ribosome removed", xlim=c(-30,30), ylim=c(0,15)))
 with(subset(df_limma, padj<0.05 & (2^(abs(log2FoldChange))>50)), points(log2FoldChange, -log10(padj), pch=20, col="blue"))
 with(subset(df_limma, padj<0.05 & (2^(abs(log2FoldChange))>50)), textxy(log2FoldChange, -log10(padj), labs=anno$symbol, cex=.5))
 
@@ -1033,15 +1062,15 @@ pheatmap(hm, annotation_col = annohm, cluster_rows=TRUE, cluster_cols=TRUE, clus
 #Saving full output of significantly differentially expressed genes
 #write.csv(df_limmaprint, file = "TCGAwhite-Nigerian-Her2.woribosomes.csv", row.names = FALSE)
 
-rankHER2white <- as.matrix(df_limmaprint)
-rankHER2white <- as.data.frame(rankHER2white)
-rankHER2white <- rankHER2white %>% dplyr::select(anno.symbol, log2FoldChange)
-rankHER2white$log2FoldChange <- as.numeric(levels(rankHER2white$log2FoldChange))[rankHER2white$log2FoldChange]
-colnames(rankHER2white) <- c("ID", "t")
-rankHER2white <- setNames(rankHER2white$t, rankHER2white$ID)
+#rankHER2white <- as.matrix(df_limmaprint)
+#rankHER2white <- as.data.frame(rankHER2white)
+#rankHER2white <- rankHER2white %>% dplyr::select(anno.symbol, log2FoldChange)
+#rankHER2white$log2FoldChange <- #as.numeric(levels(rankHER2white$log2FoldChange))[rankHER2white$log2FoldChange]
+#colnames(rankHER2white) <- c("ID", "t")
+#rankHER2white <- setNames(rankHER2white$t, rankHER2white$ID)
 
-fgseaHER2white <- fgsea(m_list, rankHER2white, minSize=20, maxSize=1000, nperm=1000)
-fgseaHER2white <- fgseaHER2white[order(pval), ]
+#fgseaHER2white <- fgsea(m_list, rankHER2white, minSize=20, maxSize=1000, nperm=1000)
+#fgseaHER2white <- fgseaHER2white[order(pval), ]
 
 #fwrite(fgseaHER2white, file="fgseaResHER2white.txt", sep="\t", sep2=c("", " ", ""))
 ```
@@ -1269,7 +1298,7 @@ df_limma <- data_frame(log2FoldChange = fit$coefficients[,1],
                        padj = qvals,
                        anno = fit$genes)
 
-with(df_limma, plot(log2FoldChange, -log10(padj), pch=20, main="Volcano plot of differential gene expression between LumA \nbreast cancers in Nigerian and TCGA white breast cancer patients\nquantile corrected", xlim=c(-50,50), ylim=c(0,20)))
+with(df_limma, plot(log2FoldChange, -log10(padj), pch=20, main="Volcano plot of differential gene expression between LumA \nbreast cancers in Nigerian and TCGA white breast cancer patients\nquantile corrected+ribosome removed", xlim=c(-30,30), ylim=c(0,15)))
 with(subset(df_limma, padj<0.05 & (2^(abs(log2FoldChange))>50)), points(log2FoldChange, -log10(padj), pch=20, col="blue"))
 with(subset(df_limma, padj<0.05 & (2^(abs(log2FoldChange))>50)), textxy(log2FoldChange, -log10(padj), labs=anno$symbol, cex=.5))
 
@@ -1340,15 +1369,15 @@ pheatmap(hm, annotation_col = annohm, cluster_rows=TRUE, cluster_cols=TRUE, clus
 #Saving full output of significantly differentially expressed genes
 #write.csv(df_limmaprint, file = "TCGA_white-Nigerian-LumA-woribosomes.csv", row.names = FALSE)
 
-rankLumAwhite <- as.matrix(df_limmaprint)
-rankLumAwhite <- as.data.frame(rankLumAwhite)
-rankLumAwhite <- rankLumAwhite %>% dplyr::select(anno.symbol, log2FoldChange)
-rankLumAwhite$log2FoldChange <- as.numeric(levels(rankLumAwhite$log2FoldChange))[rankLumAwhite$log2FoldChange]
-colnames(rankLumAwhite) <- c("ID", "t")
-rankLumAwhite <- setNames(rankLumAwhite$t, rankLumAwhite$ID)
+#rankLumAwhite <- as.matrix(df_limmaprint)
+#rankLumAwhite <- as.data.frame(rankLumAwhite)
+#rankLumAwhite <- rankLumAwhite %>% dplyr::select(anno.symbol, log2FoldChange)
+#rankLumAwhite$log2FoldChange <- #as.numeric(levels(rankLumAwhite$log2FoldChange))[rankLumAwhite$log2FoldChange]
+#colnames(rankLumAwhite) <- c("ID", "t")
+#rankLumAwhite <- setNames(rankLumAwhite$t, rankLumAwhite$ID)
 
-fgseaLumAwhite <- fgsea(m_list, rankLumAwhite, minSize=20, maxSize=1000, nperm=1000)
-fgseaLumAwhite <- fgseaHER2white[order(pval), ]
+#fgseaLumAwhite <- fgsea(m_list, rankLumAwhite, minSize=20, maxSize=1000, nperm=1000)
+#fgseaLumAwhite <- fgseaHER2white[order(pval), ]
 
 #fwrite(fgseaLumAwhite, file="fgseaResLumAwhite.txt", sep="\t", sep2=c("", " ", ""))
 ```
@@ -1435,7 +1464,7 @@ df_limma <- data_frame(log2FoldChange = fit$coefficients[,1],
                        padj = qvals,
                        anno = fit$genes)
 
-with(df_limma, plot(log2FoldChange, -log10(padj), pch=20, main="Volcano plot of differential gene expression between LumA \nbreast cancers in Nigerian and TCGA black breast cancer patients\nquantile corrected", xlim=c(-50,50), ylim=c(0,20)))
+with(df_limma, plot(log2FoldChange, -log10(padj), pch=20, main="Volcano plot of differential gene expression between LumA \nbreast cancers in Nigerian and TCGA black breast cancer patients\nquantile corrected+ribosome removed", xlim=c(-30,30), ylim=c(0,15)))
 with(subset(df_limma, padj<0.05 & (2^(abs(log2FoldChange))>50)), points(log2FoldChange, -log10(padj), pch=20, col="blue"))
 with(subset(df_limma, padj<0.05 & (2^(abs(log2FoldChange))>50)), textxy(log2FoldChange, -log10(padj), labs=anno$symbol, cex=.5))
 
@@ -1507,15 +1536,15 @@ pheatmap(hm, annotation_col = annohm, cluster_rows=TRUE, cluster_cols=TRUE, clus
 #Saving full output of significantly differentially expressed genes
 #write.csv(df_limmaprint, file = "TCGA_black-Nigerian-LumA-woribosomes.csv", row.names = FALSE)
 
-rankLumAblack <- as.matrix(df_limmaprint)
-rankLumAblack <- as.data.frame(rankLumAblack)
-rankLumAblack <- rankLumAblack %>% dplyr::select(anno.symbol, log2FoldChange)
-rankLumAblack$log2FoldChange <- as.numeric(levels(rankLumAblack$log2FoldChange))[rankLumAblack$log2FoldChange]
-colnames(rankLumAblack) <- c("ID", "t")
-rankLumAblack <- setNames(rankLumAblack$t, rankLumAblack$ID)
+#rankLumAblack <- as.matrix(df_limmaprint)
+#rankLumAblack <- as.data.frame(rankLumAblack)
+#rankLumAblack <- rankLumAblack %>% dplyr::select(anno.symbol, log2FoldChange)
+#rankLumAblack$log2FoldChange <- as.numeric(levels(rankLumAblack$log2FoldChange))[rankLumAblack$log2FoldChange]
+#colnames(rankLumAblack) <- c("ID", "t")
+#rankLumAblack <- setNames(rankLumAblack$t, rankLumAblack$ID)
 
-fgseaLumAblack <- fgsea(m_list, rankLumAblack, minSize=20, maxSize=1000, nperm=1000)
-fgseaLumAblack <- fgseaLumAblack[order(pval), ]
+#fgseaLumAblack <- fgsea(m_list, rankLumAblack, minSize=20, maxSize=1000, nperm=1000)
+#fgseaLumAblack <- fgseaLumAblack[order(pval), ]
 
 #fwrite(fgseaLumAblack, file="fgseaResLumAblack.txt", sep="\t", sep2=c("", " ", ""))
 ```
@@ -1754,7 +1783,7 @@ df_limma <- data_frame(log2FoldChange = fit$coefficients[,1],
                        padj = qvals,
                        anno = fit$genes)
 
-with(df_limma, plot(log2FoldChange, -log10(padj), pch=20, main="Volcano plot of differential gene expression between LumB \nbreast cancers in Nigerian and TCGA white breast cancer patients\nquantile corrected", xlim=c(-50,50), ylim=c(0,20)))
+with(df_limma, plot(log2FoldChange, -log10(padj), pch=20, main="Volcano plot of differential gene expression between LumB \nbreast cancers in Nigerian and TCGA white breast cancer patients\nquantile corrected + ribosome removed", xlim=c(-30,30), ylim=c(0,15)))
 with(subset(df_limma, padj<0.05 & (2^(abs(log2FoldChange))>50)), points(log2FoldChange, -log10(padj), pch=20, col="blue"))
 with(subset(df_limma, padj<0.05 & (2^(abs(log2FoldChange))>50)), textxy(log2FoldChange, -log10(padj), labs=anno$symbol, cex=.5))
 
@@ -1826,15 +1855,15 @@ pheatmap(hm, annotation_col = annohm, cluster_rows=TRUE, cluster_cols=TRUE, clus
 #Saving full output of significantly differentially expressed genes
 #write.csv(df_limmaprint, file = "TCGA_white-Nigerian-LumB-woribosomes.csv", row.names = FALSE)
 
-rankLumBwhite <- as.matrix(df_limmaprint)
-rankLumBwhite <- as.data.frame(rankLumBwhite)
-rankLumBwhite <- rankLumBwhite %>% dplyr::select(anno.symbol, log2FoldChange)
-rankLumBwhite$log2FoldChange <- as.numeric(levels(rankLumBwhite$log2FoldChange))[rankLumBwhite$log2FoldChange]
-colnames(rankLumBwhite) <- c("ID", "t")
-rankLumBwhite <- setNames(rankLumBwhite$t, rankLumBwhite$ID)
+#rankLumBwhite <- as.matrix(df_limmaprint)
+#rankLumBwhite <- as.data.frame(rankLumBwhite)
+#rankLumBwhite <- rankLumBwhite %>% dplyr::select(anno.symbol, log2FoldChange)
+#rankLumBwhite$log2FoldChange <- as.numeric(levels(rankLumBwhite$log2FoldChange))[rankLumBwhite$log2FoldChange]
+#colnames(rankLumBwhite) <- c("ID", "t")
+#rankLumBwhite <- setNames(rankLumBwhite$t, rankLumBwhite$ID)
 
-fgseaLumBwhite <- fgsea(m_list, rankLumBwhite, minSize=20, maxSize=1000, nperm=1000)
-fgseaLumBwhite <- fgseaLumBwhite[order(pval), ]
+#fgseaLumBwhite <- fgsea(m_list, rankLumBwhite, minSize=20, maxSize=1000, nperm=1000)
+#fgseaLumBwhite <- fgseaLumBwhite[order(pval), ]
 
 #fwrite(fgseaLumBwhite, file="fgseaResLumBwhite.txt", sep="\t", sep2=c("", " ", ""))
 ```
@@ -1921,7 +1950,7 @@ df_limma <- data_frame(log2FoldChange = fit$coefficients[,1],
                        padj = qvals,
                        anno = fit$genes)
 
-with(df_limma, plot(log2FoldChange, -log10(padj), pch=20, main="Volcano plot of differential gene expression between LumB \nbreast cancers in Nigerian and TCGA black breast cancer patients\nquantile corrected", xlim=c(-50,50), ylim=c(0,20)))
+with(df_limma, plot(log2FoldChange, -log10(padj), pch=20, main="Volcano plot of differential gene expression between LumB \nbreast cancers in Nigerian and TCGA black breast cancer patients\nquantile corrected + ribosome removed", xlim=c(-30,30), ylim=c(0,15)))
 with(subset(df_limma, padj<0.05 & (2^(abs(log2FoldChange))>50)), points(log2FoldChange, -log10(padj), pch=20, col="blue"))
 with(subset(df_limma, padj<0.05 & (2^(abs(log2FoldChange))>50)), textxy(log2FoldChange, -log10(padj), labs=anno$symbol, cex=.5))
 
@@ -1993,15 +2022,15 @@ pheatmap(hm, annotation_col = annohm, cluster_rows=TRUE, cluster_cols=TRUE, clus
 #Saving full output of significantly differentially expressed genes
 #write.csv(df_limmaprint, file = "TCGA_black-Nigerian-LumB-woribosomes.csv", row.names = FALSE)
 
-rankLumBblack <- as.matrix(df_limmaprint)
-rankLumBblack <- as.data.frame(rankLumBblack)
-rankLumBblack <- rankLumBblack %>% dplyr::select(anno.symbol, log2FoldChange)
-rankLumBblack$log2FoldChange <- as.numeric(levels(rankLumBblack$log2FoldChange))[rankLumBblack$log2FoldChange]
-colnames(rankLumBblack) <- c("ID", "t")
-rankLumBblack <- setNames(rankLumBblack$t, rankLumBblack$ID)
+#rankLumBblack <- as.matrix(df_limmaprint)
+#rankLumBblack <- as.data.frame(rankLumBblack)
+#rankLumBblack <- rankLumBblack %>% dplyr::select(anno.symbol, log2FoldChange)
+#rankLumBblack$log2FoldChange <- as.numeric(levels(rankLumBblack$log2FoldChange))[rankLumBblack$log2FoldChange]
+#colnames(rankLumBblack) <- c("ID", "t")
+#rankLumBblack <- setNames(rankLumBblack$t, rankLumBblack$ID)
 
-fgseaLumBblack <- fgsea(m_list, rankLumBblack, minSize=20, maxSize=1000, nperm=1000)
-fgseaLumBblack <- fgseaLumBblack[order(pval), ]
+#fgseaLumBblack <- fgsea(m_list, rankLumBblack, minSize=20, maxSize=1000, nperm=1000)
+#fgseaLumBblack <- fgseaLumBblack[order(pval), ]
 
 #fwrite(fgseaLumBblack, file="fgseaResLumBblack.txt", sep="\t", sep2=c("", " ", ""))
 ```

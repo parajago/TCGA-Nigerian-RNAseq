@@ -1,7 +1,7 @@
 ---
 title: "Nigerian-TCGA Differential Expression Analysis Using DeSeq2 - Differential gene expression in Life History Whole-Genome samples"
 author: "Padma Sheila Rajagopal, MD MPH"
-date: "8/10/2020"
+date: "12/2/2020"
 
 site: workflowr::wflow_site
 output:
@@ -15,7 +15,6 @@ output:
 rm(list = ls())
 knitr::opts_chunk$set(message=FALSE, warning=FALSE)
 library(gplots)
-library(ggbiplot)
 library(ggplot2)
 library(edgeR)
 library("DESeq2")
@@ -189,14 +188,52 @@ for (sample in samplesil){
   }
 }
 
-samplesdual <-sampleFiles
+sampledriver <-sampleFiles
 countVar2=1
-for (sample in samplesdual){
-  if (stri_detect_fixed(sample,"dual")==TRUE){
-    samplesdual[countVar2] <- "dual"
+for (sample in sampledriver){
+  if (stri_detect_fixed(sample,"driversilent")==TRUE){
+    sampledriver[countVar2] <- "silent"
+    countVar2=countVar2+1
+  }
+  else if (stri_detect_fixed(sample,"driverTP53")==TRUE){
+    sampledriver[countVar2] <- "TP53"
+    countVar2=countVar2+1
+  }
+  else if (stri_detect_fixed(sample,"driverGATA3")==TRUE){
+    sampledriver[countVar2] <- "GATA3"
+    countVar2=countVar2+1
+  }
+  else if (stri_detect_fixed(sample,"driverdual")==TRUE){
+    sampledriver[countVar2] <- "dual"
+    countVar2=countVar2+1
+  }
+  else{
+    sampledriver[countVar2] <- NA
+    countVar2=countVar2+1
+  }
+}
+
+#Condition based on PAM50 subtype 
+sampleConditionPAM50 <- sampleFiles
+countVar2=1
+for (sample in sampleConditionPAM50){
+  if (stri_detect_fixed(sample,"PAMH")==TRUE){
+    sampleConditionPAM50[countVar2] <- "Her2"
+    countVar2=countVar2+1
+  } else if (stri_detect_fixed(sample,"PAMB")==TRUE){
+    sampleConditionPAM50[countVar2] <- "Basal"
+    countVar2=countVar2+1
+  } else if (stri_detect_fixed(sample,"PAMA")==TRUE){
+    sampleConditionPAM50[countVar2] <- "LumA"
+    countVar2=countVar2+1
+  } else if (stri_detect_fixed(sample,"PAMLB")==TRUE){
+    sampleConditionPAM50[countVar2] <- "LumB"
+    countVar2=countVar2+1
+  } else if (stri_detect_fixed(sample,"PAMNL")==TRUE){
+    sampleConditionPAM50[countVar2] <- "Normal"
     countVar2=countVar2+1
   } else{
-    samplesdual[countVar2] <- NA
+    sampleConditionPAM50[countVar2] <- "PAM0"
     countVar2=countVar2+1
   }
 }
@@ -211,7 +248,8 @@ sampleTable <- data.frame(sampleName=gsub("htseq.counts","",sampleFiles),
                           condition4=sampleGATA3,
                           condition5=sampleTP53,
                           condition6=samplesil,
-                          condition7=samplesdual,
+                          condition7=sampledriver,
+                          condition8=sampleConditionPAM50,
                           batch=batchval)
 
 sampleTable$sampleCondition <- paste(sampleTable$condition1, sampleTable$condition2, sep=".")
@@ -614,9 +652,9 @@ restemp$symbol <- mapIds(EnsDb.Hsapiens.v75,
                      keytype="GENEID",           
                      multiVals="first")
 
-with(restemp, plot(log2FoldChange, -log10(padj), pch=20, main="Volcano plot of differential gene expression between \nbreast cancers in Nigerian patients with and without 'silent genomes'", xlim=c(-10,10), ylim=c(0,10)))
-with(subset(restemp, padj<0.05 & (2^(abs(log2FoldChange))>50)), points(log2FoldChange, -log10(padj), pch=20, col="blue"))
-with(subset(restemp, padj<0.05 & (2^(abs(log2FoldChange))>50)), textxy(log2FoldChange, -log10(padj), labs=symbol, cex=.5))
+with(restemp, plot(log2FoldChange, -log10(padj), pch=20, main="Volcano plot of differential gene expression between \nbreast cancers in Nigerian patients with and without 'silent genomes'", xlim=c(-7.5,7.5), ylim=c(1,8)))
+with(subset(restemp, padj<0.05 & (2^(abs(log2FoldChange))>15)), points(log2FoldChange, -log10(padj), pch=20, col="blue"))
+with(subset(restemp, padj<0.05 & (2^(abs(log2FoldChange))>15)), textxy(log2FoldChange, -log10(padj), labs=symbol, cex=.5))
 
 diffsiltable <- as.data.frame(diffsil)
 diffsiltable$temp <- row.names(diffsil)
@@ -661,9 +699,13 @@ top_n(diffsiltable, -10, foldChange)
 
 diffsiltable$baseMean <- NULL
 
+plotCounts(ddssil, gene="ENSG00000091831.17", intgroup=c("sampleCondition"), main="Distribution of ESR1 expression by silent genome status")
+
+plotCounts(ddssil, gene="ENSG00000121879.3", intgroup=c("sampleCondition"), main="Distribution of PIK3CA expression by silent genome status")
+
 #write.csv(diffsiltable, file = "RNA-DE-Nigerian-silent.csv", row.names =FALSE)
 ```
-We found 62 significantly differentially expressed genes between those patients with silent genomes and non-silent genomes among the Nigerian patients. We were able to use DESeq2 for this process as this comparison was made only within the Nigerian patients.
+We found 189 significantly differentially expressed genes between those patients with silent genomes and non-silent genomes among the Nigerian patients. We were able to use DESeq2 for this process as this comparison was made only within the Nigerian patients.
 
 #DE: GATA3 (Nigerian)
 Among the Nigerian patients, 8 demonstrated GATA3 loss of heterozygosity and 9 demonstrated GATA3 mutations. 32 patients had GATA3 WT. 
@@ -1109,8 +1151,7 @@ sampleTableall <- data.frame(sampleName=gsub(".htseq.counts","",sampleFiles),
                           condition1=sampleConditionrace,
                           condition2=sampleGATA3,
                           condition3=sampleTP53,
-                          condition4=samplesil,
-                          condition5=samplesdual)
+                          condition4=samplesil)
 
 sampleTableall <- sampleTableall %>% subset((condition1=="Nigerian")==TRUE)
 sampleTableall$condition1 <- NULL
@@ -1334,4 +1375,35 @@ top_n(diffTP53siltable, -10, foldChange)
 diffTP53siltable$baseMean <- NULL
 
 write.csv(diffTP53siltable, file = "DE-Nigerian-TP53-silent.csv", row.names =FALSE)
+
+#Driver-based PCA and comparison
+sampleTabledriver <- data.frame(sampleName=gsub(".htseq.counts","",sampleFiles),
+                          fileName=sampleFiles,
+                          sampleCondition=sampledriver)
+
+sampleTabledriver <- sampleTabledriver %>% subset(is.na(sampleCondition)==FALSE)
+
+ddsHTSeqdriver <- DESeqDataSetFromHTSeqCount(
+                                      sampleTable=sampleTabledriver,
+                                      directory=FOLDER,
+                                      design=~sampleCondition)
+
+ddsHTSeqdriver <- ddsHTSeqdriver[rowSums(counts(ddsHTSeqdriver)) > 0, ] #Pre-filtering the dataset by removing the rows without any  information about gene expression
+
+ddsHTSeqdriver <- estimateSizeFactors(ddsHTSeqdriver) #The size factor is the median ratio of the sample over a "pseudosample": for each gene, the geometric mean of all samples. This accounts for sequencing depth. 
+
+vsddriver <- vst(ddsHTSeqdriver, blind=TRUE) #Variance-stabilizing transformation, only using this since >50 samples
+
+plotPCA(vsddriver, intgroup=c("sampleCondition")) + labs(title="PCA of Nigerian patient RNAseq data based on primary driver")
+
+sampleTabledriverIHC <- data.frame(sampleName=gsub(".htseq.counts","",sampleFiles),
+                          fileName=sampleFiles,
+                          condition1=sampledriver,
+                          condition2=sampleConditionIHC)
+
+sampleTabledriverIHC <- data.frame(sampleName=gsub(".htseq.counts","",sampleFiles),
+                          fileName=sampleFiles,
+                          condition1=sampledriver,
+                          condition2=sampleConditionPAM50)
+
 ```
